@@ -2,8 +2,7 @@ import type { CreateIndexPayload, Upstash } from "@upstash/sdk";
 import { Index } from "@upstash/sdk";
 
 import type { PreferredRegions } from "../../types";
-
-export const DEFAULT_VECTOR_DB_NAME = "upstash-rag-chat-vector";
+import { DEFAULT_VECTOR_DB_NAME } from "../../constants";
 
 export const DEFAULT_VECTOR_CONFIG: CreateIndexPayload = {
   name: DEFAULT_VECTOR_DB_NAME,

@@ -1,8 +1,8 @@
 import type { Redis } from "@upstash/sdk";
 import { CustomUpstashRedisChatMessageHistory } from "./redis-custom-history";
-import type { RAGChatConfig } from "../config";
 import { Config } from "../config";
 import { ClientFactory } from "../client-factory";
+import type { RAGChatConfig } from "../types";
 
 const DAY_IN_SECONDS = 86_400;
 const TOP_6 = 5;

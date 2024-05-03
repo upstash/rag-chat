@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { Upstash } from "@upstash/sdk";
 import { describe, expect, test } from "bun:test";
-import { DEFAULT_REDIS_CONFIG, DEFAULT_REDIS_DB_NAME, RedisClient } from ".";
+import { DEFAULT_REDIS_CONFIG, RedisClient } from ".";
+import { DEFAULT_REDIS_DB_NAME } from "../../constants";
 
 const upstashSDK = new Upstash({
   email: process.env.UPSTASH_EMAIL!,

@@ -3,7 +3,7 @@ import type { BaseMessage } from "@langchain/core/messages";
 import { RunnableSequence, RunnableWithMessageHistory } from "@langchain/core/runnables";
 import { LangChainStream, StreamingTextResponse } from "ai";
 
-import { formatChatHistory, sanitizeQuestion } from "./utils";
+import { appendDefaultsIfNeeded, formatChatHistory, sanitizeQuestion } from "./utils";
 
 import type { BaseLanguageModelInterface } from "@langchain/core/language_models/base";
 import type { PromptTemplate } from "@langchain/core/prompts";
@@ -13,24 +13,16 @@ import { HistoryService } from "./services/history";
 import { RetrievalService } from "./services/retrieval";
 import { QA_TEMPLATE } from "./prompts";
 import { UpstashModelError } from "./error/model";
+import { RateLimitService } from "./services/ratelimit";
+import type { ChatOptions, PrepareChatResult, RAGChatConfig } from "./types";
+import { RatelimitUpstashError } from "./error/ratelimit";
 
 type CustomInputValues = { chat_history?: BaseMessage[]; question: string; context: string };
-
-type ChatOptions = {
-  stream: boolean;
-  sessionId: string;
-  includeHistory?: number;
-  similarityThreshold?: number;
-};
-
-type PrepareChatResult = {
-  question: string;
-  facts: string;
-};
 
 export class RAGChat {
   private retrievalService: RetrievalService;
   private historyService: HistoryService;
+  private ratelimitService: RateLimitService;
 
   private model: BaseLanguageModelInterface;
   private template: PromptTemplate;
@@ -38,10 +30,12 @@ export class RAGChat {
   constructor(
     retrievalService: RetrievalService,
     historyService: HistoryService,
+    ratelimitService: RateLimitService,
     config: { model: BaseLanguageModelInterface; template: PromptTemplate }
   ) {
     this.retrievalService = retrievalService;
     this.historyService = historyService;
+    this.ratelimitService = ratelimitService;
 
     this.model = config.model;
     this.template = config.template;
@@ -56,18 +50,33 @@ export class RAGChat {
     return { question, facts };
   }
 
-  async chat(input: string, options: ChatOptions) {
+  async chat(
+    input: string,
+    options: ChatOptions
+  ): Promise<StreamingTextResponse | Record<string, unknown>> {
+    const options_ = appendDefaultsIfNeeded(options);
+    const { success, resetTime } = await this.ratelimitService.checkLimit(
+      options_.ratelimitSessionId
+    );
+
+    if (!success) {
+      throw new RatelimitUpstashError("Couldn't process chat due to ratelimit.", {
+        error: "ERR:USER_RATELIMITED",
+        resetTime: resetTime,
+      });
+    }
+
     const { question, facts } = await this.prepareChat(input, options.similarityThreshold);
 
     return options.stream
-      ? this.streamingChainCall(question, facts, options)
-      : this.chainCall(options, question, facts);
+      ? this.streamingChainCall(options_, question, facts)
+      : this.chainCall(options_, question, facts);
   }
 
   private streamingChainCall = (
+    chatOptions: ChatOptions,
     question: string,
-    facts: string,
-    chatOptions: ChatOptions
+    facts: string
   ): StreamingTextResponse => {
     const { stream, handlers } = LangChainStream();
     void this.chainCall(chatOptions, question, facts, [handlers]);
@@ -75,7 +84,7 @@ export class RAGChat {
   };
 
   private chainCall(
-    chatOptions: { sessionId: string; includeHistory?: number },
+    chatOptions: ChatOptions,
     question: string,
     facts: string,
     handlers?: Callbacks
@@ -113,7 +122,9 @@ export class RAGChat {
     );
   }
 
-  static async initialize(config: Config): Promise<RAGChat> {
+  static async initialize(
+    config: RAGChatConfig & { email: string; token: string }
+  ): Promise<RAGChat> {
     const clientFactory = new ClientFactory(
       new Config(config.email, config.token, {
         redis: config.redis,
@@ -125,12 +136,13 @@ export class RAGChat {
 
     const historyService = new HistoryService(redis);
     const retrievalService = new RetrievalService(index);
+    const ratelimitService = new RateLimitService(config.ratelimit);
 
     if (!config.model) {
       throw new UpstashModelError("Model can not be undefined!");
     }
 
-    return new RAGChat(retrievalService, historyService, {
+    return new RAGChat(retrievalService, historyService, ratelimitService, {
       model: config.model,
       template: config.template ?? QA_TEMPLATE,
     });

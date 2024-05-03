@@ -3,7 +3,8 @@ import { PromptTemplate } from "@langchain/core/prompts";
 import { ChatOpenAI } from "@langchain/openai";
 import { Index, Redis } from "@upstash/sdk";
 import { expect, test } from "bun:test";
-import { Config, DEFAULT_REDIS_DB_NAME, DEFAULT_VECTOR_DB_NAME } from "./config";
+import { Config } from "./config";
+import { DEFAULT_VECTOR_DB_NAME, DEFAULT_REDIS_DB_NAME } from "./constants";
 
 const mockRedis = new Redis({
   token: "hey",

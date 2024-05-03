@@ -2,8 +2,7 @@ import type { CreateCommandPayload, Upstash } from "@upstash/sdk";
 
 import { Redis } from "@upstash/sdk";
 import type { PreferredRegions } from "../../types";
-
-export const DEFAULT_REDIS_DB_NAME = "upstash-rag-chat-redis";
+import { DEFAULT_REDIS_DB_NAME } from "../../constants";
 
 export const DEFAULT_REDIS_CONFIG: CreateCommandPayload = {
   name: DEFAULT_REDIS_DB_NAME,

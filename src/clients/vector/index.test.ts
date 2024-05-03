@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { Upstash } from "@upstash/sdk";
 import { describe, expect, test } from "bun:test";
-import { DEFAULT_VECTOR_DB_NAME, VectorClient, DEFAULT_VECTOR_CONFIG } from ".";
+import { VectorClient, DEFAULT_VECTOR_CONFIG } from ".";
+import { DEFAULT_VECTOR_DB_NAME } from "../../constants";
 
 const upstashSDK = new Upstash({
   email: process.env.UPSTASH_EMAIL!,

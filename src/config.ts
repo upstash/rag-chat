@@ -1,32 +1,20 @@
 import type { BaseLanguageModelInterface } from "@langchain/core/language_models/base";
 import type { PromptTemplate } from "@langchain/core/prompts";
+import type { Ratelimit } from "@upstash/sdk";
 import { Redis } from "@upstash/sdk";
 import { Index } from "@upstash/sdk";
-import type { PreferredRegions } from "./types";
-
-type RAGChatConfigCommon = {
-  model?: BaseLanguageModelInterface;
-  template?: PromptTemplate;
-  region?: PreferredRegions;
-};
-
-const PREFERRED_REGION: PreferredRegions = "us-east-1";
-export const DEFAULT_VECTOR_DB_NAME = "upstash-rag-chat-vector";
-export const DEFAULT_REDIS_DB_NAME = "upstash-rag-chat-redis";
-
-export type RAGChatConfig = {
-  vector?: string | Index;
-  redis?: string | Redis;
-} & RAGChatConfigCommon;
+import type { PreferredRegions, RAGChatConfig } from "./types";
+import { DEFAULT_REDIS_DB_NAME, DEFAULT_VECTOR_DB_NAME, PREFERRED_REGION } from "./constants";
 
 export class Config {
   public readonly token: string;
   public readonly email: string;
 
-  public readonly region: PreferredRegions;
   public readonly vector?: string | Index;
   public readonly redis?: string | Redis;
+  public readonly ratelimit?: Ratelimit;
 
+  public readonly region: PreferredRegions;
   public readonly model?: BaseLanguageModelInterface;
   public readonly template?: PromptTemplate;
 
@@ -44,6 +32,8 @@ export class Config {
       typeof config?.redis === "string" || config?.redis instanceof Redis
         ? config.redis
         : DEFAULT_REDIS_DB_NAME;
+
+    this.ratelimit = config?.ratelimit;
 
     this.model = config?.model;
     this.template = config?.template;
