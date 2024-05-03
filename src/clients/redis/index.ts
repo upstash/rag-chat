@@ -13,21 +13,21 @@ export const DEFAULT_REDIS_CONFIG: CreateCommandPayload = {
 };
 
 type Config = {
-  sdkClient: Upstash;
+  upstashSDK: Upstash;
   redisDbNameOrInstance?: string | Redis;
-  preferredRegion?: PreferredRegions;
+  region?: PreferredRegions;
 };
 
-export class RedisClientConstructor {
+export class RedisClient {
   private redisDbNameOrInstance?: string | Redis;
-  private preferredRegion?: PreferredRegions;
-  private sdkClient: Upstash;
+  private region?: PreferredRegions;
+  private upstashSDK: Upstash;
   private redisClient?: Redis;
 
-  constructor({ sdkClient, preferredRegion, redisDbNameOrInstance }: Config) {
+  constructor({ upstashSDK, region, redisDbNameOrInstance }: Config) {
     this.redisDbNameOrInstance = redisDbNameOrInstance;
-    this.sdkClient = sdkClient;
-    this.preferredRegion = preferredRegion ?? "us-east-1";
+    this.upstashSDK = upstashSDK;
+    this.region = region ?? "us-east-1";
   }
 
   public async getRedisClient(): Promise<Redis | undefined> {
@@ -63,22 +63,23 @@ export class RedisClientConstructor {
 
   private createRedisClientByName = async (redisDbName: string) => {
     try {
-      const redis = await this.sdkClient.getRedisDatabase(redisDbName);
-      this.redisClient = await this.sdkClient.newRedisClient(redis.database_name);
+      const redis = await this.upstashSDK.getRedisDatabase(redisDbName);
+      this.redisClient = await this.upstashSDK.newRedisClient(redis.database_name);
     } catch {
+      console.error(`Requested '${redisDbName}' is missing in DB list. Creating new one...`);
       await this.createRedisClientByDefaultConfig(redisDbName);
     }
   };
 
   private createRedisClientByDefaultConfig = async (redisDbName?: string) => {
-    const redisDatabase = await this.sdkClient.getOrCreateRedisDatabase({
+    const redisDatabase = await this.upstashSDK.getOrCreateRedisDatabase({
       ...DEFAULT_REDIS_CONFIG,
       name: redisDbName ?? DEFAULT_REDIS_CONFIG.name,
-      region: this.preferredRegion ?? DEFAULT_REDIS_CONFIG.region,
+      region: this.region ?? DEFAULT_REDIS_CONFIG.region,
     });
 
     if (redisDatabase?.database_name) {
-      this.redisClient = await this.sdkClient.newRedisClient(redisDatabase.database_name);
+      this.redisClient = await this.upstashSDK.newRedisClient(redisDatabase.database_name);
     }
   };
 }

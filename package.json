@@ -1,10 +1,9 @@
 {
   "name": "@upstash/rag-chat",
-  "version": "1.0.0",
+  "version": "0.0.6-alpha",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
-  "type": "module",
   "scripts": {
     "test": "bun test",
     "fmt": "prettier --write .",
@@ -52,7 +51,7 @@
     "@langchain/community": "^0.0.50",
     "@langchain/core": "^0.1.58",
     "@langchain/openai": "^0.0.28",
-    "@upstash/sdk": "0.0.19-alpha",
+    "@upstash/sdk": "0.0.23-alpha",
     "ai": "^3.0.35"
   }
 }

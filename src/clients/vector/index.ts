@@ -2,7 +2,6 @@ import type { CreateIndexPayload, Upstash } from "@upstash/sdk";
 import { Index } from "@upstash/sdk";
 
 import type { PreferredRegions } from "../../types";
-import { InternalUpstashError } from "../../error/internal";
 
 export const DEFAULT_VECTOR_DB_NAME = "upstash-rag-chat-vector";
 
@@ -15,21 +14,21 @@ export const DEFAULT_VECTOR_CONFIG: CreateIndexPayload = {
 };
 
 type Config = {
-  sdkClient: Upstash;
+  upstashSDK: Upstash;
   indexNameOrInstance?: string | Index;
-  preferredRegion?: PreferredRegions;
+  region?: PreferredRegions;
 };
 
-export class VectorClientConstructor {
+export class VectorClient {
   private indexNameOrInstance?: string | Index;
-  private preferredRegion?: PreferredRegions;
-  private sdkClient: Upstash;
+  private region?: PreferredRegions;
+  private upstashSDK: Upstash;
   private vectorClient?: Index;
 
-  constructor({ sdkClient, preferredRegion, indexNameOrInstance: indexNameOrInstance }: Config) {
+  constructor({ upstashSDK, region, indexNameOrInstance }: Config) {
     this.indexNameOrInstance = indexNameOrInstance;
-    this.sdkClient = sdkClient;
-    this.preferredRegion = preferredRegion ?? "us-east-1";
+    this.upstashSDK = upstashSDK;
+    this.region = region ?? "us-east-1";
   }
 
   public async getVectorClient(): Promise<Index | undefined> {
@@ -65,24 +64,37 @@ export class VectorClientConstructor {
 
   private createVectorClientByName = async (indexName: string) => {
     try {
-      const index = await this.sdkClient.getVectorIndexByName(indexName);
-      if (!index) throw new InternalUpstashError("Index is missing!");
-
-      this.vectorClient = await this.sdkClient.newVectorClient(index.name);
+      const index = await this.upstashSDK.getVectorIndex(indexName);
+      this.vectorClient = await this.upstashSDK.newVectorClient(index.name);
     } catch {
+      console.error(`Requested '${indexName}' is missing in Vector list. Creating new one...`);
       await this.createVectorClientByDefaultConfig(indexName);
     }
   };
 
   private createVectorClientByDefaultConfig = async (indexName?: string) => {
-    const index = await this.sdkClient.getOrCreateIndex({
-      ...DEFAULT_VECTOR_CONFIG,
-      name: indexName ?? DEFAULT_VECTOR_CONFIG.name,
-      region: this.preferredRegion ?? DEFAULT_VECTOR_CONFIG.region,
-    });
+    let index;
+    try {
+      index = await this.upstashSDK.getOrCreateVectorIndex({
+        ...DEFAULT_VECTOR_CONFIG,
+        name: indexName ?? DEFAULT_VECTOR_CONFIG.name,
+        region: this.region ?? DEFAULT_VECTOR_CONFIG.region,
+        type: "free",
+      });
+    } catch (error) {
+      const error_ = error as Error;
+      if (error_.message === "free plan is the only available option for free accounts") {
+        index = await this.upstashSDK.getOrCreateVectorIndex({
+          ...DEFAULT_VECTOR_CONFIG,
+          name: indexName ?? DEFAULT_VECTOR_CONFIG.name,
+          region: this.region ?? DEFAULT_VECTOR_CONFIG.region,
+          type: "payg",
+        });
+      }
+    }
 
     if (index?.name) {
-      const client = await this.sdkClient.newVectorClient(index.name);
+      const client = await this.upstashSDK.newVectorClient(index.name);
       this.vectorClient = client;
     }
   };

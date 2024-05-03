@@ -100,23 +100,3 @@ export class CustomUpstashRedisChatMessageHistory extends BaseListChatMessageHis
     await this.client.del(this.sessionId);
   }
 }
-
-const DAY_IN_SECONDS = 86_400;
-const TOP_6 = 5;
-
-export const redisChatMessagesHistory = ({
-  length = TOP_6,
-  sessionId,
-  redis,
-}: {
-  sessionId: string;
-  length?: number;
-  redis: Redis;
-}) => {
-  return new CustomUpstashRedisChatMessageHistory({
-    sessionId,
-    sessionTTL: DAY_IN_SECONDS,
-    topLevelChatHistoryLength: length,
-    client: redis,
-  });
-};

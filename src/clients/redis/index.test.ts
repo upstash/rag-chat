@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { Upstash } from "@upstash/sdk";
 import { describe, expect, test } from "bun:test";
-import { DEFAULT_REDIS_CONFIG, DEFAULT_REDIS_DB_NAME, RedisClientConstructor } from ".";
+import { DEFAULT_REDIS_CONFIG, DEFAULT_REDIS_DB_NAME, RedisClient } from ".";
 
 const upstashSDK = new Upstash({
   email: process.env.UPSTASH_EMAIL!,
@@ -12,8 +12,8 @@ describe("Redis Client", () => {
   test(
     "Initialize client without db name",
     async () => {
-      const constructor = new RedisClientConstructor({
-        sdkClient: upstashSDK,
+      const constructor = new RedisClient({
+        upstashSDK: upstashSDK,
       });
       const redisClient = await constructor.getRedisClient();
 
@@ -21,14 +21,14 @@ describe("Redis Client", () => {
 
       await upstashSDK.deleteRedisDatabase(DEFAULT_REDIS_DB_NAME);
     },
-    { timeout: 10_000 }
+    { timeout: 20_000 }
   );
 
   test(
     "Initialize client with db name",
     async () => {
-      const constructor = new RedisClientConstructor({
-        sdkClient: upstashSDK,
+      const constructor = new RedisClient({
+        upstashSDK: upstashSDK,
         redisDbNameOrInstance: "test-name",
       });
       const redisClient = await constructor.getRedisClient();
@@ -37,7 +37,7 @@ describe("Redis Client", () => {
 
       await upstashSDK.deleteRedisDatabase("test-name");
     },
-    { timeout: 10_000 }
+    { timeout: 20_000 }
   );
 
   test(
@@ -50,8 +50,8 @@ describe("Redis Client", () => {
       });
       const existingRedisClient = await upstashSDK.newRedisClient(redisInstance.database_name);
 
-      const constructor = new RedisClientConstructor({
-        sdkClient: upstashSDK,
+      const constructor = new RedisClient({
+        upstashSDK: upstashSDK,
         redisDbNameOrInstance: existingRedisClient,
       });
       const redisClient = await constructor.getRedisClient();

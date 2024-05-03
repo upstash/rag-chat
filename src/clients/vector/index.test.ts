@@ -1,19 +1,19 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { Upstash } from "@upstash/sdk";
 import { describe, expect, test } from "bun:test";
-import { DEFAULT_VECTOR_DB_NAME, VectorClientConstructor, DEFAULT_VECTOR_CONFIG } from ".";
+import { DEFAULT_VECTOR_DB_NAME, VectorClient, DEFAULT_VECTOR_CONFIG } from ".";
 
 const upstashSDK = new Upstash({
   email: process.env.UPSTASH_EMAIL!,
   token: process.env.UPSTASH_TOKEN!,
 });
 
-describe("Redis Client", () => {
+describe("Vector Client", () => {
   test(
     "Initialize client without index name",
     async () => {
-      const constructor = new VectorClientConstructor({
-        sdkClient: upstashSDK,
+      const constructor = new VectorClient({
+        upstashSDK: upstashSDK,
       });
       const vectorClient = await constructor.getVectorClient();
 
@@ -21,14 +21,14 @@ describe("Redis Client", () => {
 
       await upstashSDK.deleteVectorIndex(DEFAULT_VECTOR_DB_NAME);
     },
-    { timeout: 10_000 }
+    { timeout: 20_000 }
   );
 
   test(
     "Initialize client with db name",
     async () => {
-      const constructor = new VectorClientConstructor({
-        sdkClient: upstashSDK,
+      const constructor = new VectorClient({
+        upstashSDK: upstashSDK,
         indexNameOrInstance: "test-name",
       });
       const redisClient = await constructor.getVectorClient();
@@ -37,7 +37,7 @@ describe("Redis Client", () => {
 
       await upstashSDK.deleteVectorIndex("test-name");
     },
-    { timeout: 10_000 }
+    { timeout: 20_000 }
   );
 
   test(
@@ -47,11 +47,12 @@ describe("Redis Client", () => {
       const vectorInstance = await upstashSDK.createVectorIndex({
         ...DEFAULT_VECTOR_CONFIG,
         name: indexName,
+        type: "free",
       });
       const existingVectorClient = await upstashSDK.newVectorClient(vectorInstance.name);
 
-      const constructor = new VectorClientConstructor({
-        sdkClient: upstashSDK,
+      const constructor = new VectorClient({
+        upstashSDK: upstashSDK,
         indexNameOrInstance: existingVectorClient,
       });
       const vectorClient = await constructor.getVectorClient();
@@ -60,6 +61,6 @@ describe("Redis Client", () => {
 
       await upstashSDK.deleteVectorIndex(indexName);
     },
-    { timeout: 10_000 }
+    { timeout: 20_000 }
   );
 });
