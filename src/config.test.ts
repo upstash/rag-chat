@@ -53,9 +53,3 @@ test("Config initializes with custom parameters", () => {
   expect(config.redis).toBe(mockRedis);
   expect(config.template).toEqual(PromptTemplate.fromTemplate(`asdasd`));
 });
-
-test("Config throws error if model is undefined", () => {
-  expect(() => new Config(process.env.UPSTASH_EMAIL!, process.env.UPSTASH_TOKEN!)).toThrow(
-    "Model can not be undefined!"
-  );
-});

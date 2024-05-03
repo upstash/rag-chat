@@ -28,7 +28,7 @@ export class HistoryService {
     });
   }
 
-  static async init(config: HistoryInit) {
+  public static async init(config: HistoryInit) {
     const clientFactory = new ClientFactory(
       new Config(config.email, config.token, {
         redis: config.redis,

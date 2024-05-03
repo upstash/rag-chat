@@ -12,6 +12,7 @@ import { Config } from "./config";
 import { HistoryService } from "./services/history";
 import { RetrievalService } from "./services/retrieval";
 import { QA_TEMPLATE } from "./prompts";
+import { UpstashModelError } from "./error/model";
 
 type CustomInputValues = { chat_history?: BaseMessage[]; question: string; context: string };
 
@@ -63,7 +64,11 @@ export class RAGChat {
       : this.chainCall(options, question, facts);
   }
 
-  private streamingChainCall = (question: string, facts: string, chatOptions: ChatOptions) => {
+  private streamingChainCall = (
+    question: string,
+    facts: string,
+    chatOptions: ChatOptions
+  ): StreamingTextResponse => {
     const { stream, handlers } = LangChainStream();
     void this.chainCall(chatOptions, question, facts, [handlers]);
     return new StreamingTextResponse(stream, {});
@@ -111,10 +116,8 @@ export class RAGChat {
   static async initialize(config: Config): Promise<RAGChat> {
     const clientFactory = new ClientFactory(
       new Config(config.email, config.token, {
-        model: config.model,
         redis: config.redis,
         region: config.region,
-        template: config.template,
         vector: config.vector,
       })
     );
@@ -122,6 +125,10 @@ export class RAGChat {
 
     const historyService = new HistoryService(redis);
     const retrievalService = new RetrievalService(index);
+
+    if (!config.model) {
+      throw new UpstashModelError("Model can not be undefined!");
+    }
 
     return new RAGChat(retrievalService, historyService, {
       model: config.model,

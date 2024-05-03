@@ -3,7 +3,6 @@ import type { PromptTemplate } from "@langchain/core/prompts";
 import { Redis } from "@upstash/sdk";
 import { Index } from "@upstash/sdk";
 import type { PreferredRegions } from "./types";
-import { UpstashModelError } from "./error/model";
 
 type RAGChatConfigCommon = {
   model?: BaseLanguageModelInterface;
@@ -28,7 +27,7 @@ export class Config {
   public readonly vector?: string | Index;
   public readonly redis?: string | Redis;
 
-  public readonly model: BaseLanguageModelInterface;
+  public readonly model?: BaseLanguageModelInterface;
   public readonly template?: PromptTemplate;
 
   constructor(email: string, token: string, config?: RAGChatConfig) {
@@ -46,11 +45,7 @@ export class Config {
         ? config.redis
         : DEFAULT_REDIS_DB_NAME;
 
-    if (!config?.model) {
-      throw new UpstashModelError("Model can not be undefined!");
-    }
-
-    this.model = config.model;
-    this.template = config.template;
+    this.model = config?.model;
+    this.template = config?.template;
   }
 }
