@@ -82,7 +82,10 @@ export class VectorClient {
       });
     } catch (error) {
       const error_ = error as Error;
-      if (error_.message === "free plan is the only available option for free accounts") {
+      if (
+        error_.message.includes("free plan is the only available option for free accounts") ||
+        error_.message.includes("payg and fixed are only available options for paid accounts")
+      ) {
         index = await this.upstashSDK.getOrCreateVectorIndex({
           ...DEFAULT_VECTOR_CONFIG,
           name: indexName ?? DEFAULT_VECTOR_CONFIG.name,

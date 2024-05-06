@@ -22,7 +22,7 @@ describe("Redis Client", () => {
 
       await upstashSDK.deleteRedisDatabase(DEFAULT_REDIS_DB_NAME);
     },
-    { timeout: 20_000 }
+    { timeout: 30_000 }
   );
 
   test(
@@ -38,7 +38,7 @@ describe("Redis Client", () => {
 
       await upstashSDK.deleteRedisDatabase("test-name");
     },
-    { timeout: 20_000 }
+    { timeout: 30_000 }
   );
 
   test(
@@ -61,6 +61,6 @@ describe("Redis Client", () => {
 
       await upstashSDK.deleteRedisDatabase(dbName);
     },
-    { timeout: 10_000 }
+    { timeout: 30_000 }
   );
 });

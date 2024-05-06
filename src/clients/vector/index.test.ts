@@ -48,7 +48,7 @@ describe("Vector Client", () => {
       const vectorInstance = await upstashSDK.createVectorIndex({
         ...DEFAULT_VECTOR_CONFIG,
         name: indexName,
-        type: "free",
+        type: "payg",
       });
       const existingVectorClient = await upstashSDK.newVectorClient(vectorInstance.name);
 

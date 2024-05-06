@@ -24,7 +24,7 @@ describe("ClientFactory Tests", () => {
 
       await upstash.deleteRedisDatabase("test-rag-chat-client-factor-redis");
     },
-    { timeout: 20_000 }
+    { timeout: 30_000 }
   );
 
   test(
@@ -36,6 +36,6 @@ describe("ClientFactory Tests", () => {
 
       await upstash.deleteVectorIndex("test-rag-chat-client-factor-vector");
     },
-    { timeout: 20_000 }
+    { timeout: 30_000 }
   );
 });

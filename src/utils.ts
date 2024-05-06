@@ -27,3 +27,8 @@ export function appendDefaultsIfNeeded(options: ChatOptions) {
     ratelimitSessionId: options.ratelimitSessionId ?? DEFAULT_CHAT_RATELIMIT_SESSION_ID,
   } satisfies ChatOptions;
 }
+
+const DEFAULT_DELAY = 20_000;
+export function delay(ms = DEFAULT_DELAY): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}

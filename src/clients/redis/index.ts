@@ -3,6 +3,7 @@ import type { CreateCommandPayload, Upstash } from "@upstash/sdk";
 import { Redis } from "@upstash/sdk";
 import type { PreferredRegions } from "../../types";
 import { DEFAULT_REDIS_DB_NAME } from "../../constants";
+import { delay } from "../../utils";
 
 export const DEFAULT_REDIS_CONFIG: CreateCommandPayload = {
   name: DEFAULT_REDIS_DB_NAME,
@@ -76,6 +77,7 @@ export class RedisClient {
       name: redisDbName ?? DEFAULT_REDIS_CONFIG.name,
       region: this.region ?? DEFAULT_REDIS_CONFIG.region,
     });
+    await delay();
 
     if (redisDatabase?.database_name) {
       this.redisClient = await this.upstashSDK.newRedisClient(redisDatabase.database_name);
