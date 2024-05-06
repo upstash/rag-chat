@@ -2,20 +2,23 @@ import type { Callbacks } from "@langchain/core/callbacks/manager";
 import type { BaseMessage } from "@langchain/core/messages";
 import { RunnableSequence, RunnableWithMessageHistory } from "@langchain/core/runnables";
 import { LangChainStream, StreamingTextResponse } from "ai";
-
-import { appendDefaultsIfNeeded, formatChatHistory, sanitizeQuestion } from "./utils";
-
 import type { BaseLanguageModelInterface } from "@langchain/core/language_models/base";
 import type { PromptTemplate } from "@langchain/core/prompts";
-import { ClientFactory } from "./client-factory";
-import { Config } from "./config";
+
 import { HistoryService } from "./services/history";
 import { RetrievalService } from "./services/retrieval";
-import { QA_TEMPLATE } from "./prompts";
-import { UpstashModelError } from "./error/model";
 import { RateLimitService } from "./services/ratelimit";
-import type { ChatOptions, PrepareChatResult, RAGChatConfig } from "./types";
+import type { RetrievePayload } from "./services/retrieval";
+
+import { QA_TEMPLATE } from "./prompts";
+
+import { UpstashModelError } from "./error/model";
 import { RatelimitUpstashError } from "./error/ratelimit";
+
+import type { ChatOptions, PrepareChatResult, RAGChatConfig } from "./types";
+import { ClientFactory } from "./client-factory";
+import { Config } from "./config";
+import { appendDefaultsIfNeeded, formatChatHistory, sanitizeQuestion } from "./utils";
 
 type CustomInputValues = { chat_history?: BaseMessage[]; question: string; context: string };
 
@@ -41,12 +44,17 @@ export class RAGChat {
     this.template = config.template;
   }
 
-  private async prepareChat(
-    input: string,
-    similarityThreshold?: number
-  ): Promise<PrepareChatResult> {
+  private async prepareChat({
+    question: input,
+    similarityThreshold,
+    topK,
+  }: RetrievePayload): Promise<PrepareChatResult> {
     const question = sanitizeQuestion(input);
-    const facts = await this.retrievalService.retrieveFromVectorDb(question, similarityThreshold);
+    const facts = await this.retrievalService.retrieveFromVectorDb({
+      question,
+      similarityThreshold,
+      topK,
+    });
     return { question, facts };
   }
 
@@ -54,7 +62,10 @@ export class RAGChat {
     input: string,
     options: ChatOptions
   ): Promise<StreamingTextResponse | Record<string, unknown>> {
+    // Adds chat session id and ratelimit session id if not provided.
     const options_ = appendDefaultsIfNeeded(options);
+
+    //Checks ratelimit of the user. If not enabled `success` will be always true.
     const { success, resetTime } = await this.ratelimitService.checkLimit(
       options_.ratelimitSessionId
     );
@@ -66,7 +77,12 @@ export class RAGChat {
       });
     }
 
-    const { question, facts } = await this.prepareChat(input, options.similarityThreshold);
+    //Sanitizes the given input by stripping all the newline chars then queries vector db with sanitized question.
+    const { question, facts } = await this.prepareChat({
+      question: input,
+      similarityThreshold: options.similarityThreshold,
+      topK: options.topK,
+    });
 
     return options.stream
       ? this.streamingChainCall(options_, question, facts)
@@ -122,6 +138,9 @@ export class RAGChat {
     );
   }
 
+  /**
+   *  Prepares RAG Chat by creating or getting Redis, Vector and Ratelimit instances.
+   */
   static async initialize(
     config: RAGChatConfig & { email: string; token: string }
   ): Promise<RAGChat> {

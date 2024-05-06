@@ -1,6 +1,6 @@
 import type { RATELIMIT_ERROR_MESSAGE } from "../constants";
 
-type RatelimitResponse = {
+export type RatelimitResponse = {
   error: typeof RATELIMIT_ERROR_MESSAGE;
   resetTime?: number;
 };

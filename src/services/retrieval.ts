@@ -1,7 +1,22 @@
 import type { Index } from "@upstash/sdk";
 import { formatFacts } from "../utils";
+import type { RAGChatConfig } from "../types";
+import { ClientFactory } from "../client-factory";
+import { Config } from "../config";
 
 const SIMILARITY_THRESHOLD = 0.5;
+const TOP_K = 5;
+
+type RetrievalInit = Omit<RAGChatConfig, "model" | "template" | "vector"> & {
+  email: string;
+  token: string;
+};
+
+export type RetrievePayload = {
+  question: string;
+  similarityThreshold?: number;
+  topK?: number;
+};
 
 export class RetrievalService {
   private index: Index;
@@ -9,14 +24,15 @@ export class RetrievalService {
     this.index = index;
   }
 
-  async retrieveFromVectorDb(
-    question: string,
-    similarityThreshold = SIMILARITY_THRESHOLD
-  ): Promise<string> {
+  async retrieveFromVectorDb({
+    question,
+    similarityThreshold = SIMILARITY_THRESHOLD,
+    topK = TOP_K,
+  }: RetrievePayload): Promise<string> {
     const index = this.index;
     const result = await index.query<{ value: string }>({
       data: question,
-      topK: 5,
+      topK,
       includeMetadata: true,
       includeVectors: false,
     });
@@ -33,5 +49,16 @@ export class RetrievalService {
       .filter((x) => x.score >= similarityThreshold)
       .map((embedding, index) => `- Context Item ${index}: ${embedding.metadata?.value ?? ""}`);
     return formatFacts(facts);
+  }
+
+  public static async init(config: RetrievalInit) {
+    const clientFactory = new ClientFactory(
+      new Config(config.email, config.token, {
+        redis: config.redis,
+        region: config.region,
+      })
+    );
+    const { vector } = await clientFactory.init({ vector: true });
+    return new RetrievalService(vector);
   }
 }
