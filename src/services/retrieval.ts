@@ -3,6 +3,7 @@ import { formatFacts } from "../utils";
 import type { RAGChatConfig } from "../types";
 import { ClientFactory } from "../client-factory";
 import { Config } from "../config";
+import { nanoid } from "nanoid";
 
 const SIMILARITY_THRESHOLD = 0.5;
 const TOP_K = 5;
@@ -49,6 +50,13 @@ export class RetrievalService {
       .filter((x) => x.score >= similarityThreshold)
       .map((embedding, index) => `- Context Item ${index}: ${embedding.metadata?.value ?? ""}`);
     return formatFacts(facts);
+  }
+
+  async addEmbeddingOrTextToVectorDb(input: string | number[]) {
+    if (typeof input === "string") {
+      return this.index.upsert({ data: input, id: nanoid(), metadata: { value: input } });
+    }
+    return this.index.upsert({ vector: input, id: nanoid(), metadata: { value: input } });
   }
 
   public static async init(config: RetrievalInit) {

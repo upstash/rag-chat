@@ -3,6 +3,7 @@ import { Index } from "@upstash/sdk";
 
 import type { PreferredRegions } from "../../types";
 import { DEFAULT_VECTOR_DB_NAME } from "../../constants";
+import { delay } from "../../utils";
 
 export const DEFAULT_VECTOR_CONFIG: CreateIndexPayload = {
   name: DEFAULT_VECTOR_DB_NAME,
@@ -94,6 +95,7 @@ export class VectorClient {
         });
       }
     }
+    await delay();
 
     if (index?.name) {
       const client = await this.upstashSDK.newVectorClient(index.name);

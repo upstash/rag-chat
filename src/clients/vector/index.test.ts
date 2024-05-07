@@ -22,7 +22,7 @@ describe("Vector Client", () => {
 
       await upstashSDK.deleteVectorIndex(DEFAULT_VECTOR_DB_NAME);
     },
-    { timeout: 20_000 }
+    { timeout: 30_000 }
   );
 
   test(
@@ -38,7 +38,7 @@ describe("Vector Client", () => {
 
       await upstashSDK.deleteVectorIndex("test-name");
     },
-    { timeout: 20_000 }
+    { timeout: 30_000 }
   );
 
   test(
@@ -62,6 +62,6 @@ describe("Vector Client", () => {
 
       await upstashSDK.deleteVectorIndex(indexName);
     },
-    { timeout: 20_000 }
+    { timeout: 30_000 }
   );
 });
