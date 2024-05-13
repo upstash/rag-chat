@@ -9,8 +9,13 @@ import type { StreamingTextResponse } from "ai";
 import { DEFAULT_REDIS_DB_NAME, DEFAULT_VECTOR_DB_NAME } from "./constants";
 import { RatelimitUpstashError } from "./error";
 import { PromptTemplate } from "@langchain/core/prompts";
+import { sleep } from "bun";
 
 describe("RAG Chat with advance configs and direct instances", async () => {
+  const vector = new Index({
+    token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
+    url: process.env.UPSTASH_VECTOR_REST_URL!,
+  });
   const ragChat = await RAGChat.initialize({
     email: process.env.UPSTASH_EMAIL!,
     token: process.env.UPSTASH_TOKEN!,
@@ -21,10 +26,7 @@ describe("RAG Chat with advance configs and direct instances", async () => {
       temperature: 0,
       apiKey: process.env.OPENAI_API_KEY,
     }),
-    vector: new Index({
-      token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
-      url: process.env.UPSTASH_VECTOR_REST_URL!,
-    }),
+    vector,
     redis: new Redis({
       token: process.env.UPSTASH_REDIS_REST_TOKEN!,
       url: process.env.UPSTASH_REDIS_REST_URL!,
@@ -33,9 +35,14 @@ describe("RAG Chat with advance configs and direct instances", async () => {
 
   beforeAll(async () => {
     await ragChat.addContext(
-      "Paris, the capital of France, is renowned for its iconic landmark, the Eiffel Tower, which was completed in 1889 and stands at 330 meters tall."
+      "Paris, the capital of France, is renowned for its iconic landmark, the Eiffel Tower, which was completed in 1889 and stands at 330 meters tall.",
+      "text"
     );
+    //eslint-disable-next-line @typescript-eslint/no-magic-numbers
+    await sleep(3000);
   });
+
+  afterAll(async () => await vector.reset());
 
   test("should get result without streaming", async () => {
     const result = (await ragChat.chat(
@@ -104,6 +111,11 @@ describe("RAG Chat with ratelimit", async () => {
     token: process.env.UPSTASH_REDIS_REST_TOKEN!,
     url: process.env.UPSTASH_REDIS_REST_URL!,
   });
+  const vector = new Index({
+    token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
+    url: process.env.UPSTASH_VECTOR_REST_URL!,
+  });
+
   const ragChat = await RAGChat.initialize({
     email: process.env.UPSTASH_EMAIL!,
     token: process.env.UPSTASH_TOKEN!,
@@ -114,10 +126,7 @@ describe("RAG Chat with ratelimit", async () => {
       temperature: 0,
       apiKey: process.env.OPENAI_API_KEY,
     }),
-    vector: new Index({
-      token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
-      url: process.env.UPSTASH_VECTOR_REST_URL!,
-    }),
+    vector,
     redis,
     ratelimit: new Ratelimit({
       redis,
@@ -128,20 +137,32 @@ describe("RAG Chat with ratelimit", async () => {
 
   afterAll(async () => {
     await redis.flushdb();
+    await vector.reset();
   });
 
-  test("should throw ratelimit error", async () => {
-    await ragChat.chat(
-      "What year was the construction of the Eiffel Tower completed, and what is its height?",
-      { stream: false }
-    );
+  test(
+    "should throw ratelimit error",
+    async () => {
+      await ragChat.addContext(
+        "Paris, the capital of France, is renowned for its iconic landmark, the Eiffel Tower, which was completed in 1889 and stands at 330 meters tall.",
+        "text"
+      );
+      //eslint-disable-next-line @typescript-eslint/no-magic-numbers
+      await sleep(3000);
 
-    const throwable = async () => {
-      await ragChat.chat("You shall not pass", { stream: false });
-    };
+      await ragChat.chat(
+        "What year was the construction of the Eiffel Tower completed, and what is its height?",
+        { stream: false, metadataKey: "text" }
+      );
 
-    expect(throwable).toThrowError(RatelimitUpstashError);
-  });
+      const throwable = async () => {
+        await ragChat.chat("You shall not pass", { stream: false });
+      };
+
+      expect(throwable).toThrowError(RatelimitUpstashError);
+    },
+    { timeout: 10_000 }
+  );
 });
 
 describe("RAG Chat with instance names", async () => {

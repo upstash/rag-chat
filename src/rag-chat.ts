@@ -5,6 +5,7 @@ import type { StreamingTextResponse } from "ai";
 
 import { HistoryService } from "./services/history";
 import { RateLimitService } from "./services/ratelimit";
+import type { AddContextPayload } from "./services/retrieval";
 import { RetrievalService } from "./services/retrieval";
 
 import { QA_TEMPLATE } from "./prompts";
@@ -50,8 +51,9 @@ export class RAGChat extends RAGChatBase {
     //Sanitizes the given input by stripping all the newline chars then queries vector db with sanitized question.
     const { question, facts } = await this.prepareChat({
       question: input,
-      similarityThreshold: options.similarityThreshold,
-      topK: options.topK,
+      similarityThreshold: options_.similarityThreshold,
+      metadataKey: options_.metadataKey,
+      topK: options_.topK,
     });
 
     return options.stream
@@ -60,10 +62,12 @@ export class RAGChat extends RAGChatBase {
   }
 
   /** Context can be either plain text or embeddings  */
-  async addContext(context: string | number[]) {
-    const retrievalService = await this.retrievalService.addEmbeddingOrTextToVectorDb(context);
-    if (retrievalService === "Success") return "OK";
-    return "NOT-OK";
+  async addContext(context: AddContextPayload[] | string, metadataKey = "text") {
+    const retrievalServiceStatus = await this.retrievalService.addEmbeddingOrTextToVectorDb(
+      context,
+      metadataKey
+    );
+    return retrievalServiceStatus === "Success" ? "OK" : "NOT-OK";
   }
 
   /**

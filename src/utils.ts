@@ -1,6 +1,14 @@
 import type { BaseMessage } from "@langchain/core/messages";
 import type { ChatOptions } from "./types";
-import { DEFAULT_CHAT_SESSION_ID, DEFAULT_CHAT_RATELIMIT_SESSION_ID } from "./constants";
+import {
+  DEFAULT_CHAT_SESSION_ID,
+  DEFAULT_CHAT_RATELIMIT_SESSION_ID,
+  DEFAULT_METADATA_KEY,
+  DEFAULT_SIMILARITY_THRESHOLD,
+  DEFAULT_TOP_K,
+  DEFAULT_HISTORY_LENGTH,
+  DEFAULT_HISTORY_TTL,
+} from "./constants";
 
 export const sanitizeQuestion = (question: string) => {
   return question.trim().replaceAll("\n", " ");
@@ -24,8 +32,13 @@ export function appendDefaultsIfNeeded(options: ChatOptions) {
   return {
     ...options,
     sessionId: options.sessionId ?? DEFAULT_CHAT_SESSION_ID,
+    metadataKey: options.metadataKey ?? DEFAULT_METADATA_KEY,
     ratelimitSessionId: options.ratelimitSessionId ?? DEFAULT_CHAT_RATELIMIT_SESSION_ID,
-  } satisfies ChatOptions;
+    similarityThreshold: options.similarityThreshold ?? DEFAULT_SIMILARITY_THRESHOLD,
+    topK: options.topK ?? DEFAULT_TOP_K,
+    historyLength: options.historyLength ?? DEFAULT_HISTORY_LENGTH,
+    historyTTL: options.historyLength ?? DEFAULT_HISTORY_TTL,
+  };
 }
 
 const DEFAULT_DELAY = 20_000;
