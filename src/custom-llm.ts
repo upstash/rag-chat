@@ -15,23 +15,14 @@ export interface UpstashLLMParameters extends BaseLLMParams {
   /** Sampling temperature to use */
   temperature?: number;
 
-  /** Minimum number of tokens to generate. */
-  minTokens?: number;
-
   /** Maximum number of tokens to generate in the completion. */
   maxTokens?: number;
 
-  /** Generates this many completions server-side and returns the "best"." */
-  bestOf?: number;
-
-  /** Penalizes repeated tokens according to frequency. */
-  frequencyPenalty?: number;
-
-  /** Penalizes repeated tokens regardless of frequency. */
-  presencePenalty?: number;
-
   /** Total probability mass of tokens to consider at each step. */
   topP?: number;
+
+  /** Count of chars in a stream chunk */
+  n?: number;
 }
 
 export default class UpstashLLM extends LLM {
@@ -62,9 +53,8 @@ export default class UpstashLLM extends LLM {
     this.topP = fields.topP ?? this.topP;
     this.temperature = fields.temperature ?? this.temperature;
     this.maxTokens = fields.maxTokens ?? this.maxTokens;
-    this.frequencyPenalty = fields.frequencyPenalty ?? this.frequencyPenalty;
-    this.presencePenalty = fields.presencePenalty ?? this.presencePenalty;
     this.model = fields.model ?? this.model;
+    this.n = fields.n ?? this.n;
     this.apiKey = fields.apiKey;
   }
 
