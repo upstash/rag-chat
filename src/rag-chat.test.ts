@@ -10,12 +10,14 @@ import { DEFAULT_REDIS_DB_NAME, DEFAULT_VECTOR_DB_NAME } from "./constants";
 import { RatelimitUpstashError } from "./error";
 import { PromptTemplate } from "@langchain/core/prompts";
 import { sleep } from "bun";
+import UpstashLLM from "./custom-llm";
 
 describe("RAG Chat with advance configs and direct instances", async () => {
   const vector = new Index({
     token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
     url: process.env.UPSTASH_VECTOR_REST_URL!,
   });
+
   const ragChat = await RAGChat.initialize({
     email: process.env.UPSTASH_EMAIL!,
     token: process.env.UPSTASH_TOKEN!,
@@ -49,6 +51,7 @@ describe("RAG Chat with advance configs and direct instances", async () => {
       "What year was the construction of the Eiffel Tower completed, and what is its height?",
       { stream: false }
     )) as AIMessage;
+
     expect(result.content).toContain("330");
   });
 
@@ -56,6 +59,7 @@ describe("RAG Chat with advance configs and direct instances", async () => {
     const result = (await ragChat.chat("Which famous artworks can be found in the Louvre Museum?", {
       stream: true,
     })) as StreamingTextResponse;
+
     expect(result).toBeTruthy();
   });
 });
@@ -251,4 +255,45 @@ describe("RAG Chat with custom template", async () => {
     },
     { timeout: 30_000 }
   );
+});
+
+describe("RAG Chat with custom LLM", async () => {
+  const ragChat = await RAGChat.initialize({
+    email: process.env.UPSTASH_EMAIL!,
+    token: process.env.UPSTASH_TOKEN!,
+    model: new UpstashLLM({
+      apiKey: process.env.UPSTASH_MODELS_REST_TOKEN,
+      model: "mistralai/Mistral-7B-Instruct-v0.2",
+    }),
+    redis: new Redis({
+      token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+      url: process.env.UPSTASH_REDIS_REST_URL!,
+    }),
+  });
+
+  beforeAll(async () => {
+    await ragChat.addContext(
+      "Paris, the capital of France, is renowned for its iconic landmark, the Eiffel Tower, which was completed in 1889 and stands at 330 meters tall.",
+      "text"
+    );
+    //eslint-disable-next-line @typescript-eslint/no-magic-numbers
+    await sleep(3000);
+  });
+
+  test("should get result without streaming", async () => {
+    const result = (await ragChat.chat(
+      "What year was the construction of the Eiffel Tower completed, and what is its height?",
+      { stream: false }
+    )) as AIMessage;
+
+    expect(result).toContain("330");
+  });
+
+  test("should get result with streaming", async () => {
+    const result = (await ragChat.chat("Which famous artworks can be found in the Louvre Museum?", {
+      stream: true,
+    })) as StreamingTextResponse;
+
+    expect(result).toBeTruthy();
+  });
 });
