@@ -4,10 +4,7 @@ import { Config } from "../config";
 import { ClientFactory } from "../client-factory";
 import type { RAGChatConfig } from "../types";
 
-const DAY_IN_SECONDS = 86_400;
-const TOP_6 = 5;
-
-type GetHistory = { sessionId: string; length?: number };
+type GetHistory = { sessionId: string; length?: number; sessionTTL?: number };
 type HistoryInit = Omit<RAGChatConfig, "model" | "template" | "vector"> & {
   email: string;
   token: string;
@@ -19,10 +16,10 @@ export class HistoryService {
     this.redis = redis;
   }
 
-  getMessageHistory({ length = TOP_6, sessionId }: GetHistory) {
+  getMessageHistory({ length, sessionId, sessionTTL }: GetHistory) {
     return new CustomUpstashRedisChatMessageHistory({
       sessionId,
-      sessionTTL: DAY_IN_SECONDS,
+      sessionTTL,
       topLevelChatHistoryLength: length,
       client: this.redis,
     });

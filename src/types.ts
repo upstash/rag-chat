@@ -17,7 +17,12 @@ export type ChatOptions = {
   /** Length of the conversation history to include in your LLM query. Increasing this may lead to hallucinations. Retrieves the last N messages.
    * @default 5
    */
-  includeHistory?: number;
+  historyLength?: number;
+
+  /** Configuration to retain chat history. After the specified time, the history will be automatically cleared.
+   * @default 86_400 // 1 day in seconds
+   */
+  historyTTL?: number;
 
   /** Configuration to adjust the accuracy of results.
    * @default 0.5
@@ -33,6 +38,13 @@ export type ChatOptions = {
    * @default 5
    */
   topK?: number;
+
+  /** Key of metadata that we use to store additional content .
+   * @default "text"
+   * @example {text: "Capital of France is Paris"}
+   *
+   */
+  metadataKey?: string;
 };
 
 export type PrepareChatResult = {

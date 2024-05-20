@@ -4,9 +4,9 @@ import type { RAGChatConfig } from "../types";
 import { ClientFactory } from "../client-factory";
 import { Config } from "../config";
 import { nanoid } from "nanoid";
+import { DEFAULT_METADATA_KEY, DEFAULT_SIMILARITY_THRESHOLD, DEFAULT_TOP_K } from "../constants";
 
-const SIMILARITY_THRESHOLD = 0.5;
-const TOP_K = 5;
+export type AddContextPayload = { input: string | number[]; id?: string; metadata?: string };
 
 type RetrievalInit = Omit<RAGChatConfig, "model" | "template" | "vector"> & {
   email: string;
@@ -15,8 +15,9 @@ type RetrievalInit = Omit<RAGChatConfig, "model" | "template" | "vector"> & {
 
 export type RetrievePayload = {
   question: string;
-  similarityThreshold?: number;
-  topK?: number;
+  similarityThreshold: number;
+  metadataKey: string;
+  topK: number;
 };
 
 export class RetrievalService {
@@ -27,36 +28,64 @@ export class RetrievalService {
 
   async retrieveFromVectorDb({
     question,
-    similarityThreshold = SIMILARITY_THRESHOLD,
-    topK = TOP_K,
+    similarityThreshold = DEFAULT_SIMILARITY_THRESHOLD,
+    metadataKey = DEFAULT_METADATA_KEY,
+    topK = DEFAULT_TOP_K,
   }: RetrievePayload): Promise<string> {
     const index = this.index;
-    const result = await index.query<{ value: string }>({
+    const result = await index.query<Record<string, string>>({
       data: question,
       topK,
       includeMetadata: true,
       includeVectors: false,
     });
 
-    const allValuesUndefined = result.every((embedding) => embedding.metadata?.value === undefined);
+    const allValuesUndefined = result.every(
+      (embedding) => embedding.metadata?.[metadataKey] === undefined
+    );
+
     if (allValuesUndefined) {
       throw new TypeError(`
-          Query to the vector store returned ${result.length} vectors but none had "value" field in their metadata.
-          Text of your vectors should be in the "value" field in the metadata for the RAG Chat.
+          Query to the vector store returned ${result.length} vectors but none had "${metadataKey}" field in their metadata.
+          Text of your vectors should be in the "${metadataKey}" field in the metadata for the RAG Chat.
         `);
     }
 
     const facts = result
       .filter((x) => x.score >= similarityThreshold)
-      .map((embedding, index) => `- Context Item ${index}: ${embedding.metadata?.value ?? ""}`);
+      .map(
+        (embedding, index) => `- Context Item ${index}: ${embedding.metadata?.[metadataKey] ?? ""}`
+      );
     return formatFacts(facts);
   }
 
-  async addEmbeddingOrTextToVectorDb(input: string | number[]) {
+  async addEmbeddingOrTextToVectorDb(
+    input: AddContextPayload[] | string,
+    metadataKey = "text"
+  ): Promise<string> {
     if (typeof input === "string") {
-      return this.index.upsert({ data: input, id: nanoid(), metadata: { value: input } });
+      return this.index.upsert({
+        data: input,
+        id: nanoid(),
+        metadata: { [metadataKey]: input },
+      });
     }
-    return this.index.upsert({ vector: input, id: nanoid(), metadata: { value: input } });
+    const items = input.map((context) => {
+      const isText = typeof context.input === "string";
+      const metadata = context.metadata
+        ? { [metadataKey]: context.metadata }
+        : isText
+          ? { [metadataKey]: context.input }
+          : {};
+
+      return {
+        [isText ? "data" : "vector"]: context.input,
+        id: context.id ?? nanoid(),
+        metadata,
+      };
+    });
+
+    return this.index.upsert(items as Parameters<Index["upsert"]>[number]);
   }
 
   public static async init(config: RetrievalInit) {

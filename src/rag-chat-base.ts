@@ -35,11 +35,13 @@ export class RAGChatBase {
     question: input,
     similarityThreshold,
     topK,
+    metadataKey,
   }: RetrievePayload): Promise<PrepareChatResult> {
     const question = sanitizeQuestion(input);
     const facts = await this.retrievalService.retrieveFromVectorDb({
       question,
       similarityThreshold,
+      metadataKey,
       topK,
     });
     return { question, facts };
@@ -76,7 +78,7 @@ export class RAGChatBase {
       getMessageHistory: (sessionId: string) =>
         this.historyService.getMessageHistory({
           sessionId,
-          length: chatOptions.includeHistory,
+          length: chatOptions.historyLength,
         }),
       inputMessagesKey: "question",
       historyMessagesKey: "chat_history",
