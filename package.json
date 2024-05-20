@@ -1,6 +1,6 @@
 {
   "name": "@upstash/rag-chat",
-  "version": "0.0.21-alpha",
+  "version": "0.0.22-alpha",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
