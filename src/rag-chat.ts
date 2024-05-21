@@ -1,34 +1,36 @@
-import type { BaseLanguageModelInterface } from "@langchain/core/language_models/base";
 import type { AIMessage } from "@langchain/core/messages";
-import type { PromptTemplate } from "@langchain/core/prompts";
 import type { StreamingTextResponse } from "ai";
-
-import { HistoryService } from "./services/history";
-import { RateLimitService } from "./services/ratelimit";
-import type { AddContextPayload } from "./services/retrieval";
-import { RetrievalService } from "./services/retrieval";
 
 import { QA_TEMPLATE } from "./prompts";
 
 import { UpstashModelError } from "./error/model";
 import { RatelimitUpstashError } from "./error/ratelimit";
 
-import { ClientFactory } from "./client-factory";
-import { Config } from "./config";
+import type { Config } from "./config";
 import { RAGChatBase } from "./rag-chat-base";
-import type { ChatOptions, RAGChatConfig } from "./types";
+import type { AddContextPayload } from "./services";
+import { HistoryService, RetrievalService } from "./services";
+import { RateLimitService } from "./services/ratelimit";
+import type { ChatOptions } from "./types";
 import { appendDefaultsIfNeeded } from "./utils";
 
 export class RAGChat extends RAGChatBase {
   #ratelimitService: RateLimitService;
 
-  constructor(
-    retrievalService: RetrievalService,
-    historyService: HistoryService,
-    ratelimitService: RateLimitService,
-    config: { model: BaseLanguageModelInterface; template: PromptTemplate }
-  ) {
-    super(retrievalService, historyService, config);
+  constructor(config: Config) {
+    const { vector: index, redis } = config;
+
+    const historyService = new HistoryService(redis);
+    const retrievalService = new RetrievalService(index);
+    const ratelimitService = new RateLimitService(config.ratelimit);
+
+    if (!config.model) {
+      throw new UpstashModelError("Model can not be undefined!");
+    }
+    super(retrievalService, historyService, {
+      model: config.model,
+      template: config.template ?? QA_TEMPLATE,
+    });
     this.#ratelimitService = ratelimitService;
   }
 
@@ -68,34 +70,5 @@ export class RAGChat extends RAGChatBase {
       metadataKey
     );
     return retrievalServiceStatus === "Success" ? "OK" : "NOT-OK";
-  }
-
-  /**
-   *  Prepares RAG Chat by creating or getting Redis, Vector and Ratelimit instances.
-   */
-  static async initialize(
-    config: RAGChatConfig & { email: string; token: string }
-  ): Promise<RAGChat> {
-    const clientFactory = new ClientFactory(
-      new Config(config.email, config.token, {
-        redis: config.redis,
-        region: config.region,
-        vector: config.vector,
-      })
-    );
-    const { vector: index, redis } = await clientFactory.init({ redis: true, vector: true });
-
-    const historyService = new HistoryService(redis);
-    const retrievalService = new RetrievalService(index);
-    const ratelimitService = new RateLimitService(config.ratelimit);
-
-    if (!config.model) {
-      throw new UpstashModelError("Model can not be undefined!");
-    }
-
-    return new RAGChat(retrievalService, historyService, ratelimitService, {
-      model: config.model,
-      template: config.template ?? QA_TEMPLATE,
-    });
   }
 }

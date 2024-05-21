@@ -1,26 +1,24 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { ChatOpenAI } from "@langchain/openai";
-import { RAGChat } from "./rag-chat";
-import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import type { AIMessage } from "@langchain/core/messages";
-import { delay } from "./utils";
-import { Index, Ratelimit, Redis, Upstash } from "@upstash/sdk";
+import { ChatOpenAI } from "@langchain/openai";
 import type { StreamingTextResponse } from "ai";
-import { DEFAULT_REDIS_DB_NAME, DEFAULT_VECTOR_DB_NAME } from "./constants";
-import { RatelimitUpstashError } from "./error";
-import { PromptTemplate } from "@langchain/core/prompts";
 import { sleep } from "bun";
-import UpstashLLM from "./custom-llm";
+import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import { RAGChat } from "./rag-chat";
+import { Index } from "@upstash/vector";
+import { Redis } from "@upstash/redis";
+import { Ratelimit } from "@upstash/ratelimit";
+import { RatelimitUpstashError } from "./error/ratelimit";
+import { PromptTemplate } from "@langchain/core/prompts";
+import { delay } from "./utils";
 
-describe("RAG Chat with advance configs and direct instances", async () => {
+describe("RAG Chat with advance configs and direct instances", () => {
   const vector = new Index({
     token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
     url: process.env.UPSTASH_VECTOR_REST_URL!,
   });
 
-  const ragChat = await RAGChat.initialize({
-    email: process.env.UPSTASH_EMAIL!,
-    token: process.env.UPSTASH_TOKEN!,
+  const ragChat = new RAGChat({
     model: new ChatOpenAI({
       modelName: "gpt-3.5-turbo",
       streaming: true,
@@ -64,53 +62,7 @@ describe("RAG Chat with advance configs and direct instances", async () => {
   });
 });
 
-describe("RAG Chat with basic configs", async () => {
-  const ragChat = await RAGChat.initialize({
-    email: process.env.UPSTASH_EMAIL!,
-    token: process.env.UPSTASH_TOKEN!,
-    model: new ChatOpenAI({
-      modelName: "gpt-3.5-turbo",
-      streaming: false,
-      verbose: false,
-      temperature: 0,
-      apiKey: process.env.OPENAI_API_KEY,
-    }),
-    region: "eu-west-1",
-  });
-
-  const upstashSDK = new Upstash({
-    email: process.env.UPSTASH_EMAIL!,
-    token: process.env.UPSTASH_TOKEN!,
-  });
-
-  afterAll(async () => {
-    await upstashSDK.deleteRedisDatabase(DEFAULT_REDIS_DB_NAME);
-    await upstashSDK.deleteVectorIndex(DEFAULT_VECTOR_DB_NAME);
-  });
-
-  test(
-    "should get result without streaming",
-    async () => {
-      await ragChat.addContext(
-        "Paris, the capital of France, is renowned for its iconic landmark, the Eiffel Tower, which was completed in 1889 and stands at 330 meters tall."
-      );
-
-      // Wait for it to be indexed
-      // eslint-disable-next-line @typescript-eslint/no-magic-numbers
-      await delay(3000);
-
-      const result = (await ragChat.chat(
-        "What year was the construction of the Eiffel Tower completed, and what is its height?",
-        { stream: false }
-      )) as AIMessage;
-
-      expect(result.content).toContain("330");
-    },
-    { timeout: 30_000 }
-  );
-});
-
-describe("RAG Chat with ratelimit", async () => {
+describe("RAG Chat with ratelimit", () => {
   const redis = new Redis({
     token: process.env.UPSTASH_REDIS_REST_TOKEN!,
     url: process.env.UPSTASH_REDIS_REST_URL!,
@@ -120,9 +72,7 @@ describe("RAG Chat with ratelimit", async () => {
     url: process.env.UPSTASH_VECTOR_REST_URL!,
   });
 
-  const ragChat = await RAGChat.initialize({
-    email: process.env.UPSTASH_EMAIL!,
-    token: process.env.UPSTASH_TOKEN!,
+  const ragChat = new RAGChat({
     model: new ChatOpenAI({
       modelName: "gpt-3.5-turbo",
       streaming: false,
@@ -169,57 +119,8 @@ describe("RAG Chat with ratelimit", async () => {
   );
 });
 
-describe("RAG Chat with instance names", async () => {
-  const ragChat = await RAGChat.initialize({
-    email: process.env.UPSTASH_EMAIL!,
-    token: process.env.UPSTASH_TOKEN!,
-    redis: "my-fancy-redis-db",
-    vector: "my-fancy-vector-db",
-    model: new ChatOpenAI({
-      modelName: "gpt-3.5-turbo",
-      streaming: false,
-      verbose: false,
-      temperature: 0,
-      apiKey: process.env.OPENAI_API_KEY,
-    }),
-    region: "eu-west-1",
-  });
-
-  afterAll(async () => {
-    const upstashSDK = new Upstash({
-      email: process.env.UPSTASH_EMAIL!,
-      token: process.env.UPSTASH_TOKEN!,
-    });
-    await upstashSDK.deleteRedisDatabase("my-fancy-redis-db");
-    await upstashSDK.deleteVectorIndex("my-fancy-vector-db");
-  });
-
-  test(
-    "should get result without streaming",
-    async () => {
-      await ragChat.addContext(
-        "Paris, the capital of France, is renowned for its iconic landmark, the Eiffel Tower, which was completed in 1889 and stands at 330 meters tall."
-      );
-
-      // Wait for it to be indexed
-      // eslint-disable-next-line @typescript-eslint/no-magic-numbers
-      await delay(3000);
-
-      const result = (await ragChat.chat(
-        "What year was the construction of the Eiffel Tower completed, and what is its height?",
-        { stream: false }
-      )) as AIMessage;
-
-      expect(result.content).toContain("330");
-    },
-    { timeout: 30_000 }
-  );
-});
-
-describe("RAG Chat with custom template", async () => {
-  const ragChat = await RAGChat.initialize({
-    email: process.env.UPSTASH_EMAIL!,
-    token: process.env.UPSTASH_TOKEN!,
+describe("RAG Chat with custom template", () => {
+  const ragChat = new RAGChat({
     vector: new Index({
       token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
       url: process.env.UPSTASH_VECTOR_REST_URL!,
@@ -255,45 +156,4 @@ describe("RAG Chat with custom template", async () => {
     },
     { timeout: 30_000 }
   );
-});
-
-describe("RAG Chat with custom LLM", async () => {
-  const ragChat = await RAGChat.initialize({
-    email: process.env.UPSTASH_EMAIL!,
-    token: process.env.UPSTASH_TOKEN!,
-    model: new UpstashLLM({
-      apiKey: process.env.UPSTASH_MODELS_REST_TOKEN,
-      model: "mistralai/Mistral-7B-Instruct-v0.2",
-    }),
-    redis: new Redis({
-      token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-      url: process.env.UPSTASH_REDIS_REST_URL!,
-    }),
-  });
-
-  beforeAll(async () => {
-    await ragChat.addContext(
-      "Paris, the capital of France, is renowned for its iconic landmark, the Eiffel Tower, which was completed in 1889 and stands at 330 meters tall.",
-      "text"
-    );
-    //eslint-disable-next-line @typescript-eslint/no-magic-numbers
-    await sleep(3000);
-  });
-
-  test("should get result without streaming", async () => {
-    const result = (await ragChat.chat(
-      "What year was the construction of the Eiffel Tower completed, and what is its height?",
-      { stream: false }
-    )) as AIMessage;
-
-    expect(result).toContain("330");
-  });
-
-  test("should get result with streaming", async () => {
-    const result = (await ragChat.chat("Which famous artworks can be found in the Louvre Museum?", {
-      stream: true,
-    })) as StreamingTextResponse;
-
-    expect(result).toBeTruthy();
-  });
 });
