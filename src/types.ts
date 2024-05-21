@@ -1,6 +1,8 @@
 import type { BaseLanguageModelInterface } from "@langchain/core/language_models/base";
 import type { PromptTemplate } from "@langchain/core/prompts";
-import type { Index, Ratelimit, Redis } from "@upstash/sdk";
+import type { Ratelimit } from "@upstash/ratelimit";
+import type { Redis } from "@upstash/redis";
+import type { Index } from "@upstash/vector";
 
 export type PreferredRegions = "eu-west-1" | "us-east-1";
 
@@ -84,11 +86,6 @@ type RAGChatConfigCommon = {
    */
   template?: PromptTemplate;
   /**
-   * Region that will be used to create or get Vector and Redis instance.
-   * @default "us-east-1"
-   */
-  region?: PreferredRegions;
-  /**
    * Ratelimit instance
    * @example new Ratelimit({
         redis,
@@ -105,10 +102,10 @@ export type RAGChatConfig = {
    * If no Index name or instance is provided, falls back to the default.
    * @default "upstash-rag-chat-redis"
    */
-  vector?: string | Index;
+  vector: Index;
   /**
    * If no Redis database name or instance is provided, falls back to the default.
    * @default "upstash-rag-chat-redis"
    */
-  redis?: string | Redis;
+  redis: Redis;
 } & RAGChatConfigCommon;

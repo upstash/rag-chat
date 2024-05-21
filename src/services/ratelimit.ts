@@ -1,4 +1,4 @@
-import type { Ratelimit } from "@upstash/sdk";
+import type { Ratelimit } from "@upstash/ratelimit";
 
 export class RateLimitService {
   private ratelimit?: Ratelimit;

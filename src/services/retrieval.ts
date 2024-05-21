@@ -1,17 +1,9 @@
-import type { Index } from "@upstash/sdk";
-import { formatFacts } from "../utils";
-import type { RAGChatConfig } from "../types";
-import { ClientFactory } from "../client-factory";
-import { Config } from "../config";
 import { nanoid } from "nanoid";
 import { DEFAULT_METADATA_KEY, DEFAULT_SIMILARITY_THRESHOLD, DEFAULT_TOP_K } from "../constants";
+import { formatFacts } from "../utils";
+import type { Index } from "@upstash/vector";
 
 export type AddContextPayload = { input: string | number[]; id?: string; metadata?: string };
-
-type RetrievalInit = Omit<RAGChatConfig, "model" | "template" | "vector"> & {
-  email: string;
-  token: string;
-};
 
 export type RetrievePayload = {
   question: string;
@@ -85,17 +77,6 @@ export class RetrievalService {
       };
     });
 
-    return this.index.upsert(items as Parameters<Index["upsert"]>[number]);
-  }
-
-  public static async init(config: RetrievalInit) {
-    const clientFactory = new ClientFactory(
-      new Config(config.email, config.token, {
-        redis: config.redis,
-        region: config.region,
-      })
-    );
-    const { vector } = await clientFactory.init({ vector: true });
-    return new RetrievalService(vector);
+    return this.index.upsert(items);
   }
 }
