@@ -11,7 +11,7 @@ export class Config {
   public readonly ratelimit?: Ratelimit;
 
   public readonly model?: BaseLanguageModelInterface;
-  public readonly template?: PromptTemplate;
+  public readonly prompt?: PromptTemplate;
 
   constructor(config: RAGChatConfig) {
     this.vector = config.vector;
@@ -20,6 +20,6 @@ export class Config {
     this.ratelimit = config.ratelimit;
 
     this.model = config.model;
-    this.template = config.template;
+    this.prompt = config.prompt;
   }
 }

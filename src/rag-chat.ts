@@ -1,7 +1,7 @@
 import type { AIMessage } from "@langchain/core/messages";
 import type { StreamingTextResponse } from "ai";
 
-import { QA_TEMPLATE } from "./prompts";
+import { QA_PROMPT_TEMPLATE } from "./prompts";
 
 import { UpstashModelError } from "./error/model";
 import { RatelimitUpstashError } from "./error/ratelimit";
@@ -29,7 +29,7 @@ export class RAGChat extends RAGChatBase {
     }
     super(retrievalService, historyService, {
       model: config.model,
-      template: config.template ?? QA_TEMPLATE,
+      prompt: config.prompt ?? QA_PROMPT_TEMPLATE,
     });
     this.#ratelimitService = ratelimitService;
   }
@@ -38,7 +38,7 @@ export class RAGChat extends RAGChatBase {
     // Adds chat session id and ratelimit session id if not provided.
     const options_ = appendDefaultsIfNeeded(options);
 
-    //Checks ratelimit of the user. If not enabled `success` will be always true.
+    // Checks ratelimit of the user. If not enabled `success` will be always true.
     const { success, resetTime } = await this.#ratelimitService.checkLimit(
       options_.ratelimitSessionId
     );
@@ -50,7 +50,7 @@ export class RAGChat extends RAGChatBase {
       });
     }
 
-    //Sanitizes the given input by stripping all the newline chars then queries vector db with sanitized question.
+    // Sanitizes the given input by stripping all the newline chars. Then, queries vector db with sanitized question.
     const { question, facts } = await this.prepareChat({
       question: input,
       similarityThreshold: options_.similarityThreshold,
@@ -58,6 +58,8 @@ export class RAGChat extends RAGChatBase {
       topK: options_.topK,
     });
 
+    // Calls LLM service with organized prompt. Prompt holds chat_history, facts gathered from vector db and sanitized question.
+    // Allows either streaming call via Vercel AI SDK or non-streaming call
     return options.stream
       ? this.streamingChainCall(options_, question, facts)
       : this.chainCall(options_, question, facts);
@@ -70,5 +72,10 @@ export class RAGChat extends RAGChatBase {
       metadataKey
     );
     return retrievalServiceStatus === "Success" ? "OK" : "NOT-OK";
+  }
+
+  /** Method to get history of messages used in the RAG Chat*/
+  getHistory() {
+    return this.historyService;
   }
 }

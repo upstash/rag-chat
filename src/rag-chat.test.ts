@@ -129,7 +129,7 @@ describe("RAG Chat with custom template", () => {
       token: process.env.UPSTASH_REDIS_REST_TOKEN!,
       url: process.env.UPSTASH_REDIS_REST_URL!,
     }),
-    template: PromptTemplate.fromTemplate("Just say `I'm a cookie monster`. Nothing else."),
+    prompt: PromptTemplate.fromTemplate("Just say `I'm a cookie monster`. Nothing else."),
     model: new ChatOpenAI({
       modelName: "gpt-3.5-turbo",
       streaming: false,

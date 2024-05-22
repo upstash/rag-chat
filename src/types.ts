@@ -84,7 +84,7 @@ type RAGChatConfigCommon = {
         Question: {question}
         Helpful answer:`)
    */
-  template?: PromptTemplate;
+  prompt?: PromptTemplate;
   /**
    * Ratelimit instance
    * @example new Ratelimit({
