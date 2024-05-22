@@ -17,18 +17,18 @@ export class RAGChatBase {
   protected historyService: HistoryService;
 
   #model: BaseLanguageModelInterface;
-  #template: PromptTemplate;
+  #prompt: PromptTemplate;
 
   constructor(
     retrievalService: RetrievalService,
     historyService: HistoryService,
-    config: { model: BaseLanguageModelInterface; template: PromptTemplate }
+    config: { model: BaseLanguageModelInterface; prompt: PromptTemplate }
   ) {
     this.retrievalService = retrievalService;
     this.historyService = historyService;
 
     this.#model = config.model;
-    this.#template = config.template;
+    this.#prompt = config.prompt;
   }
 
   protected async prepareChat({
@@ -69,7 +69,7 @@ export class RAGChatBase {
         question: (input) => input.question,
         context: (input) => input.context,
       },
-      this.#template,
+      this.#prompt,
       this.#model,
     ]);
 
