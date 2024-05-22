@@ -8,7 +8,7 @@ import { RatelimitUpstashError } from "./error/ratelimit";
 
 import type { Config } from "./config";
 import { RAGChatBase } from "./rag-chat-base";
-import type { AddContextPayload } from "./services";
+import type { AddContextOptions, AddContextPayload } from "./services";
 import { HistoryService, RetrievalService } from "./services";
 import { RateLimitService } from "./services/ratelimit";
 import type { ChatOptions } from "./types";
@@ -34,8 +34,18 @@ export class RAGChat extends RAGChatBase {
     this.#ratelimitService = ratelimitService;
   }
 
+  /**
+   * A method that allows you to chat LLM using Vector DB as your knowledge store and Redis - optional - as a chat history.
+   *
+   * @example
+   * ```typescript
+   *    await ragChat.chat("Where is the capital of Turkiye?", {
+   *        stream: false,
+   *      })
+   * ```
+   */
   async chat(input: string, options: ChatOptions): Promise<StreamingTextResponse | AIMessage> {
-    // Adds chat session id and ratelimit session id if not provided.
+    // Adds all the necessary default options that users can skip in the options parameter above.
     const options_ = appendDefaultsIfNeeded(options);
 
     // Checks ratelimit of the user. If not enabled `success` will be always true.
@@ -65,12 +75,26 @@ export class RAGChat extends RAGChatBase {
       : this.chainCall(options_, question, facts);
   }
 
-  /** Context can be either plain text or embeddings  */
-  async addContext(context: AddContextPayload[] | string, metadataKey = "text") {
-    const retrievalServiceStatus = await this.retrievalService.addEmbeddingOrTextToVectorDb(
-      context,
-      metadataKey
-    );
+  /**
+   * A method that allows you to add various data types into a vector database.
+   * It supports plain text, embeddings, PDF, and CSV. Additionally, it handles text-splitting for CSV and PDF.
+   *
+   * @example
+   * ```typescript
+   * await addDataToVectorDb({
+   *   dataType: "pdf",
+   *   fileSource: "./data/the_wonderful_wizard_of_oz.pdf",
+   *   opts: { chunkSize: 500, chunkOverlap: 50 },
+   * });
+   * // OR
+   * await addDataToVectorDb({
+   *   dataType: "text",
+   *   data: "Paris, the capital of France, is renowned for its iconic landmark, the Eiffel Tower, which was completed in 1889 and stands at 330 meters tall.",
+   * });
+   * ```
+   */
+  async addContext(context: AddContextPayload, options?: AddContextOptions) {
+    const retrievalServiceStatus = await this.retrievalService.addDataToVectorDb(context, options);
     return retrievalServiceStatus === "Success" ? "OK" : "NOT-OK";
   }
 
