@@ -6,11 +6,11 @@ import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf";
 import type { RecursiveCharacterTextSplitterParams } from "langchain/text_splitter";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 
-type IndexUpsertPayload = { input: string | number[]; id?: string; metadata?: string };
+type IndexUpsertPayload = { input: number[]; id?: string | number; metadata?: string };
 type FilePath = string;
 
 export type AddContextPayload =
-  | { dataType: "text"; data: string }
+  | { dataType: "text"; data: string; id?: string | number }
   | { dataType: "embedding"; data: IndexUpsertPayload[] }
   | {
       dataType: "pdf";
@@ -88,23 +88,16 @@ export class RetrievalService {
       case "text": {
         return this.index.upsert({
           data: input.data,
-          id: nanoid(),
+          id: input.id ?? nanoid(),
           metadata: { [metadataKey]: input.data },
         });
       }
       case "embedding": {
         const items = input.data.map((context) => {
-          const isText = typeof context.input === "string";
-          const metadata = context.metadata
-            ? { [metadataKey]: context.metadata }
-            : isText
-              ? { [metadataKey]: context.input }
-              : {};
-
           return {
-            [isText ? "data" : "vector"]: context.input,
+            vector: context.input,
             id: context.id ?? nanoid(),
-            metadata,
+            metadata: { [metadataKey]: context.metadata },
           };
         });
 
