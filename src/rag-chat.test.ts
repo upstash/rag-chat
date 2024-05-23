@@ -1,16 +1,15 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { AIMessage } from "@langchain/core/messages";
-import { ChatOpenAI } from "@langchain/openai";
-import type { StreamingTextResponse } from "ai";
-import { sleep } from "bun";
-import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { RAGChat } from "./rag-chat";
-import { Index } from "@upstash/vector";
-import { Redis } from "@upstash/redis";
-import { Ratelimit } from "@upstash/ratelimit";
-import { RatelimitUpstashError } from "./error/ratelimit";
 import { PromptTemplate } from "@langchain/core/prompts";
-import { delay } from "./utils";
+import { ChatOpenAI } from "@langchain/openai";
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
+import { Index } from "@upstash/vector";
+import type { StreamingTextResponse } from "ai";
+import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import { RatelimitUpstashError } from "./error/ratelimit";
+import { RAGChat } from "./rag-chat";
+import { awaitUntilIndexed } from "./test-utils";
 
 describe("RAG Chat with advance configs and direct instances", () => {
   const vector = new Index({
@@ -34,12 +33,11 @@ describe("RAG Chat with advance configs and direct instances", () => {
   });
 
   beforeAll(async () => {
-    await ragChat.addContext(
-      "Paris, the capital of France, is renowned for its iconic landmark, the Eiffel Tower, which was completed in 1889 and stands at 330 meters tall.",
-      "text"
-    );
-    //eslint-disable-next-line @typescript-eslint/no-magic-numbers
-    await sleep(3000);
+    await ragChat.addContext({
+      dataType: "text",
+      data: "Paris, the capital of France, is renowned for its iconic landmark, the Eiffel Tower, which was completed in 1889 and stands at 330 meters tall.",
+    });
+    await awaitUntilIndexed(vector);
   });
 
   afterAll(async () => await vector.reset());
@@ -98,11 +96,13 @@ describe("RAG Chat with ratelimit", () => {
     "should throw ratelimit error",
     async () => {
       await ragChat.addContext(
-        "Paris, the capital of France, is renowned for its iconic landmark, the Eiffel Tower, which was completed in 1889 and stands at 330 meters tall.",
-        "text"
+        {
+          dataType: "text",
+          data: "Paris, the capital of France, is renowned for its iconic landmark, the Eiffel Tower, which was completed in 1889 and stands at 330 meters tall.",
+        },
+        { metadataKey: "text" }
       );
-      //eslint-disable-next-line @typescript-eslint/no-magic-numbers
-      await sleep(3000);
+      await awaitUntilIndexed(vector);
 
       await ragChat.chat(
         "What year was the construction of the Eiffel Tower completed, and what is its height?",
@@ -120,11 +120,12 @@ describe("RAG Chat with ratelimit", () => {
 });
 
 describe("RAG Chat with custom template", () => {
+  const vector = new Index({
+    token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
+    url: process.env.UPSTASH_VECTOR_REST_URL!,
+  });
   const ragChat = new RAGChat({
-    vector: new Index({
-      token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
-      url: process.env.UPSTASH_VECTOR_REST_URL!,
-    }),
+    vector,
     redis: new Redis({
       token: process.env.UPSTASH_REDIS_REST_TOKEN!,
       url: process.env.UPSTASH_REDIS_REST_URL!,
@@ -142,17 +143,63 @@ describe("RAG Chat with custom template", () => {
   test(
     "should get result without streaming",
     async () => {
-      await ragChat.addContext("Ankara is the capital of Turkiye.");
+      await ragChat.addContext(
+        { dataType: "text", data: "Ankara is the capital of Turkiye." },
+        { metadataKey: "text" }
+      );
 
       // Wait for it to be indexed
       // eslint-disable-next-line @typescript-eslint/no-magic-numbers
-      await delay(3000);
+      await awaitUntilIndexed(vector);
 
       const result = (await ragChat.chat("Where is the capital of Turkiye?", {
         stream: false,
       })) as AIMessage;
 
       expect(result.content).toContain("I'm a cookie monster");
+    },
+    { timeout: 30_000 }
+  );
+});
+
+describe("RAG Chat addContext using PDF", () => {
+  const vector = new Index({
+    token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
+    url: process.env.UPSTASH_VECTOR_REST_URL!,
+  });
+  const redis = new Redis({
+    token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+    url: process.env.UPSTASH_REDIS_REST_URL!,
+  });
+  const ragChat = new RAGChat({
+    redis,
+    vector,
+    model: new ChatOpenAI({
+      modelName: "gpt-3.5-turbo",
+      streaming: false,
+      verbose: false,
+      temperature: 0,
+      apiKey: process.env.OPENAI_API_KEY,
+    }),
+  });
+
+  afterAll(async () => {
+    await vector.reset();
+  });
+
+  test(
+    "should be able to successfully query embedded book",
+    async () => {
+      await ragChat.addContext({
+        dataType: "pdf",
+        fileSource: "./data/the_wonderful_wizard_of_oz.pdf",
+        opts: { chunkSize: 500, chunkOverlap: 50 },
+      });
+      await awaitUntilIndexed(vector);
+      const result = (await ragChat.chat("Whats the author of The Wonderful Wizard of Oz?", {
+        stream: false,
+      })) as AIMessage;
+      expect(result.content).toContain("Frank");
     },
     { timeout: 30_000 }
   );
