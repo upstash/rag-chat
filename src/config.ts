@@ -7,7 +7,7 @@ import type { Index } from "@upstash/vector";
 
 export class Config {
   public readonly vector: Index;
-  public readonly redis: Redis;
+  public readonly redis?: Redis;
   public readonly ratelimit?: Ratelimit;
 
   public readonly model?: BaseLanguageModelInterface;

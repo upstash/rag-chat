@@ -98,14 +98,6 @@ type RAGChatConfigCommon = {
 
 /**Config needed to initialize RAG Chat SDK */
 export type RAGChatConfig = {
-  /**
-   * If no Index name or instance is provided, falls back to the default.
-   * @default "upstash-rag-chat-redis"
-   */
   vector: Index;
-  /**
-   * If no Redis database name or instance is provided, falls back to the default.
-   * @default "upstash-rag-chat-redis"
-   */
-  redis: Redis;
+  redis?: Redis;
 } & RAGChatConfigCommon;
