@@ -204,3 +204,51 @@ describe("RAG Chat addContext using PDF", () => {
     { timeout: 30_000 }
   );
 });
+
+describe("RAG Chat without Redis, but In-memory chat history", () => {
+  const vector = new Index({
+    token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
+    url: process.env.UPSTASH_VECTOR_REST_URL!,
+  });
+
+  const ragChat = new RAGChat({
+    model: new ChatOpenAI({
+      modelName: "gpt-3.5-turbo",
+      streaming: false,
+      verbose: false,
+      temperature: 0,
+      apiKey: process.env.OPENAI_API_KEY,
+    }),
+    vector,
+  });
+
+  afterAll(async () => {
+    await vector.reset();
+  });
+
+  test(
+    "should reply back using in-memory db",
+    async () => {
+      await ragChat.addContext({ data: "Ankara is the capital of Turkiye.", dataType: "text" });
+      await awaitUntilIndexed(vector);
+
+      await ragChat.chat("Hello, my name is Oz!", {
+        stream: false,
+        sessionId: "find-name",
+        historyLength: 5,
+      });
+      await ragChat.chat("How are you?", {
+        stream: false,
+        sessionId: "find-name",
+        historyLength: 5,
+      });
+      const result = await ragChat.chat("Do you remember my name?", {
+        stream: false,
+        sessionId: "find-name",
+        historyLength: 5,
+      });
+      expect((result as AIMessage).content).toInclude("Oz");
+    },
+    { timeout: 10_000 }
+  );
+});
