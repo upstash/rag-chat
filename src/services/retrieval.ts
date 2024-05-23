@@ -186,7 +186,6 @@ export class RetrievalService {
         const splitter = RecursiveCharacterTextSplitter.fromLanguage("html", input.opts ?? {});
 
         const transformer = new HtmlToTextTransformer();
-        //@ts-expect-error langchain type issue
         const sequence = splitter.pipe(transformer);
 
         const newDocuments = await sequence.invoke(documents);
