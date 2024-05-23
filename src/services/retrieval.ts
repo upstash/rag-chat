@@ -55,6 +55,17 @@ export class RetrievalService {
       includeVectors: false,
     });
 
+    const allValuesUndefined = result.every(
+      (embedding) => embedding.metadata?.[metadataKey] === undefined
+    );
+
+    if (allValuesUndefined) {
+      throw new TypeError(`
+            Query to the vector store returned ${result.length} vectors but none had "${metadataKey}" field in their metadata.
+            Text of your vectors should be in the "${metadataKey}" field in the metadata for the RAG Chat.
+          `);
+    }
+
     const facts = result
       .filter((x) => x.score >= similarityThreshold)
       .map(
