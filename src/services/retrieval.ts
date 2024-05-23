@@ -4,10 +4,15 @@ import { formatFacts } from "../utils";
 import type { Index } from "@upstash/vector";
 import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf";
 import type { RecursiveCharacterTextSplitterParams } from "langchain/text_splitter";
+import { CSVLoader } from "@langchain/community/document_loaders/fs/csv";
+import { TextLoader } from "langchain/document_loaders/fs/text";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
+import { HtmlToTextTransformer } from "@langchain/community/document_transformers/html_to_text";
+import type { WebBaseLoaderParams } from "@langchain/community/document_loaders/web/cheerio";
 
 type IndexUpsertPayload = { input: number[]; id?: string | number; metadata?: string };
 type FilePath = string;
+type URL = string;
 
 export type AddContextPayload =
   | { dataType: "text"; data: string; id?: string | number }
@@ -16,8 +21,31 @@ export type AddContextPayload =
       dataType: "pdf";
       fileSource: FilePath | Blob;
       opts?: Partial<RecursiveCharacterTextSplitterParams>;
+      pdfOpts?: { parsedItemSeparator?: string; splitPages?: boolean };
     }
-  | { dataType: "csv"; fileSource: FilePath | Blob };
+  | {
+      dataType: "csv";
+      fileSource: FilePath | Blob;
+      csvOpts?: { column?: string; separator?: string };
+    }
+  | {
+      dataType: "text-file";
+      fileSource: FilePath | Blob;
+      opts?: Partial<RecursiveCharacterTextSplitterParams>;
+    }
+  | (
+      | {
+          dataType: "html";
+          fileSource: URL;
+          htmlOpts?: WebBaseLoaderParams;
+          opts: Partial<RecursiveCharacterTextSplitterParams>;
+        }
+      | {
+          dataType: "html";
+          fileSource: FilePath | Blob;
+          opts?: Partial<RecursiveCharacterTextSplitterParams>;
+        }
+    );
 
 export type AddContextOptions = {
   metadataKey?: string;
@@ -92,6 +120,7 @@ export class RetrievalService {
           metadata: { [metadataKey]: input.data },
         });
       }
+
       case "embedding": {
         const items = input.data.map((context) => {
           return {
@@ -103,21 +132,67 @@ export class RetrievalService {
 
         return this.index.upsert(items);
       }
+
       case "pdf": {
-        const loader = new PDFLoader(input.fileSource);
+        const { parsedItemSeparator, splitPages } = input.pdfOpts ?? {};
+
+        const loader = new PDFLoader(input.fileSource, { parsedItemSeparator, splitPages });
         const documents = await loader.load();
 
         // Users will be able to pass options like chunkSize,chunkOverlap when calling addContext from RAGChat instance directly.
         const splitter = new RecursiveCharacterTextSplitter(input.opts);
 
         const splittedDocuments = await splitter.splitDocuments(documents);
-        const upsertPayload = splittedDocuments.map((document) => ({
+        const formattedDocuments = splittedDocuments.map((document) => ({
           data: document.pageContent,
           metadata: { [metadataKey]: document.pageContent },
           id: nanoid(),
         }));
 
-        return this.index.upsert(upsertPayload);
+        return this.index.upsert(formattedDocuments);
+      }
+
+      case "csv": {
+        const { column, separator } = input.csvOpts ?? {};
+
+        const loader = new CSVLoader(input.fileSource, { column, separator });
+        const documents = await loader.load();
+        const formattedDocuments = documents.map((document) => ({
+          data: document.pageContent,
+          id: nanoid(),
+          metadata: { [metadataKey]: document.pageContent },
+        }));
+        return this.index.upsert(formattedDocuments);
+      }
+
+      case "text-file": {
+        const loader = new TextLoader(input.fileSource);
+        const documents = await loader.load();
+        const splitter = new RecursiveCharacterTextSplitter(input.opts);
+
+        const splittedDocuments = await splitter.splitDocuments(documents);
+        const formattedDocuments = splittedDocuments.map((document) => ({
+          data: document.pageContent,
+          metadata: { [metadataKey]: document.pageContent },
+          id: nanoid(),
+        }));
+
+        return this.index.upsert(formattedDocuments);
+      }
+
+      case "html": {
+        const loader = new TextLoader(input.fileSource);
+        const documents = await loader.load();
+        const splitter = RecursiveCharacterTextSplitter.fromLanguage("html", input.opts ?? {});
+
+        const transformer = new HtmlToTextTransformer();
+        //@ts-expect-error langchain type issue
+        const sequence = splitter.pipe(transformer);
+
+        const newDocuments = await sequence.invoke(documents);
+
+        // eslint-disable-next-line no-console
+        console.log(newDocuments);
       }
     }
   }

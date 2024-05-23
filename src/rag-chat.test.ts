@@ -252,3 +252,124 @@ describe("RAG Chat without Redis, but In-memory chat history", () => {
     { timeout: 10_000 }
   );
 });
+
+describe("RAG Chat addContext using CSV", () => {
+  const vector = new Index({
+    token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
+    url: process.env.UPSTASH_VECTOR_REST_URL!,
+  });
+
+  const ragChat = new RAGChat({
+    vector,
+    model: new ChatOpenAI({
+      modelName: "gpt-3.5-turbo",
+      streaming: false,
+      verbose: false,
+      temperature: 0,
+      apiKey: process.env.OPENAI_API_KEY,
+    }),
+  });
+
+  afterAll(async () => {
+    await vector.reset();
+  });
+
+  test(
+    "should be able to successfully query csv",
+    async () => {
+      await ragChat.addContext({
+        dataType: "csv",
+        fileSource: "./data/list_of_user_info.csv",
+      });
+      await awaitUntilIndexed(vector);
+      const result = (await ragChat.chat("Whats username of Rachel Booker?", {
+        stream: false,
+      })) as AIMessage;
+      expect(result.content).toContain("booker12");
+    },
+    { timeout: 30_000 }
+  );
+});
+
+describe("RAG Chat addContext using text-file", () => {
+  const vector = new Index({
+    token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
+    url: process.env.UPSTASH_VECTOR_REST_URL!,
+  });
+
+  const ragChat = new RAGChat({
+    vector,
+    model: new ChatOpenAI({
+      modelName: "gpt-3.5-turbo",
+      streaming: false,
+      verbose: false,
+      temperature: 0,
+      apiKey: process.env.OPENAI_API_KEY,
+    }),
+  });
+
+  afterAll(async () => {
+    await vector.reset();
+  });
+
+  test(
+    "should be able to successfully query txt file",
+    async () => {
+      await ragChat.addContext({
+        dataType: "text-file",
+        fileSource: "./data/the_wonderful_wizard_of_oz_summary.txt",
+        opts: { chunkSize: 500, chunkOverlap: 50 },
+      });
+      await awaitUntilIndexed(vector);
+
+      const result = (await ragChat.chat("Whats the author of The Wonderful Wizard of Oz?", {
+        stream: false,
+        metadataKey: "text",
+      })) as AIMessage;
+
+      expect(result.content).toContain("Frank");
+    },
+    { timeout: 30_000 }
+  );
+});
+
+describe("RAG Chat addContext using HTML", () => {
+  const vector = new Index({
+    token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
+    url: process.env.UPSTASH_VECTOR_REST_URL!,
+  });
+
+  const ragChat = new RAGChat({
+    vector,
+    model: new ChatOpenAI({
+      modelName: "gpt-3.5-turbo",
+      streaming: false,
+      verbose: false,
+      temperature: 0,
+      apiKey: process.env.OPENAI_API_KEY,
+    }),
+  });
+
+  afterAll(async () => {
+    await vector.reset();
+  });
+
+  test(
+    "should be able to successfully query html file",
+    async () => {
+      await ragChat.addContext({
+        dataType: "html",
+        fileSource: "./data/the_wonderful_wizard_of_oz_summary.html",
+      });
+      await awaitUntilIndexed(vector);
+
+      //   const result = (await ragChat.chat("Wwhats the author of The Wonderful Wizard of Oz?", {
+      //     stream: false,
+      //     metadataKey: "text",
+      //   })) as AIMessage;
+
+      //   expect(result.content).toContain("Frank");
+    },
+    { timeout: 30_000 }
+  );
+});

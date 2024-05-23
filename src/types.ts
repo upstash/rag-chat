@@ -4,7 +4,9 @@ import type { Ratelimit } from "@upstash/ratelimit";
 import type { Redis } from "@upstash/redis";
 import type { Index } from "@upstash/vector";
 
-export type PreferredRegions = "eu-west-1" | "us-east-1";
+declare const __brand: unique symbol;
+type Brand<B> = { [__brand]: B };
+export type Branded<T, B> = T & Brand<B>;
 
 export type ChatOptions = {
   /** Set to `true` if working with web apps and you want to be interactive without stalling users.
