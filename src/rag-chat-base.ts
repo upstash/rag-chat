@@ -6,26 +6,26 @@ import { LangChainAdapter, StreamingTextResponse } from "ai";
 
 import type { BaseLanguageModelInterface } from "@langchain/core/language_models/base";
 import type { PromptTemplate } from "@langchain/core/prompts";
-import type { HistoryService, VectorPayload } from "./services";
-import type { VectorService } from "./services/database";
 import type { ChatOptions, PrepareChatResult } from "./types";
 import { formatChatHistory, sanitizeQuestion } from "./utils";
+import type { Database, VectorPayload } from "./database";
+import type { History } from "./history";
 
 type CustomInputValues = { chat_history?: BaseMessage[]; question: string; context: string };
 
 export class RAGChatBase {
-  protected vectorService: VectorService;
-  protected historyService: HistoryService;
+  protected vectorService: Database;
+  protected historyService: History;
 
   #model: BaseLanguageModelInterface;
   #prompt: PromptTemplate;
 
   constructor(
-    retrievalService: VectorService,
-    historyService: HistoryService,
+    vectorService: Database,
+    historyService: History,
     config: { model: BaseLanguageModelInterface; prompt: PromptTemplate }
   ) {
-    this.vectorService = retrievalService;
+    this.vectorService = vectorService;
     this.historyService = historyService;
 
     this.#model = config.model;

@@ -2,9 +2,9 @@ import type { WebBaseLoaderParams } from "@langchain/community/document_loaders/
 import type { Index } from "@upstash/vector";
 import type { RecursiveCharacterTextSplitterParams } from "langchain/text_splitter";
 import { nanoid } from "nanoid";
-import { DEFAULT_METADATA_KEY, DEFAULT_SIMILARITY_THRESHOLD, DEFAULT_TOP_K } from "../constants";
-import { FileDataLoader } from "../file-loader";
-import { formatFacts } from "../utils";
+import { DEFAULT_SIMILARITY_THRESHOLD, DEFAULT_METADATA_KEY, DEFAULT_TOP_K } from "./constants";
+import { FileDataLoader } from "./file-loader";
+import { formatFacts } from "./utils";
 
 export type IndexUpsertPayload = { input: number[]; id?: string | number; metadata?: string };
 export type FilePath = string;
@@ -57,7 +57,7 @@ export type VectorPayload = {
   topK: number;
 };
 
-export class VectorService {
+export class Database {
   private index: Index;
   constructor(index: Index) {
     this.index = index;

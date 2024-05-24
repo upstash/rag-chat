@@ -9,7 +9,7 @@ import { TextLoader } from "langchain/document_loaders/fs/text";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { nanoid } from "nanoid";
 import { DEFAULT_METADATA_KEY } from "./constants";
-import type { DatasWithFileSource, FilePath, URL } from "./services/database";
+import type { DatasWithFileSource, FilePath, URL } from "./database";
 
 export class FileDataLoader {
   private config: Pick<DatasWithFileSource, "dataType" | "fileSource">;

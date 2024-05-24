@@ -1,3 +1,6 @@
 export * from "./src/rag-chat";
-export * from "./src/services";
+export * from "./src/history";
+export * from "./src/database";
+export * from "./src/ratelimit";
 export * from "./src/error";
+export * from "./src/types";
