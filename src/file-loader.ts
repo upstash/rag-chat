@@ -1,91 +1,110 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
-import {
-  CheerioWebBaseLoader,
-  type WebBaseLoaderParams,
-} from "@langchain/community/document_loaders/web/cheerio";
-import type { RecursiveCharacterTextSplitterParams } from "langchain/text_splitter";
-import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf";
-import type { Branded } from "./types";
 import { CSVLoader } from "@langchain/community/document_loaders/fs/csv";
+import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf";
+import { CheerioWebBaseLoader } from "@langchain/community/document_loaders/web/cheerio";
+import { HtmlToTextTransformer } from "@langchain/community/document_transformers/html_to_text";
+import type { Document } from "@langchain/core/documents";
 import { TextLoader } from "langchain/document_loaders/fs/text";
+import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
+import { nanoid } from "nanoid";
+import { DEFAULT_METADATA_KEY } from "./constants";
+import type { DatasWithFileSource, FilePath, URL } from "./services/database";
 
-type IndexUpsertPayload = { input: number[]; id?: string | number; metadata?: string };
-type FilePath = Branded<string, "FilePath">;
-type URL = Branded<string, "URL">;
-
-type DatasWithFileSource =
-  | {
-      dataType: "pdf";
-      fileSource: FilePath | Blob;
-      opts?: Partial<RecursiveCharacterTextSplitterParams>;
-      pdfOpts?: { parsedItemSeparator?: string; splitPages?: boolean };
-    }
-  | {
-      dataType: "csv";
-      fileSource: FilePath | Blob;
-      csvOpts?: { column?: string; separator?: string };
-    }
-  | {
-      dataType: "text-file";
-      fileSource: FilePath | Blob;
-      opts?: Partial<RecursiveCharacterTextSplitterParams>;
-    }
-  | (
-      | {
-          dataType: "html";
-          fileSource: URL;
-          htmlOpts?: WebBaseLoaderParams;
-          opts: Partial<RecursiveCharacterTextSplitterParams>;
-        }
-      | {
-          dataType: "html";
-          fileSource: FilePath | Blob;
-          opts?: Partial<RecursiveCharacterTextSplitterParams>;
-        }
-    );
-
-export type AddContextPayload =
-  | { dataType: "text"; data: string; id?: string | number }
-  | { dataType: "embedding"; data: IndexUpsertPayload[] }
-  | DatasWithFileSource;
-
-export class FileLoader {
+export class FileDataLoader {
   private config: Pick<DatasWithFileSource, "dataType" | "fileSource">;
+  private metadataKey: string;
 
-  constructor(config: Pick<DatasWithFileSource, "dataType" | "fileSource">) {
+  constructor(config: Pick<DatasWithFileSource, "dataType" | "fileSource">, dataKey?: string) {
     this.config = config;
+    this.metadataKey = dataKey ?? DEFAULT_METADATA_KEY;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async loadFile(args: any) {
     const loader = this.createLoader(args);
-    return loader.load();
-  }
-  //TODO: Add transforming methods here
+    const documents = await loader.load();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (args: any) => this.transformDocument(documents, args);
+  }
+
   private createLoader(args: any) {
     switch (this.config.dataType) {
       case "pdf": {
-        return new PDFLoader(this.config.fileSource, args);
+        return new PDFLoader(
+          this.config.fileSource,
+          args satisfies Extract<DatasWithFileSource, { dataType: "pdf" }>
+        );
       }
+
       case "csv": {
-        return new CSVLoader(this.config.fileSource, args);
+        return new CSVLoader(
+          this.config.fileSource,
+          args satisfies Extract<DatasWithFileSource, { dataType: "csv" }>
+        );
       }
+
       case "text-file": {
         return new TextLoader(this.config.fileSource);
       }
+
       case "html": {
         return this.isURL(this.config.fileSource)
           ? new CheerioWebBaseLoader(this.config.fileSource)
           : new TextLoader(this.config.fileSource);
       }
+
       default: {
         throw new Error(`Unsupported data type: ${this.config.dataType}`);
       }
     }
   }
-  private isURL(source: FilePath | Blob | URL): source is URL {
+
+  private isURL(source: FilePath | Blob): source is URL {
     return typeof source === "string" && source.startsWith("http");
+  }
+
+  private async transformDocument(documents: Document[], args: any) {
+    switch (this.config.dataType) {
+      case "pdf": {
+        const splitter = new RecursiveCharacterTextSplitter(args);
+        const splittedDocuments = await splitter.splitDocuments(documents);
+
+        return mapDocumentsIntoInsertPayload(splittedDocuments, this.metadataKey);
+      }
+
+      case "csv": {
+        return mapDocumentsIntoInsertPayload(documents, this.metadataKey);
+      }
+
+      case "text-file": {
+        const splitter = new RecursiveCharacterTextSplitter(args);
+
+        const splittedDocuments = await splitter.splitDocuments(documents);
+        return mapDocumentsIntoInsertPayload(splittedDocuments, this.metadataKey);
+      }
+
+      case "html": {
+        const splitter = RecursiveCharacterTextSplitter.fromLanguage("html", args);
+
+        const transformer = new HtmlToTextTransformer();
+        const sequence = splitter.pipe(transformer);
+
+        const newDocuments = await sequence.invoke(documents);
+
+        return mapDocumentsIntoInsertPayload(newDocuments, this.metadataKey);
+      }
+
+      default: {
+        throw new Error(`Unsupported data type: ${this.config.dataType}`);
+      }
+    }
+
+    function mapDocumentsIntoInsertPayload(splittedDocuments: Document[], metadataKey: string) {
+      return splittedDocuments.map((document) => ({
+        data: document.pageContent,
+        metadata: { [metadataKey]: document.pageContent },
+        id: nanoid(),
+      }));
+    }
   }
 }

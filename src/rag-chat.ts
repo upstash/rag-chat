@@ -9,7 +9,7 @@ import { RatelimitUpstashError } from "./error/ratelimit";
 import type { Config } from "./config";
 import { RAGChatBase } from "./rag-chat-base";
 import type { AddContextOptions, AddContextPayload } from "./services";
-import { HistoryService, RetrievalService } from "./services";
+import { HistoryService, VectorService } from "./services";
 import { RateLimitService } from "./services/ratelimit";
 import type { ChatOptions } from "./types";
 import { appendDefaultsIfNeeded } from "./utils";
@@ -21,13 +21,13 @@ export class RAGChat extends RAGChatBase {
     const { vector: index, redis } = config;
 
     const historyService = new HistoryService(redis);
-    const retrievalService = new RetrievalService(index);
+    const vectorService = new VectorService(index);
     const ratelimitService = new RateLimitService(config.ratelimit);
 
     if (!config.model) {
       throw new UpstashModelError("Model can not be undefined!");
     }
-    super(retrievalService, historyService, {
+    super(vectorService, historyService, {
       model: config.model,
       prompt: config.prompt ?? QA_PROMPT_TEMPLATE,
     });
@@ -94,7 +94,7 @@ export class RAGChat extends RAGChatBase {
    * ```
    */
   async addContext(context: AddContextPayload, options?: AddContextOptions) {
-    const retrievalServiceStatus = await this.retrievalService.addDataToVectorDb(context, options);
+    const retrievalServiceStatus = await this.vectorService.save(context, options);
     return retrievalServiceStatus === "Success" ? "OK" : "NOT-OK";
   }
 

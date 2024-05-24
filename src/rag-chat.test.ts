@@ -363,12 +363,12 @@ describe("RAG Chat addContext using HTML", () => {
       });
       await awaitUntilIndexed(vector);
 
-      //   const result = (await ragChat.chat("Wwhats the author of The Wonderful Wizard of Oz?", {
-      //     stream: false,
-      //     metadataKey: "text",
-      //   })) as AIMessage;
+      const result = (await ragChat.chat("Whats the author of The Wonderful Wizard of Oz?", {
+        stream: false,
+        metadataKey: "text",
+      })) as AIMessage;
 
-      //   expect(result.content).toContain("Frank");
+      expect(result.content).toContain("Frank");
     },
     { timeout: 30_000 }
   );

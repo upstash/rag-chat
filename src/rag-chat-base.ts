@@ -7,24 +7,24 @@ import type { PrepareChatResult, ChatOptions } from "./types";
 import { sanitizeQuestion, formatChatHistory } from "./utils";
 import type { BaseLanguageModelInterface } from "@langchain/core/language_models/base";
 import type { PromptTemplate } from "@langchain/core/prompts";
-import type { HistoryService, RetrievePayload } from "./services";
-import type { RetrievalService } from "./services/retrieval";
+import type { HistoryService, VectorPayload } from "./services";
+import type { VectorService } from "./services/database";
 
 type CustomInputValues = { chat_history?: BaseMessage[]; question: string; context: string };
 
 export class RAGChatBase {
-  protected retrievalService: RetrievalService;
+  protected vectorService: VectorService;
   protected historyService: HistoryService;
 
   #model: BaseLanguageModelInterface;
   #prompt: PromptTemplate;
 
   constructor(
-    retrievalService: RetrievalService,
+    retrievalService: VectorService,
     historyService: HistoryService,
     config: { model: BaseLanguageModelInterface; prompt: PromptTemplate }
   ) {
-    this.retrievalService = retrievalService;
+    this.vectorService = retrievalService;
     this.historyService = historyService;
 
     this.#model = config.model;
@@ -36,9 +36,9 @@ export class RAGChatBase {
     similarityThreshold,
     topK,
     metadataKey,
-  }: RetrievePayload): Promise<PrepareChatResult> {
+  }: VectorPayload): Promise<PrepareChatResult> {
     const question = sanitizeQuestion(input);
-    const facts = await this.retrievalService.retrieveFromVectorDb({
+    const facts = await this.vectorService.retrieve({
       question,
       similarityThreshold,
       metadataKey,
