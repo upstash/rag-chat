@@ -1,14 +1,15 @@
-import type { Callbacks } from "@langchain/core/callbacks/manager";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { AIMessage, BaseMessage } from "@langchain/core/messages";
+import type { RunnableConfig } from "@langchain/core/runnables";
 import { RunnableSequence, RunnableWithMessageHistory } from "@langchain/core/runnables";
-import { StreamingTextResponse, LangChainStream } from "ai";
+import { LangChainAdapter, StreamingTextResponse } from "ai";
 
-import type { PrepareChatResult, ChatOptions } from "./types";
-import { sanitizeQuestion, formatChatHistory } from "./utils";
 import type { BaseLanguageModelInterface } from "@langchain/core/language_models/base";
 import type { PromptTemplate } from "@langchain/core/prompts";
 import type { HistoryService, VectorPayload } from "./services";
 import type { VectorService } from "./services/database";
+import type { ChatOptions, PrepareChatResult } from "./types";
+import { formatChatHistory, sanitizeQuestion } from "./utils";
 
 type CustomInputValues = { chat_history?: BaseMessage[]; question: string; context: string };
 
@@ -47,22 +48,8 @@ export class RAGChatBase {
     return { question, facts };
   }
 
-  protected streamingChainCall = (
-    chatOptions: ChatOptions,
-    question: string,
-    facts: string
-  ): StreamingTextResponse => {
-    const { stream, handlers } = LangChainStream();
-    void this.chainCall(chatOptions, question, facts, [handlers]);
-    return new StreamingTextResponse(stream, {});
-  };
-
-  protected chainCall(
-    chatOptions: ChatOptions,
-    question: string,
-    facts: string,
-    handlers?: Callbacks
-  ): Promise<AIMessage> {
+  /** This method first gets required params, then returns another function depending on streaming param input */
+  chainCall(chatOptions: ChatOptions, question: string, facts: string) {
     const formattedHistoryChain = RunnableSequence.from<CustomInputValues>([
       {
         chat_history: (input) => formatChatHistory(input.chat_history ?? []),
@@ -83,16 +70,31 @@ export class RAGChatBase {
       inputMessagesKey: "question",
       historyMessagesKey: "chat_history",
     });
-
-    return chainWithMessageHistory.invoke(
-      {
+    const runnableArgs = {
+      input: {
         question,
         context: facts,
       },
-      {
-        callbacks: handlers ?? undefined,
+      options: {
         configurable: { sessionId: chatOptions.sessionId },
-      }
-    ) as Promise<AIMessage>;
+      },
+    };
+
+    return (streaming: boolean) =>
+      streaming
+        ? this.streamingChainCall(chainWithMessageHistory, runnableArgs)
+        : (chainWithMessageHistory.invoke(
+            runnableArgs.input,
+            runnableArgs.options
+          ) as Promise<AIMessage>);
+  }
+
+  protected async streamingChainCall(
+    runnable: RunnableWithMessageHistory<CustomInputValues, any>,
+    runnableArgs: { input: CustomInputValues; options?: Partial<RunnableConfig> | undefined }
+  ) {
+    const stream = await runnable.stream(runnableArgs.input, runnableArgs.options);
+    const wrappedStream = LangChainAdapter.toAIStream(stream);
+    return new StreamingTextResponse(wrappedStream, {});
   }
 }

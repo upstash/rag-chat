@@ -70,9 +70,8 @@ export class RAGChat extends RAGChatBase {
 
     // Calls LLM service with organized prompt. Prompt holds chat_history, facts gathered from vector db and sanitized question.
     // Allows either streaming call via Vercel AI SDK or non-streaming call
-    return options.stream
-      ? this.streamingChainCall(options_, question, facts)
-      : this.chainCall(options_, question, facts);
+    const chainCall = this.chainCall(options_, question, facts);
+    return chainCall(options.stream);
   }
 
   /**
