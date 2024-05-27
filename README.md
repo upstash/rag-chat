@@ -68,7 +68,8 @@ await ragchat.chat("Say Hello To My Little Friend", {
   sessionId: "chat-session-id",
   similarityThreshold: 0.8,
   topK: 10,
-});```
+});
+```
 
 ### Usage of `addContext()`
 
