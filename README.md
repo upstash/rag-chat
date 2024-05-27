@@ -36,7 +36,7 @@ await ragchat.chat("Say Hello To My Little Friend", { stream: true });
 
 ### Advance Usage of Initilization and `chat()`
 
-````typescript
+```typescript
 import { ChatOpenAI } from "@langchain/openai";
 import { PromptTemplate } from "@langchain/core/prompts";
 import { Index } from "@upstash/vector";
@@ -80,7 +80,7 @@ const ragChat = new RAGChat({...});
 await ragChat.addContext("Tokyo is the capital of Japan.");
 
 await ragchat.chat("Where is the capital of Japan.", { stream: true });
-````
+```
 
 But, you can also add various files:
 
