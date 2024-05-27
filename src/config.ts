@@ -2,8 +2,8 @@ import type { BaseLanguageModelInterface } from "@langchain/core/language_models
 import type { PromptTemplate } from "@langchain/core/prompts";
 import type { RAGChatConfig } from "./types";
 import type { Ratelimit } from "@upstash/ratelimit";
-import type { Redis } from "@upstash/redis";
-import type { Index } from "@upstash/vector";
+import { Redis } from "@upstash/redis";
+import { Index } from "@upstash/vector";
 
 export class Config {
   public readonly vector: Index;
@@ -14,8 +14,8 @@ export class Config {
   public readonly prompt?: PromptTemplate;
 
   constructor(config: RAGChatConfig) {
-    this.vector = config.vector;
-    this.redis = config.redis;
+    this.vector = config.vector ?? Index.fromEnv();
+    this.redis = config.redis ?? initializeRedis();
 
     this.ratelimit = config.ratelimit;
 
@@ -23,3 +23,16 @@ export class Config {
     this.prompt = config.prompt;
   }
 }
+
+/**
+ * Attempts to create a Redis instance using environment variables.
+ * If the required environment variables are not found, it catches the error
+ * and returns undefined, allowing RAG CHAT to fall back to using an in-memory database.
+ */
+const initializeRedis = () => {
+  try {
+    return Redis.fromEnv();
+  } catch {
+    return;
+  }
+};

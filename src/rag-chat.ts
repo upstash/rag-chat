@@ -6,10 +6,10 @@ import { QA_PROMPT_TEMPLATE } from "./prompts";
 import { UpstashModelError } from "./error/model";
 import { RatelimitUpstashError } from "./error/ratelimit";
 
-import type { Config } from "./config";
+import { Config } from "./config";
 import { RAGChatBase } from "./rag-chat-base";
 import { RateLimitService } from "./ratelimit";
-import type { ChatOptions } from "./types";
+import type { ChatOptions, RAGChatConfig } from "./types";
 import { appendDefaultsIfNeeded } from "./utils";
 import type { AddContextOptions, AddContextPayload } from "./database";
 import { Database } from "./database";
@@ -18,8 +18,8 @@ import { History } from "./history";
 export class RAGChat extends RAGChatBase {
   #ratelimitService: RateLimitService;
 
-  constructor(config: Config) {
-    const { vector: index, redis } = config;
+  constructor(config: RAGChatConfig) {
+    const { vector: index, redis } = new Config(config);
 
     const historyService = new History(redis);
     const vectorService = new Database(index);

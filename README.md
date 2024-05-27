@@ -10,9 +10,29 @@ Features:
 - Leverages LangChain, Vercel AI SDK, and Upstash products.
 - Allows you to add various data types into your Vector store.
 
+## Installation
+
+```sh
+pnpm add @upstash/vector @uptash/index @upstash/rag-chat
+
+bun add @upstash/vector @uptash/index @upstash/rag-chat
+
+npm i @upstash/vector @uptash/index @upstash/rag-chat
+```
+
 ### Basic Usage of Initilization and `chat()`
 
-Most basic usage relies on in-memory chat history instead of Redis.
+If you are planning to use the most basic version of our SDK, make sure you have those files in your `.env`.
+
+```sh
+UPSTASH_VECTOR_REST_URL="XXXXX"
+UPSTASH_VECTOR_REST_TOKEN="XXXXX"
+
+UPSTASH_REDIS_REST_URL="XXXXX"
+UPSTASH_REDIS_REST_TOKEN="XXXXX"
+```
+
+Now, you are all set. Required Redis and Vector instances will be created for you.
 
 ```typescript
 import { ChatOpenAI } from "@langchain/openai";
@@ -26,10 +46,8 @@ const ragChat = new RAGChat({
     streaming: true,
     verbose: false,
     temperature: 0,
-    apiKey: process.env.OPENAI_API_KEY,
+    apiKey: "XXXXX",
   }),
-  vector: new Index(),
-  redis: new Redis(),
 });
 await ragchat.chat("Say Hello To My Little Friend", { stream: true });
 ```

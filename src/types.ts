@@ -100,6 +100,6 @@ type RAGChatConfigCommon = {
 
 /**Config needed to initialize RAG Chat SDK */
 export type RAGChatConfig = {
-  vector: Index;
+  vector?: Index;
   redis?: Redis;
 } & RAGChatConfigCommon;
