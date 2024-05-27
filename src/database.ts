@@ -42,6 +42,7 @@ export type DatasWithFileSource =
     );
 
 export type AddContextPayload =
+  | string
   | { dataType: "text"; data: string; id?: string | number }
   | { dataType: "embedding"; data: IndexUpsertPayload[] }
   | DatasWithFileSource;
@@ -107,6 +108,14 @@ export class Database {
    */
   async save(input: AddContextPayload, options?: AddContextOptions): Promise<string | undefined> {
     const { metadataKey = "text" } = options ?? {};
+
+    if (typeof input === "string") {
+      return this.index.upsert({
+        data: input,
+        id: nanoid(),
+        metadata: { [metadataKey]: input },
+      });
+    }
 
     if (input.dataType === "text") {
       return this.index.upsert({

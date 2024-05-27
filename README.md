@@ -5,50 +5,60 @@ The `@upstash/rag-chat` SDK simplifies RAG (retrieval-augmented generation) chat
 Features:
 
 - Creates a Redis instance for your chat history, fully configurable.
-- Creates a Index instance for your knowledge base.
+- Creates a Vector store for your knowledge base.
 - Integrates with Next.js using streams and is compatible with other frameworks.
 - Leverages LangChain, Vercel AI SDK, and Upstash products.
+- Allows you to add various data types into your Vector store.
+
+### Basic Usage of Initilization and `chat()`
+
+Most basic usage relies on in-memory chat history instead of Redis.
 
 ```typescript
 import { ChatOpenAI } from "@langchain/openai";
 import { PromptTemplate } from "@langchain/core/prompts";
+import { Index } from "@upstash/vector";
+import { Redis } from "@upstash/redis";
 
-// Basic usage
-const ragchat = await RAGChat.initialize({
-  email: "YOUR_UPSTASH_EMAIL",
-  token: "YOUR_UPSTASH_TOKEN,
+const ragChat = new RAGChat({
   model: new ChatOpenAI({
     modelName: "gpt-3.5-turbo",
     streaming: true,
-    verbose,
+    verbose: false,
     temperature: 0,
-    apiKey: "YOUR_OPEN_AI_KEY_HERE",
+    apiKey: process.env.OPENAI_API_KEY,
   }),
-});
-await ragchat.chat("Say Hello To My Little Friend", { stream: true });
-
-// Advance
-const ragchat = await RAGChat.initialize({
-  email: process.env.UPSTASH_EMAIL!,
-  token: process.env.UPSTASH_TOKEN!,
-  model: new ChatOpenAI({
-    modelName: "gpt-3.5-turbo",
-    streaming: true,
-    verbose,
-    temperature: 0,
-    apiKey: "YOUR_OPEN_AI_KEY_HERE",
-  }) // Or your can pass any other Langchain compatible LLMs like Gemini, Anthropic, etc...
   vector: new Index(),
   redis: new Redis(),
+});
+await ragchat.chat("Say Hello To My Little Friend", { stream: true });
+```
+
+### Advance Usage of Initilization and `chat()`
+
+````typescript
+import { ChatOpenAI } from "@langchain/openai";
+import { PromptTemplate } from "@langchain/core/prompts";
+import { Index } from "@upstash/vector";
+import { Redis } from "@upstash/redis";
+import { Ratelimit } from "@upstash/ratelimit";
+
+const ragChat = new RAGChat({
+  model: new ChatOpenAI({
+    modelName: "gpt-3.5-turbo",
+    streaming: false,
+    verbose: false,
+    temperature: 0,
+    apiKey: process.env.OPENAI_API_KEY,
+  }),
+  vector: new Index(),
+  redis: new Redis(),
+  prompt: PromptTemplate.fromTemplate("Just say `I'm a cookie monster`. Nothing else."),
   ratelimit: new Ratelimit({
     redis,
-    limiter: Ratelimit.tokenBucket(10, "1d", 10),
+    limiter: Ratelimit.tokenBucket(1, "1d", 1),
     prefix: "@upstash/rag-chat-ratelimit",
   }),
-  region: "us-east-1", // Default to "us-east-1"
-  template: PromptTemplate.fromTemplate(
-    "Use this history {chat_history} and this context {context}"
-  ),
 });
 
 await ragchat.chat("Say Hello To My Little Friend", {
@@ -58,7 +68,70 @@ await ragchat.chat("Say Hello To My Little Friend", {
   sessionId: "chat-session-id",
   similarityThreshold: 0.8,
   topK: 10,
+});```
+
+### Usage of `addContext()`
+
+There are various way to add data into your RAG application, but the most simple one is this:
+
+```typescript
+const ragChat = new RAGChat({...});
+await ragChat.addContext("Tokyo is the capital of Japan.");
+
+await ragchat.chat("Where is the capital of Japan.", { stream: true });
+````
+
+But, you can also add various files:
+
+```typescript
+//Adding embeddings
+await ragChat.addContext(
+  {
+    dataType: "embedding",
+    data: [{ input: [1, 2, 3, 4], id: "embedding-data", metadata: "My custom embedding data" }], // Metadata value will be mapped your `metadataKey`
+  },
+  { metadataKey: "text" }
+);
+
+// Adding text with better control
+await ragChat.addContext(
+  {
+    dataType: "text",
+    data: "Hello there!", //This will also be your metadata
+    id: "my-custom-id",
+  },
+  { metadataKey: "text" }
+);
+
+//Adding PDF
+await ragChat.addContext({
+  dataType: "pdf",
+  fileSource: "./data/the_wonderful_wizard_of_oz.pdf",
+  opts: { chunkSize: 500, chunkOverlap: 50 },
+});
+
+//Adding CSV
+await ragChat.addContext({
+  dataType: "csv",
+  fileSource: "./data/list_of_user_info.csv",
+});
+
+//Adding TXT
+await ragChat.addContext({
+  dataType: "text-file",
+  fileSource: "./data/the_wonderful_wizard_of_oz_summary.txt",
+  opts: { chunkSize: 500, chunkOverlap: 50 },
+});
+
+//Adding HTML
+await ragChat.addContext({
+  dataType: "html",
+  fileSource: "./data/the_wonderful_wizard_of_oz_summary.html",
+});
+
+//You can even add remote HTML page, but this requires OpenAI key in order to organize the content on the page.
+await ragChat.addContext({
+  dataType: "html",
+  fileSource: "https://en.wikipedia.org/wiki/Tokyo",
 });
 ```
-
-In the future, you'll be able to pass your own custom LangChain flows as callbacks, providing better control and flexibility.
