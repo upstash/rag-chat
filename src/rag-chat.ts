@@ -8,11 +8,12 @@ import { RatelimitUpstashError } from "./error/ratelimit";
 
 import type { Config } from "./config";
 import { RAGChatBase } from "./rag-chat-base";
-import type { AddContextOptions, AddContextPayload } from "./services";
-import { HistoryService, RetrievalService } from "./services";
-import { RateLimitService } from "./services/ratelimit";
+import { RateLimitService } from "./ratelimit";
 import type { ChatOptions } from "./types";
 import { appendDefaultsIfNeeded } from "./utils";
+import type { AddContextOptions, AddContextPayload } from "./database";
+import { Database } from "./database";
+import { History } from "./history";
 
 export class RAGChat extends RAGChatBase {
   #ratelimitService: RateLimitService;
@@ -20,14 +21,14 @@ export class RAGChat extends RAGChatBase {
   constructor(config: Config) {
     const { vector: index, redis } = config;
 
-    const historyService = new HistoryService(redis);
-    const retrievalService = new RetrievalService(index);
+    const historyService = new History(redis);
+    const vectorService = new Database(index);
     const ratelimitService = new RateLimitService(config.ratelimit);
 
     if (!config.model) {
       throw new UpstashModelError("Model can not be undefined!");
     }
-    super(retrievalService, historyService, {
+    super(vectorService, historyService, {
       model: config.model,
       prompt: config.prompt ?? QA_PROMPT_TEMPLATE,
     });
@@ -70,9 +71,8 @@ export class RAGChat extends RAGChatBase {
 
     // Calls LLM service with organized prompt. Prompt holds chat_history, facts gathered from vector db and sanitized question.
     // Allows either streaming call via Vercel AI SDK or non-streaming call
-    return options.stream
-      ? this.streamingChainCall(options_, question, facts)
-      : this.chainCall(options_, question, facts);
+    const chainCall = this.chainCall(options_, question, facts);
+    return chainCall(options.stream);
   }
 
   /**
@@ -94,7 +94,7 @@ export class RAGChat extends RAGChatBase {
    * ```
    */
   async addContext(context: AddContextPayload, options?: AddContextOptions) {
-    const retrievalServiceStatus = await this.retrievalService.addDataToVectorDb(context, options);
+    const retrievalServiceStatus = await this.vectorService.save(context, options);
     return retrievalServiceStatus === "Success" ? "OK" : "NOT-OK";
   }
 

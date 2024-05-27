@@ -1,11 +1,11 @@
 import type { Redis } from "@upstash/redis";
 import { CustomInMemoryChatMessageHistory } from "./in-memory-custom-history";
 import { CustomUpstashRedisChatMessageHistory } from "./redis-custom-history";
-import { InternalUpstashError } from "../../error";
+import { InternalUpstashError } from "../error";
 
 type GetHistory = { sessionId: string; length?: number; sessionTTL?: number };
 
-export class HistoryService {
+export class History {
   private redis?: Redis;
   private inMemoryChatHistory?: CustomInMemoryChatMessageHistory;
 
