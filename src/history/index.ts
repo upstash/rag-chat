@@ -3,16 +3,25 @@ import { CustomInMemoryChatMessageHistory } from "./in-memory-custom-history";
 import { CustomUpstashRedisChatMessageHistory } from "./redis-custom-history";
 import { InternalUpstashError } from "../error";
 
+type HistoryConfig = {
+  redis?: Redis;
+  modelNameWithProvider: string;
+};
 type GetHistory = { sessionId: string; length?: number; sessionTTL?: number };
 
 export class History {
   private redis?: Redis;
+  private modelNameWithProvider: string;
   private inMemoryChatHistory?: CustomInMemoryChatMessageHistory;
 
-  constructor(redis?: Redis) {
+  constructor(fields: HistoryConfig) {
+    const { modelNameWithProvider, redis } = fields;
+
     this.redis = redis;
+    this.modelNameWithProvider = modelNameWithProvider;
+
     if (!redis) {
-      this.inMemoryChatHistory = new CustomInMemoryChatMessageHistory();
+      this.inMemoryChatHistory = new CustomInMemoryChatMessageHistory({ modelNameWithProvider });
     }
   }
 
@@ -24,6 +33,7 @@ export class History {
           sessionTTL,
           topLevelChatHistoryLength: length,
           client: this.redis,
+          modelNameWithProvider: this.modelNameWithProvider,
         });
       }
     } catch (error) {

@@ -3,7 +3,11 @@ import { CustomInMemoryChatMessageHistory } from "./in-memory-custom-history";
 
 test("should give last 3 messages from in-memory", async () => {
   const messageHistoryLength = 3;
-  const history = new CustomInMemoryChatMessageHistory([], messageHistoryLength);
+  const history = new CustomInMemoryChatMessageHistory({
+    messages: [],
+    topLevelChatHistoryLength: messageHistoryLength,
+    modelNameWithProvider: "",
+  });
   await history.addUserMessage("Hello!");
   await history.addAIMessage("Hello, human.");
   await history.addUserMessage("Whats your name?");
@@ -16,7 +20,10 @@ test("should give last 3 messages from in-memory", async () => {
 });
 
 test("should give all the messages", async () => {
-  const history = new CustomInMemoryChatMessageHistory();
+  const history = new CustomInMemoryChatMessageHistory({
+    messages: [],
+    modelNameWithProvider: "",
+  });
   await history.addUserMessage("Hello!");
   await history.addAIMessage("Hello, human.");
   await history.addUserMessage("Whats your name?");

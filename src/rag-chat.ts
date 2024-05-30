@@ -14,6 +14,7 @@ import { appendDefaultsIfNeeded } from "./utils";
 import type { AddContextOptions, AddContextPayload } from "./database";
 import { Database } from "./database";
 import { History } from "./history";
+import { MODEL_NAME_WITH_PROVIDER_SPLITTER } from "./constants.ts";
 
 export class RAGChat extends RAGChatBase {
   #ratelimitService: RateLimitService;
@@ -21,7 +22,11 @@ export class RAGChat extends RAGChatBase {
   constructor(config: RAGChatConfig) {
     const { vector: index, redis } = new Config(config);
 
-    const historyService = new History(redis);
+    const historyService = new History({
+      redis,
+      //@ts-expect-error We need that private field to track message creator LLM such as `ChatOpenAI_gpt-3.5-turbo`. Format is `provider_modelName`.
+      modelNameWithProvider: `${config.model?.getName()}${MODEL_NAME_WITH_PROVIDER_SPLITTER}${config.model?.modelName}`,
+    });
     const vectorService = new Database(index);
     const ratelimitService = new RateLimitService(config.ratelimit);
 

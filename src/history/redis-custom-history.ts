@@ -19,6 +19,7 @@ export type CustomUpstashRedisChatMessageHistoryInput = {
   config?: RedisConfigNodejs;
   client?: Redis;
   topLevelChatHistoryLength?: number;
+  modelNameWithProvider: string;
 };
 
 /**
@@ -38,13 +39,21 @@ export class CustomUpstashRedisChatMessageHistory extends BaseListChatMessageHis
   public client: Redis;
 
   private sessionId: string;
+  private modelNameWithProvider: string;
 
   private sessionTTL?: number;
   private topLevelChatHistoryLength?: number;
 
   constructor(fields: CustomUpstashRedisChatMessageHistoryInput) {
     super(fields);
-    const { sessionId, sessionTTL, config, client, topLevelChatHistoryLength } = fields;
+    const {
+      sessionId,
+      sessionTTL,
+      config,
+      client,
+      topLevelChatHistoryLength,
+      modelNameWithProvider,
+    } = fields;
     if (client) {
       this.client = client;
     } else if (config) {
@@ -54,7 +63,9 @@ export class CustomUpstashRedisChatMessageHistory extends BaseListChatMessageHis
         `Upstash Redis message stores require either a config object or a pre-configured client.`
       );
     }
+
     this.sessionId = sessionId;
+    this.modelNameWithProvider = modelNameWithProvider;
     this.sessionTTL = sessionTTL;
     this.topLevelChatHistoryLength = topLevelChatHistoryLength;
   }
@@ -86,7 +97,10 @@ export class CustomUpstashRedisChatMessageHistory extends BaseListChatMessageHis
    */
   async addMessage(message: BaseMessage): Promise<void> {
     const messageToAdd = mapChatMessagesToStoredMessages([message]);
-    await this.client.lpush(this.sessionId, JSON.stringify(messageToAdd[0]));
+    await this.client.lpush(
+      this.sessionId,
+      JSON.stringify({ ...messageToAdd[0], modelNameWithProvider: this.modelNameWithProvider })
+    );
     if (this.sessionTTL) {
       await this.client.expire(this.sessionId, this.sessionTTL);
     }

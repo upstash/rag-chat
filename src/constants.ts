@@ -14,3 +14,6 @@ export const DEFAULT_METADATA_KEY = "text";
 //History related default options
 export const DEFAULT_HISTORY_TTL = 86_400;
 export const DEFAULT_HISTORY_LENGTH = 5;
+
+//We need that constant to split creator LLM such as `ChatOpenAI_gpt-3.5-turbo`. Format is `provider_modelName`.
+export const MODEL_NAME_WITH_PROVIDER_SPLITTER = "_";
