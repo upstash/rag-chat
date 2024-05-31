@@ -5,17 +5,17 @@ import { InternalUpstashError } from "../error";
 
 type HistoryConfig = {
   redis?: Redis;
-  modelNameWithProvider: string;
+  modelNameWithProvider?: string;
 };
 type GetHistory = { sessionId: string; length?: number; sessionTTL?: number };
 
 export class History {
   private redis?: Redis;
-  private modelNameWithProvider: string;
+  private modelNameWithProvider?: string;
   private inMemoryChatHistory?: CustomInMemoryChatMessageHistory;
 
-  constructor(fields: HistoryConfig) {
-    const { modelNameWithProvider, redis } = fields;
+  constructor(fields?: HistoryConfig) {
+    const { modelNameWithProvider, redis } = fields ?? {};
 
     this.redis = redis;
     this.modelNameWithProvider = modelNameWithProvider;

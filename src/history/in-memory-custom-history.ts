@@ -5,7 +5,7 @@ import type { BaseMessage } from "@langchain/core/messages";
 export type CustomInMemoryChatMessageHistoryInput = {
   messages?: BaseMessage[];
   topLevelChatHistoryLength?: number;
-  modelNameWithProvider: string;
+  modelNameWithProvider?: string;
 };
 
 export class CustomInMemoryChatMessageHistory extends BaseListChatMessageHistory {
@@ -13,7 +13,7 @@ export class CustomInMemoryChatMessageHistory extends BaseListChatMessageHistory
 
   private messages: BaseMessage[] = [];
   private topLevelChatHistoryLength?: number;
-  private modelNameWithProvider: string;
+  private modelNameWithProvider?: string;
 
   constructor(fields: CustomInMemoryChatMessageHistoryInput) {
     const { modelNameWithProvider, messages, topLevelChatHistoryLength } = fields;

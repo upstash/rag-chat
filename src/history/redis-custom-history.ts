@@ -19,7 +19,7 @@ export type CustomUpstashRedisChatMessageHistoryInput = {
   config?: RedisConfigNodejs;
   client?: Redis;
   topLevelChatHistoryLength?: number;
-  modelNameWithProvider: string;
+  modelNameWithProvider?: string;
 };
 
 /**
@@ -39,7 +39,7 @@ export class CustomUpstashRedisChatMessageHistory extends BaseListChatMessageHis
   public client: Redis;
 
   private sessionId: string;
-  private modelNameWithProvider: string;
+  private modelNameWithProvider?: string;
 
   private sessionTTL?: number;
   private topLevelChatHistoryLength?: number;
