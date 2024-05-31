@@ -96,11 +96,13 @@ export class CustomUpstashRedisChatMessageHistory extends BaseListChatMessageHis
    * @returns Promise resolving to void.
    */
   async addMessage(message: BaseMessage): Promise<void> {
+    message.response_metadata = {
+      ...message.response_metadata,
+      modelNameWithProvider: this.modelNameWithProvider,
+    };
     const messageToAdd = mapChatMessagesToStoredMessages([message]);
-    await this.client.lpush(
-      this.sessionId,
-      JSON.stringify({ ...messageToAdd[0], modelNameWithProvider: this.modelNameWithProvider })
-    );
+
+    await this.client.lpush(this.sessionId, JSON.stringify(messageToAdd[0]));
     if (this.sessionTTL) {
       await this.client.expire(this.sessionId, this.sessionTTL);
     }

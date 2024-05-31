@@ -49,7 +49,7 @@ export class RAGChatBase {
   }
 
   /** This method first gets required params, then returns another function depending on streaming param input */
-  chainCall(chatOptions: ChatOptions, question: string, facts: string) {
+  protected chainCall(chatOptions: ChatOptions, question: string, facts: string) {
     const formattedHistoryChain = RunnableSequence.from<CustomInputValues>([
       {
         chat_history: (input) => formatChatHistory(input.chat_history ?? []),
