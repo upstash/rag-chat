@@ -13,11 +13,11 @@ Features:
 ## Installation
 
 ```sh
-pnpm add @upstash/vector @uptash/index @upstash/rag-chat
+pnpm add @upstash/rag-chat
 
-bun add @upstash/vector @uptash/index @upstash/rag-chat
+bun add @upstash/rag-chat
 
-npm i @upstash/vector @uptash/index @upstash/rag-chat
+npm i @upstash/rag-chat
 ```
 
 ### Basic Usage of Initilization and `chat()`
@@ -36,9 +36,6 @@ Now, you are all set. Required Redis and Vector instances will be created for yo
 
 ```typescript
 import { ChatOpenAI } from "@langchain/openai";
-import { PromptTemplate } from "@langchain/core/prompts";
-import { Index } from "@upstash/vector";
-import { Redis } from "@upstash/redis";
 
 const ragChat = new RAGChat({
   model: new ChatOpenAI({
