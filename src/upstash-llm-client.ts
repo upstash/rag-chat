@@ -2,10 +2,10 @@ import { ChatOpenAI } from "@langchain/openai";
 import { type BaseMessage } from "@langchain/core/messages";
 import { type ChatGeneration } from "@langchain/core/outputs";
 
-export type LLMType = "mistralai/Mistral-7B-Instruct-v0.2" | "meta-llama/Meta-Llama-3-8B-Instruct";
+export type Model = "mistralai/Mistral-7B-Instruct-v0.2" | "meta-llama/Meta-Llama-3-8B-Instruct";
 
 export type UpstashLLMClientConfig = {
-  model: LLMType;
+  model: Model;
   apiKey: string;
   streaming: boolean;
   maxTokens?: number;
@@ -21,7 +21,7 @@ export type UpstashLLMClientConfig = {
 };
 
 export class UpstashLLMClient extends ChatOpenAI {
-  modelName: LLMType;
+  modelName: Model;
   apiKey: string;
   maxTokens?: number;
   stop?: string[];
