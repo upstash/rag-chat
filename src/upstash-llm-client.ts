@@ -26,7 +26,7 @@ export class UpstashLLMClient extends ChatOpenAI {
 
   n = 1;
 
-  streaming = false;
+  streaming: boolean;
 
   topP = 1;
 
@@ -41,11 +41,11 @@ export class UpstashLLMClient extends ChatOpenAI {
         apiKey: config.apiKey,
         maxTokens: config.maxTokens,
         streaming: config.streaming,
-        // topP: config.topP,
-        // temperature: config.temperature,
-        // n: config.n,
-        // frequencyPenalty: config.frequencyPenalty,
-        // presencePenalty: config.presencePenalty,
+        topP: config.topP,
+        temperature: config.temperature,
+        n: config.n,
+        frequencyPenalty: config.frequencyPenalty,
+        presencePenalty: config.presencePenalty,
       },
       {
         baseURL: "https://qstash.upstash.io/llm/v1",
@@ -55,6 +55,7 @@ export class UpstashLLMClient extends ChatOpenAI {
     this.modelName = config.model;
     this.apiKey = config.apiKey;
     this.maxTokens = config.maxTokens;
+    this.streaming = config.streaming;
 
     // @ts-expect-error This is overriding the method
     this.getNumTokensFromGenerations = (_generations: ChatGeneration[]): Promise<number> => {

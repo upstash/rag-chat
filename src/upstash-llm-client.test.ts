@@ -10,7 +10,7 @@ import { RAGChat } from "./rag-chat";
 import { awaitUntilIndexed } from "./test-utils";
 import { UpstashLLMClient } from "./upstash-llm-client";
 
-describe("RAG Chat with advance configs and direct instances", () => {
+describe("RAG Chat with Upstash LLM Client", () => {
   const vector = new Index({
     token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
     url: process.env.UPSTASH_VECTOR_REST_URL!,
@@ -51,7 +51,7 @@ describe("RAG Chat with advance configs and direct instances", () => {
 
       expect(result.content).toContain("330");
     },
-    { timeout: 20000 }
+    { timeout: 10000 }
   );
 
   test(
@@ -66,6 +66,6 @@ describe("RAG Chat with advance configs and direct instances", () => {
 
       expect(result).toBeTruthy();
     },
-    { timeout: 20000 }
+    { timeout: 10000 }
   );
 });
