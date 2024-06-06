@@ -88,17 +88,12 @@ export class Database {
     );
 
     if (allValuesUndefined) {
-      throw new TypeError(`
-            Query to the vector store returned ${result.length} vectors but none had "${metadataKey}" field in their metadata.
-            Text of your vectors should be in the "${metadataKey}" field in the metadata for the RAG Chat.
-          `);
+      throw new TypeError("There is no answer for this question in the provided context.");
     }
 
     const facts = result
       .filter((x) => x.score >= similarityThreshold)
-      .map(
-        (embedding) => `- ${embedding.metadata?.[metadataKey] ?? ""}`
-      );
+      .map((embedding) => `- ${embedding.metadata?.[metadataKey] ?? ""}`);
     return formatFacts(facts);
   }
 
