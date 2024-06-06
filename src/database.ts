@@ -97,7 +97,7 @@ export class Database {
     const facts = result
       .filter((x) => x.score >= similarityThreshold)
       .map(
-        (embedding) => `- Context Id '${embedding.id}': ${embedding.metadata?.[metadataKey] ?? ""}`
+        (embedding) => `- ${embedding.metadata?.[metadataKey] ?? ""}`
       );
     return formatFacts(facts);
   }
