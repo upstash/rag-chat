@@ -54,11 +54,12 @@ await ragchat.chat("Say Hello To My Little Friend", { stream: true });
 It's possible to use the RAG Chat SDK with the LLMs provided by Upstash.
 
 <details>
-  <summary>How to setup QStash LLM?</summary>
+  <summary>How to setup QStash LLM?</summary><br>
+  
   
   It only takes few clicks. 
   * First, navigate to [Upstash Console](https://console.upstash.com/qstash).
-  * Scroll down to the **Environment Keys** section and copy the `QSTASH_TOKEN`` to your `.env` file.
+  * Scroll down to the **Environment Keys** section and copy the `QSTASH_TOKEN` to your `.env` file.
   * ![QStash Credentials](./img/qstash.png)
 
 </details>
