@@ -5,7 +5,7 @@ import type { BaseMessage } from "@langchain/core/messages";
 export type CustomInMemoryChatMessageHistoryInput = {
   messages?: BaseMessage[];
   topLevelChatHistoryLength?: number;
-  modelNameWithProvider?: string;
+  metadata?: Record<string, unknown>;
 };
 
 export class CustomInMemoryChatMessageHistory extends BaseListChatMessageHistory {
@@ -13,15 +13,15 @@ export class CustomInMemoryChatMessageHistory extends BaseListChatMessageHistory
 
   private messages: BaseMessage[] = [];
   private topLevelChatHistoryLength?: number;
-  private modelNameWithProvider?: string;
+  private metadata?: Record<string, unknown>;
 
   constructor(fields: CustomInMemoryChatMessageHistoryInput) {
-    const { modelNameWithProvider, messages, topLevelChatHistoryLength } = fields;
+    const { metadata, messages, topLevelChatHistoryLength } = fields;
     // eslint-disable-next-line prefer-rest-params
     super(...arguments);
     this.messages = messages ?? [];
     this.topLevelChatHistoryLength = topLevelChatHistoryLength;
-    this.modelNameWithProvider = modelNameWithProvider;
+    this.metadata = metadata;
   }
 
   /**
@@ -42,7 +42,7 @@ export class CustomInMemoryChatMessageHistory extends BaseListChatMessageHistory
    */
   async addMessage(message: BaseMessage) {
     //@ts-expect-error This our way of mutating Message object to store model name with providers.
-    this.messages.push({ ...message, modelNameWithProvider: this.modelNameWithProvider });
+    this.messages.push({ ...message, response_metadata: this.metadata });
   }
 
   /**

@@ -6,7 +6,7 @@ test("should give last 3 messages from in-memory", async () => {
   const history = new CustomInMemoryChatMessageHistory({
     messages: [],
     topLevelChatHistoryLength: messageHistoryLength,
-    modelNameWithProvider: "",
+    metadata: { helloWorld: "hey" },
   });
   await history.addUserMessage("Hello!");
   await history.addAIMessage("Hello, human.");
@@ -22,7 +22,7 @@ test("should give last 3 messages from in-memory", async () => {
 test("should give all the messages", async () => {
   const history = new CustomInMemoryChatMessageHistory({
     messages: [],
-    modelNameWithProvider: "",
+    metadata: { helloWorld: "hey" },
   });
   await history.addUserMessage("Hello!");
   await history.addAIMessage("Hello, human.");

@@ -19,7 +19,7 @@ export type CustomUpstashRedisChatMessageHistoryInput = {
   config?: RedisConfigNodejs;
   client?: Redis;
   topLevelChatHistoryLength?: number;
-  modelNameWithProvider?: string;
+  metadata?: Record<string, unknown>;
 };
 
 /**
@@ -39,21 +39,14 @@ export class CustomUpstashRedisChatMessageHistory extends BaseListChatMessageHis
   public client: Redis;
 
   private sessionId: string;
-  private modelNameWithProvider?: string;
+  private metadata?: Record<string, unknown>;
 
   private sessionTTL?: number;
   private topLevelChatHistoryLength?: number;
 
   constructor(fields: CustomUpstashRedisChatMessageHistoryInput) {
     super(fields);
-    const {
-      sessionId,
-      sessionTTL,
-      config,
-      client,
-      topLevelChatHistoryLength,
-      modelNameWithProvider,
-    } = fields;
+    const { sessionId, sessionTTL, config, client, topLevelChatHistoryLength, metadata } = fields;
     if (client) {
       this.client = client;
     } else if (config) {
@@ -65,7 +58,7 @@ export class CustomUpstashRedisChatMessageHistory extends BaseListChatMessageHis
     }
 
     this.sessionId = sessionId;
-    this.modelNameWithProvider = modelNameWithProvider;
+    this.metadata = metadata;
     this.sessionTTL = sessionTTL;
     this.topLevelChatHistoryLength = topLevelChatHistoryLength;
   }
@@ -74,8 +67,8 @@ export class CustomUpstashRedisChatMessageHistory extends BaseListChatMessageHis
    * Retrieves the chat messages from the Redis database.
    * @returns An array of BaseMessage instances representing the chat history.
    */
-  async getMessages(chatHistoryLength?: number): Promise<BaseMessage[]> {
-    const length = chatHistoryLength ?? this.topLevelChatHistoryLength ?? [0, -1];
+  async getMessages(): Promise<BaseMessage[]> {
+    const length = this.topLevelChatHistoryLength ?? [0, -1];
 
     const rawStoredMessages: StoredMessage[] = await this.client.lrange<StoredMessage>(
       this.sessionId,
@@ -98,7 +91,7 @@ export class CustomUpstashRedisChatMessageHistory extends BaseListChatMessageHis
   async addMessage(message: BaseMessage): Promise<void> {
     message.response_metadata = {
       ...message.response_metadata,
-      modelNameWithProvider: this.modelNameWithProvider,
+      ...this.metadata,
     };
     const messageToAdd = mapChatMessagesToStoredMessages([message]);
 

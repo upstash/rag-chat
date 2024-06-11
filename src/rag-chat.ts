@@ -1,43 +1,42 @@
 import type { AIMessage } from "@langchain/core/messages";
 import type { StreamingTextResponse } from "ai";
 
-import { QA_PROMPT_TEMPLATE } from "./prompts";
-
 import { UpstashModelError } from "./error/model";
 import { RatelimitUpstashError } from "./error/ratelimit";
 
 import { Config } from "./config";
-import { RAGChatBase } from "./rag-chat-base";
-import { RateLimitService } from "./ratelimit";
-import type { AddContextOptions, ChatOptions, RAGChatConfig } from "./types";
-import { appendDefaultsIfNeeded } from "./utils";
+import { DEFAULT_CHAT_SESSION_ID, MODEL_NAME_WITH_PROVIDER_SPLITTER } from "./constants.ts";
 import type { AddContextPayload } from "./database";
 import { Database } from "./database";
 import { History } from "./history";
-import { MODEL_NAME_WITH_PROVIDER_SPLITTER } from "./constants.ts";
+import { RAGChatBase } from "./rag-chat-base";
+import { RateLimitService } from "./ratelimit";
+import type { AddContextOptions, ChatOptions, HistoryOptions, RAGChatConfig } from "./types";
+import { appendDefaultsIfNeeded } from "./utils";
 
 export class RAGChat extends RAGChatBase {
   #ratelimitService: RateLimitService;
 
   constructor(config: RAGChatConfig) {
-    const { vector: index, redis } = new Config(config);
+    const { vector: index, redis, model, prompt } = new Config(config);
 
     const historyService = new History({
       redis,
-      //@ts-expect-error We need that private field to track message creator LLM such as `ChatOpenAI_gpt-3.5-turbo`. Format is `provider_modelName`.
-      modelNameWithProvider: `${config.model?.getName()}${MODEL_NAME_WITH_PROVIDER_SPLITTER}${config.model?.modelName}`,
+      metadata: {
+        //@ts-expect-error We need that private field to track message creator LLM such as `ChatOpenAI_gpt-3.5-turbo`. Format is `provider_modelName`.
+        modelNameWithProvider: `${model?.getName()}${MODEL_NAME_WITH_PROVIDER_SPLITTER}${model?.modelName}`,
+      },
     });
     const vectorService = new Database(index);
-    const ratelimitService = new RateLimitService(config.ratelimit);
 
-    if (!config.model) {
+    if (!model) {
       throw new UpstashModelError("Model can not be undefined!");
     }
     super(vectorService, historyService, {
-      model: config.model,
-      prompt: config.prompt ?? QA_PROMPT_TEMPLATE,
+      model,
+      prompt,
     });
-    this.#ratelimitService = ratelimitService;
+    this.#ratelimitService = new RateLimitService(config.ratelimit);
   }
 
   /**
@@ -105,7 +104,21 @@ export class RAGChat extends RAGChatBase {
   }
 
   /** Method to get history of messages used in the RAG Chat*/
-  getHistory() {
-    return this.historyService;
+  getHistory(options: HistoryOptions) {
+    return this.historyService
+      .getMessageHistory({
+        sessionId: options.sessionId ?? DEFAULT_CHAT_SESSION_ID,
+        length: options.historyLength,
+      })
+      .getMessages();
+  }
+
+  /** Method to clear history of messages used in the RAG Chat*/
+  clearHistory(options: HistoryOptions) {
+    return this.historyService
+      .getMessageHistory({
+        sessionId: options.sessionId ?? DEFAULT_CHAT_SESSION_ID,
+      })
+      .clear();
   }
 }

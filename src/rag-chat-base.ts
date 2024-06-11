@@ -67,6 +67,7 @@ export class RAGChatBase {
       getMessageHistory: (sessionId: string) =>
         this.historyService.getMessageHistory({
           sessionId,
+          sessionTTL: chatOptions.historyTTL,
           length: chatOptions.historyLength,
         }),
       inputMessagesKey: "question",

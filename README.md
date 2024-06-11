@@ -35,17 +35,9 @@ UPSTASH_REDIS_REST_TOKEN="XXXXX"
 Now, you are all set. Required Redis and Vector instances will be created for you.
 
 ```typescript
-import { ChatOpenAI } from "@langchain/openai";
+import { RAGChat } from "@upstash/rag-chat";
 
-const ragChat = new RAGChat({
-  model: new ChatOpenAI({
-    modelName: "gpt-3.5-turbo",
-    streaming: true,
-    verbose: false,
-    temperature: 0,
-    apiKey: "XXXXX",
-  }),
-});
+const ragChat = new RAGChat();
 await ragchat.chat("Say Hello To My Little Friend", { stream: true });
 ```
 
@@ -55,12 +47,12 @@ It's possible to use the RAG Chat SDK with the LLMs provided by Upstash.
 
 <details>
   <summary>How to setup QStash LLM?</summary><br>
-  
-  
-  It only takes few clicks. 
-  * First, navigate to [Upstash Console](https://console.upstash.com/qstash).
-  * Scroll down to the **Environment Keys** section and copy the `QSTASH_TOKEN` to your `.env` file.
-  * ![QStash Credentials](./img/qstash.png)
+
+It only takes few clicks.
+
+- First, navigate to [Upstash Console](https://console.upstash.com/qstash).
+- Scroll down to the **Environment Keys** section and copy the `QSTASH_TOKEN` to your `.env` file.
+- ![QStash Credentials](./img/qstash.png)
 
 </details>
 
