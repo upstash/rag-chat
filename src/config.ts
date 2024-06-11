@@ -4,6 +4,8 @@ import type { RAGChatConfig } from "./types";
 import type { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import { Index } from "@upstash/vector";
+import { UpstashLLMClient } from "./upstash-llm-client";
+import { ChatOpenAI } from "@langchain/openai";
 
 export class Config {
   public readonly vector: Index;
@@ -19,7 +21,7 @@ export class Config {
 
     this.ratelimit = config.ratelimit;
 
-    this.model = config.model;
+    this.model = initializeModel(this.model);
     this.prompt = config.prompt;
   }
 }
@@ -34,5 +36,30 @@ const initializeRedis = () => {
     return Redis.fromEnv();
   } catch {
     return;
+  }
+};
+
+const initializeModel = (model?: BaseLanguageModelInterface) => {
+  const qstashToken = process.env.UPSTASH_LLM_REST_TOKEN;
+  const openAIToken = process.env.OPENAI_API_KEY;
+
+  if (model) {
+    return model;
+  }
+
+  if (qstashToken)
+    return new UpstashLLMClient({
+      model: "meta-llama/Meta-Llama-3-8B-Instruct",
+      apiKey: qstashToken,
+      streaming: true,
+    });
+
+  if (openAIToken) {
+    return new ChatOpenAI({
+      modelName: "gpt-4o",
+      streaming: true,
+      verbose: false,
+      apiKey: openAIToken,
+    });
   }
 };

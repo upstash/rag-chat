@@ -7,14 +7,14 @@ import { UpstashModelError } from "./error/model";
 import { RatelimitUpstashError } from "./error/ratelimit";
 
 import { Config } from "./config";
-import { RAGChatBase } from "./rag-chat-base";
-import { RateLimitService } from "./ratelimit";
-import type { AddContextOptions, ChatOptions, RAGChatConfig } from "./types";
-import { appendDefaultsIfNeeded } from "./utils";
+import { DEFAULT_CHAT_SESSION_ID, MODEL_NAME_WITH_PROVIDER_SPLITTER } from "./constants.ts";
 import type { AddContextPayload } from "./database";
 import { Database } from "./database";
 import { History } from "./history";
-import { MODEL_NAME_WITH_PROVIDER_SPLITTER } from "./constants.ts";
+import { RAGChatBase } from "./rag-chat-base";
+import { RateLimitService } from "./ratelimit";
+import type { AddContextOptions, ChatOptions, HistoryOptions, RAGChatConfig } from "./types";
+import { appendDefaultsIfNeeded } from "./utils";
 
 export class RAGChat extends RAGChatBase {
   #ratelimitService: RateLimitService;
@@ -105,7 +105,21 @@ export class RAGChat extends RAGChatBase {
   }
 
   /** Method to get history of messages used in the RAG Chat*/
-  getHistory() {
-    return this.historyService;
+  getHistory(options: HistoryOptions) {
+    return this.historyService
+      .getMessageHistory({
+        sessionId: options.sessionId ?? DEFAULT_CHAT_SESSION_ID,
+        length: options.historyLength,
+      })
+      .getMessages();
+  }
+
+  /** Method to clear history of messages used in the RAG Chat*/
+  clearHistory(options: HistoryOptions) {
+    return this.historyService
+      .getMessageHistory({
+        sessionId: options.sessionId ?? DEFAULT_CHAT_SESSION_ID,
+      })
+      .clear();
   }
 }

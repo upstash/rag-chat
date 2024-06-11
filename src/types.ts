@@ -121,3 +121,5 @@ export type AddContextOptions = {
    */
   namespace?: string;
 };
+
+export type HistoryOptions = Pick<ChatOptions, "historyLength" | "sessionId">;

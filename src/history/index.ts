@@ -7,7 +7,8 @@ type HistoryConfig = {
   redis?: Redis;
   modelNameWithProvider?: string;
 };
-type GetHistory = { sessionId: string; length?: number; sessionTTL?: number };
+
+export type GetHistoryOptions = { sessionId: string; length?: number; sessionTTL?: number };
 
 export class History {
   private redis?: Redis;
@@ -25,7 +26,7 @@ export class History {
     }
   }
 
-  getMessageHistory({ length, sessionId, sessionTTL }: GetHistory) {
+  getMessageHistory({ length, sessionId, sessionTTL }: GetHistoryOptions) {
     try {
       if (this.redis) {
         return new CustomUpstashRedisChatMessageHistory({
