@@ -22,8 +22,10 @@ export class RAGChat extends RAGChatBase {
 
     const historyService = new History({
       redis,
-      //@ts-expect-error We need that private field to track message creator LLM such as `ChatOpenAI_gpt-3.5-turbo`. Format is `provider_modelName`.
-      modelNameWithProvider: `${model?.getName()}${MODEL_NAME_WITH_PROVIDER_SPLITTER}${model?.modelName}`,
+      metadata: {
+        //@ts-expect-error We need that private field to track message creator LLM such as `ChatOpenAI_gpt-3.5-turbo`. Format is `provider_modelName`.
+        modelNameWithProvider: `${model?.getName()}${MODEL_NAME_WITH_PROVIDER_SPLITTER}${model?.modelName}`,
+      },
     });
     const vectorService = new Database(index);
 

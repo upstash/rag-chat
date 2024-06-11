@@ -5,24 +5,24 @@ import { InternalUpstashError } from "../error";
 
 type HistoryConfig = {
   redis?: Redis;
-  modelNameWithProvider?: string;
+  metadata?: Record<string, unknown>;
 };
 
 export type GetHistoryOptions = { sessionId: string; length?: number; sessionTTL?: number };
 
 export class History {
   private redis?: Redis;
-  private modelNameWithProvider?: string;
+  private metadata?: Record<string, unknown>;
   private inMemoryChatHistory?: CustomInMemoryChatMessageHistory;
 
   constructor(fields?: HistoryConfig) {
-    const { modelNameWithProvider, redis } = fields ?? {};
+    const { metadata, redis } = fields ?? {};
 
     this.redis = redis;
-    this.modelNameWithProvider = modelNameWithProvider;
+    this.metadata = metadata;
 
     if (!redis) {
-      this.inMemoryChatHistory = new CustomInMemoryChatMessageHistory({ modelNameWithProvider });
+      this.inMemoryChatHistory = new CustomInMemoryChatMessageHistory({ metadata });
     }
   }
 
@@ -34,7 +34,7 @@ export class History {
           sessionTTL,
           topLevelChatHistoryLength: length,
           client: this.redis,
-          modelNameWithProvider: this.modelNameWithProvider,
+          metadata: this.metadata,
         });
       }
     } catch (error) {
