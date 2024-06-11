@@ -49,6 +49,10 @@ export type ChatOptions = {
    *
    */
   metadataKey?: string;
+  /**
+   * Namespace of the index you wanted to query.
+   */
+  namespace?: string;
 };
 
 export type PrepareChatResult = {
@@ -103,3 +107,17 @@ export type RAGChatConfig = {
   vector?: Index;
   redis?: Redis;
 } & RAGChatConfigCommon;
+
+export type AddContextOptions = {
+  /** Key of metadata that we use to store additional content .
+   * @default "text"
+   * @example {text: "Capital of France is Paris"}
+   *
+   */
+  metadataKey?: string;
+  /**
+   * Namespace of the index you wanted to insert. Default is empty string.
+   * @default ""
+   */
+  namespace?: string;
+};

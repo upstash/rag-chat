@@ -5,6 +5,7 @@ import { nanoid } from "nanoid";
 import { DEFAULT_SIMILARITY_THRESHOLD, DEFAULT_METADATA_KEY, DEFAULT_TOP_K } from "./constants";
 import { FileDataLoader } from "./file-loader";
 import { formatFacts } from "./utils";
+import type { AddContextOptions } from "./types";
 
 export type IndexUpsertPayload = { input: number[]; id?: string | number; metadata?: string };
 export type FilePath = string;
@@ -47,15 +48,12 @@ export type AddContextPayload =
   | { dataType: "embedding"; data: IndexUpsertPayload[] }
   | DatasWithFileSource;
 
-export type AddContextOptions = {
-  metadataKey?: string;
-};
-
 export type VectorPayload = {
   question: string;
   similarityThreshold: number;
   metadataKey: string;
   topK: number;
+  namespace?: string;
 };
 
 export class Database {
@@ -74,14 +72,18 @@ export class Database {
     similarityThreshold = DEFAULT_SIMILARITY_THRESHOLD,
     metadataKey = DEFAULT_METADATA_KEY,
     topK = DEFAULT_TOP_K,
+    namespace,
   }: VectorPayload): Promise<string> {
     const index = this.index;
-    const result = await index.query<Record<string, string>>({
-      data: question,
-      topK,
-      includeMetadata: true,
-      includeVectors: false,
-    });
+    const result = await index.query<Record<string, string>>(
+      {
+        data: question,
+        topK,
+        includeMetadata: true,
+        includeVectors: false,
+      },
+      { namespace }
+    );
 
     const allValuesUndefined = result.every(
       (embedding) => embedding.metadata?.[metadataKey] === undefined
@@ -102,14 +104,17 @@ export class Database {
    * It supports plain text, embeddings, PDF, HTML, Text file and CSV. Additionally, it handles text-splitting for CSV, PDF and Text file.
    */
   async save(input: AddContextPayload, options?: AddContextOptions): Promise<string | undefined> {
-    const { metadataKey = "text" } = options ?? {};
+    const { metadataKey = "text", namespace } = options ?? {};
 
     if (typeof input === "string") {
-      return this.index.upsert({
-        data: input,
-        id: nanoid(),
-        metadata: { [metadataKey]: input },
-      });
+      return this.index.upsert(
+        {
+          data: input,
+          id: nanoid(),
+          metadata: { [metadataKey]: input },
+        },
+        { namespace }
+      );
     }
 
     if (input.dataType === "text") {

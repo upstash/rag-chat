@@ -373,3 +373,46 @@ describe("RAG Chat addContext using HTML", () => {
     { timeout: 30_000 }
   );
 });
+
+describe("RAGChat with namespaces", () => {
+  const namespace = "japan";
+  const vector = new Index({
+    token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
+    url: process.env.UPSTASH_VECTOR_REST_URL!,
+  });
+
+  const ragChat = new RAGChat({
+    vector,
+    model: new ChatOpenAI({
+      modelName: "gpt-3.5-turbo",
+      streaming: false,
+      verbose: false,
+      temperature: 0,
+      apiKey: process.env.OPENAI_API_KEY,
+    }),
+  });
+
+  afterAll(async () => {
+    await vector.reset({ namespace });
+  });
+
+  test(
+    "should be able to insert data into a namespace and query it",
+    async () => {
+      await ragChat.addContext("Tokyo is the Capital of Japan.", {
+        namespace,
+        metadataKey: "text",
+      });
+      await awaitUntilIndexed(vector);
+
+      const result = (await ragChat.chat("Where is the capital of Japan?", {
+        stream: false,
+        metadataKey: "text",
+        namespace,
+      })) as AIMessage;
+
+      expect(result.content).toContain("Tokyo");
+    },
+    { timeout: 30_000 }
+  );
+});

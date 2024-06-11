@@ -9,9 +9,9 @@ import { RatelimitUpstashError } from "./error/ratelimit";
 import { Config } from "./config";
 import { RAGChatBase } from "./rag-chat-base";
 import { RateLimitService } from "./ratelimit";
-import type { ChatOptions, RAGChatConfig } from "./types";
+import type { AddContextOptions, ChatOptions, RAGChatConfig } from "./types";
 import { appendDefaultsIfNeeded } from "./utils";
-import type { AddContextOptions, AddContextPayload } from "./database";
+import type { AddContextPayload } from "./database";
 import { Database } from "./database";
 import { History } from "./history";
 import { MODEL_NAME_WITH_PROVIDER_SPLITTER } from "./constants.ts";
@@ -72,6 +72,7 @@ export class RAGChat extends RAGChatBase {
       similarityThreshold: options_.similarityThreshold,
       metadataKey: options_.metadataKey,
       topK: options_.topK,
+      namespace: options.namespace,
     });
 
     // Calls LLM service with organized prompt. Prompt holds chat_history, facts gathered from vector db and sanitized question.
