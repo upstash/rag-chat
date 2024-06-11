@@ -37,6 +37,7 @@ export class RAGChatBase {
     similarityThreshold,
     topK,
     metadataKey,
+    namespace,
   }: VectorPayload): Promise<PrepareChatResult> {
     const question = sanitizeQuestion(input);
     const facts = await this.vectorService.retrieve({
@@ -44,6 +45,7 @@ export class RAGChatBase {
       similarityThreshold,
       metadataKey,
       topK,
+      namespace,
     });
     return { question, facts };
   }
