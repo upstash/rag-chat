@@ -1,8 +1,6 @@
 import type { AIMessage } from "@langchain/core/messages";
 import type { StreamingTextResponse } from "ai";
 
-import { QA_PROMPT_TEMPLATE } from "./prompts";
-
 import { UpstashModelError } from "./error/model";
 import { RatelimitUpstashError } from "./error/ratelimit";
 
@@ -20,24 +18,23 @@ export class RAGChat extends RAGChatBase {
   #ratelimitService: RateLimitService;
 
   constructor(config: RAGChatConfig) {
-    const { vector: index, redis } = new Config(config);
+    const { vector: index, redis, model, prompt } = new Config(config);
 
     const historyService = new History({
       redis,
       //@ts-expect-error We need that private field to track message creator LLM such as `ChatOpenAI_gpt-3.5-turbo`. Format is `provider_modelName`.
-      modelNameWithProvider: `${config.model?.getName()}${MODEL_NAME_WITH_PROVIDER_SPLITTER}${config.model?.modelName}`,
+      modelNameWithProvider: `${model?.getName()}${MODEL_NAME_WITH_PROVIDER_SPLITTER}${model?.modelName}`,
     });
     const vectorService = new Database(index);
-    const ratelimitService = new RateLimitService(config.ratelimit);
 
-    if (!config.model) {
+    if (!model) {
       throw new UpstashModelError("Model can not be undefined!");
     }
     super(vectorService, historyService, {
-      model: config.model,
-      prompt: config.prompt ?? QA_PROMPT_TEMPLATE,
+      model,
+      prompt,
     });
-    this.#ratelimitService = ratelimitService;
+    this.#ratelimitService = new RateLimitService(config.ratelimit);
   }
 
   /**
