@@ -29,10 +29,21 @@ export class CustomInMemoryChatMessageHistory extends BaseListChatMessageHistory
    * instance.
    * @returns Array of stored BaseMessage instances.
    */
-  async getMessages(): Promise<BaseMessage[]> {
-    return this.topLevelChatHistoryLength
-      ? this.messages.slice(1).slice(-this.topLevelChatHistoryLength)
-      : this.messages;
+  async getMessages(options?: { offset?: number; length?: number }): Promise<BaseMessage[]> {
+    if (options) {
+      const start = options.offset ?? 0;
+      const length = options.length ?? 0;
+      const end = start + length + 1;
+
+      const reversedMessages = [...this.messages].reverse();
+      const slicedMessages = reversedMessages.slice(start, end);
+
+      return slicedMessages.reverse(); // Reverse back to original order
+    } else if (this.topLevelChatHistoryLength) {
+      return this.messages.slice(1).slice(-this.topLevelChatHistoryLength);
+    } else {
+      return this.messages;
+    }
   }
 
   /**

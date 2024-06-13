@@ -104,13 +104,12 @@ export class RAGChat extends RAGChatBase {
   }
 
   /** Method to get history of messages used in the RAG Chat*/
-  getHistory(options: HistoryOptions) {
+  getMessageHistory(options: HistoryOptions) {
     return this.historyService
       .getMessageHistory({
         sessionId: options.sessionId ?? DEFAULT_CHAT_SESSION_ID,
-        length: options.historyLength,
       })
-      .getMessages();
+      .getMessages({ length: options.length, offset: options.offset });
   }
 
   /** Method to clear history of messages used in the RAG Chat*/
