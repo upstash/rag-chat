@@ -69,6 +69,7 @@ export class RAGChatBase {
           sessionId,
           sessionTTL: chatOptions.historyTTL,
           length: chatOptions.historyLength,
+          metadata: chatOptions.metadata,
         }),
       inputMessagesKey: "question",
       historyMessagesKey: "chat_history",

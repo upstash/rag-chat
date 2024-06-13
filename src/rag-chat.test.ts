@@ -451,3 +451,41 @@ describe("RAGChat init without model", () => {
     { timeout: 30_000 }
   );
 });
+
+describe("RAGChat with chat metadata", () => {
+  const namespace = "japan";
+  const vector = new Index({
+    token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
+    url: process.env.UPSTASH_VECTOR_REST_URL!,
+  });
+
+  const ragChat = new RAGChat({
+    vector,
+  });
+
+  afterAll(async () => {
+    await vector.reset({ namespace });
+  });
+
+  test(
+    "should be able to insert data into a namespace and query it",
+    async () => {
+      await ragChat.addContext("Tokyo is the Capital of Japan.", {
+        namespace,
+        metadataKey: "text",
+      });
+      await awaitUntilIndexed(vector);
+
+      (await ragChat.chat("Where is the capital of Japan?", {
+        stream: false,
+        metadataKey: "text",
+        namespace,
+        metadata: { usedModel: "testing-cookie" },
+      })) as AIMessage;
+      const messages = await ragChat.getMessageHistory<{ usedModel: string }>();
+
+      expect(messages.find((x) => x.metadata.usedModel === "testing-cookie"));
+    },
+    { timeout: 30_000 }
+  );
+});

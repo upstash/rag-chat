@@ -17,8 +17,8 @@ export class CustomInMemoryChatMessageHistory extends BaseListChatMessageHistory
   private topLevelChatHistoryLength?: number;
   private metadata?: Record<string, unknown>;
 
-  constructor(fields: CustomInMemoryChatMessageHistoryInput) {
-    const { metadata, messages, topLevelChatHistoryLength } = fields;
+  constructor(fields?: CustomInMemoryChatMessageHistoryInput) {
+    const { metadata, messages, topLevelChatHistoryLength } = fields ?? {};
     // eslint-disable-next-line prefer-rest-params
     super(...arguments);
     this.messages = messages ?? [];

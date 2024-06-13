@@ -1,13 +1,14 @@
-import type { AIMessage, BaseMessage } from "@langchain/core/messages";
+import type { AIMessage } from "@langchain/core/messages";
 import type { StreamingTextResponse } from "ai";
 
 import { UpstashModelError } from "./error/model";
 import { RatelimitUpstashError } from "./error/ratelimit";
 
 import { Config } from "./config";
-import { DEFAULT_CHAT_SESSION_ID, MODEL_NAME_WITH_PROVIDER_SPLITTER } from "./constants.ts";
+import { DEFAULT_CHAT_SESSION_ID } from "./constants.ts";
 import type { AddContextPayload } from "./database";
 import { Database } from "./database";
+import { UpstashVectorError } from "./error/vector.ts";
 import { History } from "./history";
 import { RAGChatBase } from "./rag-chat-base";
 import { RateLimitService } from "./ratelimit";
@@ -24,16 +25,16 @@ import { appendDefaultsIfNeeded } from "./utils";
 export class RAGChat extends RAGChatBase {
   #ratelimitService: RateLimitService;
 
-  constructor(config: RAGChatConfig) {
+  constructor(config?: RAGChatConfig) {
     const { vector: index, redis, model, prompt } = new Config(config);
 
     const historyService = new History({
       redis,
-      metadata: {
-        //@ts-expect-error We need that private field to track message creator LLM such as `ChatOpenAI_gpt-3.5-turbo`. Format is `provider_modelName`.
-        modelNameWithProvider: `${model?.getName()}${MODEL_NAME_WITH_PROVIDER_SPLITTER}${model?.modelName}`,
-      },
     });
+
+    if (!index) {
+      throw new UpstashVectorError("Vector can not be undefined!");
+    }
     const vectorService = new Database(index);
 
     if (!model) {
@@ -43,7 +44,7 @@ export class RAGChat extends RAGChatBase {
       model,
       prompt,
     });
-    this.#ratelimitService = new RateLimitService(config.ratelimit);
+    this.#ratelimitService = new RateLimitService(config?.ratelimit);
   }
 
   /**
@@ -112,13 +113,13 @@ export class RAGChat extends RAGChatBase {
 
   /** Method to get history of messages used in the RAG Chat*/
   getMessageHistory<TMetadata extends UpstashDict = UpstashDict>(
-    options: HistoryOptions
-  ): Promise<UpstashMessage[]> | Promise<BaseMessage[]> {
+    options?: HistoryOptions
+  ): Promise<UpstashMessage<TMetadata>[]> {
     return this.historyService
       .getMessageHistory({
-        sessionId: options.sessionId ?? DEFAULT_CHAT_SESSION_ID,
+        sessionId: options?.sessionId ?? DEFAULT_CHAT_SESSION_ID,
       })
-      .getMessagesForUpstash<TMetadata>({ length: options.length, offset: options.offset });
+      .getMessagesForUpstash<TMetadata>({ length: options?.length, offset: options?.offset });
   }
 
   /** Method to clear history of messages used in the RAG Chat*/
