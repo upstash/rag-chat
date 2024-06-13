@@ -122,4 +122,17 @@ export type AddContextOptions = {
   namespace?: string;
 };
 
-export type HistoryOptions = Pick<ChatOptions, "historyLength" | "sessionId">;
+export type HistoryOptions = {
+  /** Length of the conversation history.
+   * @default -1
+   */
+  length?: number;
+  /** Offset value to skip N amount of messages from starting from last message.
+   * @default 0
+   */
+  offset?: number;
+  /** Chat session ID of the user interacting with the application.
+   * @default "upstash-rag-chat-session"
+   */
+  sessionId?: string;
+};

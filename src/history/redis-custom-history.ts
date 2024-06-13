@@ -67,13 +67,15 @@ export class CustomUpstashRedisChatMessageHistory extends BaseListChatMessageHis
    * Retrieves the chat messages from the Redis database.
    * @returns An array of BaseMessage instances representing the chat history.
    */
-  async getMessages(): Promise<BaseMessage[]> {
-    const length = this.topLevelChatHistoryLength ?? [0, -1];
+  async getMessages(options?: { offset?: number; length?: number }): Promise<BaseMessage[]> {
+    const _length = options
+      ? [options.offset ?? 0, options.length ?? -1]
+      : this.topLevelChatHistoryLength ?? [0, -1];
 
     const rawStoredMessages: StoredMessage[] = await this.client.lrange<StoredMessage>(
       this.sessionId,
-      typeof length === "number" ? 0 : length[0],
-      typeof length === "number" ? length : length[1]
+      typeof _length === "number" ? 0 : _length[0],
+      typeof _length === "number" ? _length : _length[1]
     );
 
     const orderedMessages = rawStoredMessages.reverse();
