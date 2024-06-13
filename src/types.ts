@@ -146,3 +146,12 @@ export type HistoryOptions = {
    */
   sessionId?: string;
 };
+
+export type UpstashDict = Record<string, unknown>;
+
+export type UpstashMessage<TMetadata extends UpstashDict = UpstashDict> = {
+  role: "assistant" | "user";
+  content: string;
+  metadata: TMetadata;
+  id: string;
+};

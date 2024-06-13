@@ -7,6 +7,8 @@ import {
   mapStoredMessagesToChatMessages,
 } from "@langchain/core/messages";
 import { Redis, type RedisConfigNodejs } from "@upstash/redis";
+import type { UpstashDict, UpstashMessage } from "../types";
+import { mapLangchainMessageToUpstashMessages } from "./utils";
 
 //REFER HERE: https://github.com/langchain-ai/langchainjs/blob/main/libs/langchain-community/src/stores/message/upstash_redis.ts
 /**
@@ -67,10 +69,8 @@ export class CustomUpstashRedisChatMessageHistory extends BaseListChatMessageHis
    * Retrieves the chat messages from the Redis database.
    * @returns An array of BaseMessage instances representing the chat history.
    */
-  async getMessages(options?: { offset?: number; length?: number }): Promise<BaseMessage[]> {
-    const _length = options
-      ? [options.offset ?? 0, options.length ?? -1]
-      : this.topLevelChatHistoryLength ?? [0, -1];
+  async getMessages(): Promise<BaseMessage[]> {
+    const _length = this.topLevelChatHistoryLength ?? [0, -1];
 
     const rawStoredMessages: StoredMessage[] = await this.client.lrange<StoredMessage>(
       this.sessionId,
@@ -83,6 +83,29 @@ export class CustomUpstashRedisChatMessageHistory extends BaseListChatMessageHis
       (x): x is StoredMessage => x.type !== undefined && x.data.content !== undefined
     );
     return mapStoredMessagesToChatMessages(previousMessages);
+  }
+
+  /**
+   * Retrieves the mapped chat messages from the Upstash Redis database .
+   * @returns An array of UpstashMessages instances representing the chat history.
+   */
+  async getMessagesForUpstash<TMetadata extends UpstashDict = UpstashDict>(options?: {
+    offset?: number;
+    length?: number;
+  }): Promise<UpstashMessage<TMetadata>[]> {
+    const _length = options ? [options.offset ?? 0, options.length ?? -1] : [0, -1];
+
+    const rawStoredMessages: StoredMessage[] = await this.client.lrange<StoredMessage>(
+      this.sessionId,
+      typeof _length === "number" ? 0 : _length[0],
+      typeof _length === "number" ? _length : _length[1]
+    );
+
+    const orderedMessages = rawStoredMessages.reverse();
+    const previousMessages = orderedMessages.filter(
+      (x): x is StoredMessage => x.type !== undefined && x.data.content !== undefined
+    );
+    return mapLangchainMessageToUpstashMessages(previousMessages);
   }
 
   /**

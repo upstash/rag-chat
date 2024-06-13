@@ -32,7 +32,7 @@ test("should give all the messages", async () => {
 
   // eslint-disable-next-line unicorn/no-await-expression-member
   const final = (await history.getMessages()).map((message) => message.content as string);
-  expect(["Hello!", "Hello, human.", "Whats your name?", "Upstash", "Good."]).toEqual(final);
+  expect(["Good.", "Upstash", "Whats your name?", "Hello, human.", "Hello!"]).toEqual(final);
 });
 
 test("should give all the messages with offset pagination", async () => {
@@ -51,11 +51,11 @@ test("should give all the messages with offset pagination", async () => {
   let final = (await history.getMessages({ offset: 0, length: 2 })).map(
     (message) => message.content as string
   );
-  expect(["Upstash", "Good. How are you?", "I'm good. Thanks."]).toEqual(final);
+  expect(["I'm good. Thanks.", "Good. How are you?", "Upstash"]).toEqual(final);
 
   // eslint-disable-next-line unicorn/no-await-expression-member
   final = (await history.getMessages({ offset: 2, length: 3 })).map(
     (message) => message.content as string
   );
-  expect(["Hello!", "Hello, human.", "Whats your name?", "Upstash"]).toEqual(final);
+  expect(["Upstash", "Whats your name?", "Hello, human.", "Hello!"]).toEqual(final);
 });

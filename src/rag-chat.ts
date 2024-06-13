@@ -1,4 +1,4 @@
-import type { AIMessage } from "@langchain/core/messages";
+import type { AIMessage, BaseMessage } from "@langchain/core/messages";
 import type { StreamingTextResponse } from "ai";
 
 import { UpstashModelError } from "./error/model";
@@ -11,7 +11,14 @@ import { Database } from "./database";
 import { History } from "./history";
 import { RAGChatBase } from "./rag-chat-base";
 import { RateLimitService } from "./ratelimit";
-import type { AddContextOptions, ChatOptions, HistoryOptions, RAGChatConfig } from "./types";
+import type {
+  AddContextOptions,
+  ChatOptions,
+  HistoryOptions,
+  RAGChatConfig,
+  UpstashDict,
+  UpstashMessage,
+} from "./types";
 import { appendDefaultsIfNeeded } from "./utils";
 
 export class RAGChat extends RAGChatBase {
@@ -104,12 +111,14 @@ export class RAGChat extends RAGChatBase {
   }
 
   /** Method to get history of messages used in the RAG Chat*/
-  getMessageHistory(options: HistoryOptions) {
+  getMessageHistory<TMetadata extends UpstashDict = UpstashDict>(
+    options: HistoryOptions
+  ): Promise<UpstashMessage[]> | Promise<BaseMessage[]> {
     return this.historyService
       .getMessageHistory({
         sessionId: options.sessionId ?? DEFAULT_CHAT_SESSION_ID,
       })
-      .getMessages({ length: options.length, offset: options.offset });
+      .getMessagesForUpstash<TMetadata>({ length: options.length, offset: options.offset });
   }
 
   /** Method to clear history of messages used in the RAG Chat*/
