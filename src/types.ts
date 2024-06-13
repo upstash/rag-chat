@@ -123,14 +123,24 @@ export type AddContextOptions = {
 };
 
 export type HistoryOptions = {
-  /** Length of the conversation history.
+  /**
+   * Specifies the number of messages to get from the conversation history.
+   * A negative value (default is -1) means the entire conversation history will be retrieved.
+   * Set this to a positive number to limit the history to that many recent messages.
+   *
    * @default -1
    */
   length?: number;
-  /** Offset value to skip N amount of messages from starting from last message.
+
+  /**
+   * Defines the number of most recent messages to skip in the conversation history.
+   * For example, if offset is set to 2, the two most recent messages will be skipped.
+   * Default value is 0, meaning no messages will be skipped.
+   *
    * @default 0
    */
   offset?: number;
+
   /** Chat session ID of the user interacting with the application.
    * @default "upstash-rag-chat-session"
    */
