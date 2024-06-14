@@ -2,31 +2,31 @@ import type { Redis } from "@upstash/redis";
 import { CustomInMemoryChatMessageHistory } from "./in-memory-custom-history";
 import { CustomUpstashRedisChatMessageHistory } from "./redis-custom-history";
 import { InternalUpstashError } from "../error";
+import type { UpstashDict } from "../types";
 
 type HistoryConfig = {
   redis?: Redis;
   metadata?: Record<string, unknown>;
 };
 
-export type GetHistoryOptions = { sessionId: string; length?: number; sessionTTL?: number };
+type GetHistoryOptions = {
+  sessionId: string;
+  length?: number;
+  sessionTTL?: number;
+  metadata?: UpstashDict;
+};
 
 export class History {
   private redis?: Redis;
-  private metadata?: Record<string, unknown>;
   private inMemoryChatHistory?: CustomInMemoryChatMessageHistory;
 
   constructor(fields?: HistoryConfig) {
-    const { metadata, redis } = fields ?? {};
+    const { redis } = fields ?? {};
 
     this.redis = redis;
-    this.metadata = metadata;
-
-    if (!redis) {
-      this.inMemoryChatHistory = new CustomInMemoryChatMessageHistory({ metadata });
-    }
   }
 
-  getMessageHistory({ length, sessionId, sessionTTL }: GetHistoryOptions) {
+  getMessageHistory({ length, sessionId, sessionTTL, metadata }: GetHistoryOptions) {
     try {
       if (this.redis) {
         return new CustomUpstashRedisChatMessageHistory({
@@ -34,7 +34,7 @@ export class History {
           sessionTTL,
           topLevelChatHistoryLength: length,
           client: this.redis,
-          metadata: this.metadata,
+          metadata,
         });
       }
     } catch (error) {
@@ -44,7 +44,13 @@ export class History {
     }
     if (this.inMemoryChatHistory) {
       return this.inMemoryChatHistory;
+    } else {
+      this.inMemoryChatHistory = new CustomInMemoryChatMessageHistory({
+        metadata,
+        topLevelChatHistoryLength: length,
+      });
     }
+
     throw new InternalUpstashError("Could not initialize in-memoroy chat history.");
   }
 }

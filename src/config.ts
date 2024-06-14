@@ -9,21 +9,21 @@ import { ChatOpenAI } from "@langchain/openai";
 import { QA_PROMPT_TEMPLATE } from "./prompts";
 
 export class Config {
-  public readonly vector: Index;
+  public readonly vector?: Index;
   public readonly redis?: Redis;
   public readonly ratelimit?: Ratelimit;
 
   public readonly model?: BaseLanguageModelInterface;
   public readonly prompt: PromptTemplate;
 
-  constructor(config: RAGChatConfig) {
-    this.vector = config.vector ?? Index.fromEnv();
-    this.redis = config.redis ?? initializeRedis();
+  constructor(config?: RAGChatConfig) {
+    this.vector = config?.vector ?? Index.fromEnv();
+    this.redis = config?.redis ?? initializeRedis();
 
-    this.ratelimit = config.ratelimit;
+    this.ratelimit = config?.ratelimit;
 
-    this.model = config.model ?? initializeModel();
-    this.prompt = config.prompt ?? QA_PROMPT_TEMPLATE;
+    this.model = config?.model ?? initializeModel();
+    this.prompt = config?.prompt ?? QA_PROMPT_TEMPLATE;
   }
 }
 

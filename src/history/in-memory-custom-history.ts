@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/require-await */
 import { BaseListChatMessageHistory } from "@langchain/core/chat_history";
 import type { BaseMessage } from "@langchain/core/messages";
+import type { UpstashDict, UpstashMessage } from "../types";
+import { mapLangchainMessageToUpstashMessages } from "./utils";
 
 export type CustomInMemoryChatMessageHistoryInput = {
   messages?: BaseMessage[];
@@ -15,8 +17,8 @@ export class CustomInMemoryChatMessageHistory extends BaseListChatMessageHistory
   private topLevelChatHistoryLength?: number;
   private metadata?: Record<string, unknown>;
 
-  constructor(fields: CustomInMemoryChatMessageHistoryInput) {
-    const { metadata, messages, topLevelChatHistoryLength } = fields;
+  constructor(fields?: CustomInMemoryChatMessageHistoryInput) {
+    const { metadata, messages, topLevelChatHistoryLength } = fields ?? {};
     // eslint-disable-next-line prefer-rest-params
     super(...arguments);
     this.messages = messages ?? [];
@@ -38,11 +40,37 @@ export class CustomInMemoryChatMessageHistory extends BaseListChatMessageHistory
       const reversedMessages = [...this.messages].reverse();
       const slicedMessages = reversedMessages.slice(start, end);
 
-      return slicedMessages.reverse(); // Reverse back to original order
+      return slicedMessages;
     } else if (this.topLevelChatHistoryLength) {
       return this.messages.slice(1).slice(-this.topLevelChatHistoryLength);
     } else {
-      return this.messages;
+      return this.messages.reverse();
+    }
+  }
+
+  /**
+   * Retrieves the mapped chat messages from the Upstash Redis database .
+   * @returns An array of UpstashMessages instances representing the chat history.
+   */
+  async getMessagesForUpstash<TMetadata extends UpstashDict = UpstashDict>(options?: {
+    offset?: number;
+    length?: number;
+  }): Promise<UpstashMessage<TMetadata>[]> {
+    if (options) {
+      const start = options.offset ?? 0;
+      const length = options.length ?? 0;
+      const end = start + length + 1;
+
+      const reversedMessages = [...this.messages].reverse();
+      const slicedMessages = reversedMessages.slice(start, end);
+
+      return mapLangchainMessageToUpstashMessages<TMetadata>(slicedMessages.reverse());
+    } else if (this.topLevelChatHistoryLength) {
+      return mapLangchainMessageToUpstashMessages<TMetadata>(
+        this.messages.slice(1).slice(-this.topLevelChatHistoryLength)
+      );
+    } else {
+      return mapLangchainMessageToUpstashMessages<TMetadata>(this.messages.reverse());
     }
   }
 
