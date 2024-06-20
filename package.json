@@ -1,15 +1,17 @@
 {
   "name": "@upstash/rag-chat",
   "version": "0.0.34-alpha",
-  "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/base/index.mjs",
+  "types": "./dist/base/index.d.ts",
   "scripts": {
-    "test": "bun test",
+    "test": "",
     "fmt": "prettier --write .",
     "lint": "tsc && eslint \"src/**/*.{js,ts,tsx}\" --quiet --fix",
-    "build": "tsup",
-    "prepare": "husky install"
+    "build": "bun run build:base && bun run build:react",
+    "build:base": "tsup index.ts --format cjs,esm --dts --outDir dist/base/",
+    "build:react": "tsup react.ts --format cjs,esm --dts --outDir dist/react/",
+    "prepare": "husky install",
+    "a": "yarn build && yarn pack ./dist"
   },
   "bugs": {
     "url": "https://github.com/upstash/rag-chat/issues"
@@ -18,6 +20,16 @@
   "files": [
     "dist"
   ],
+  "exports": {
+    ".": {
+      "types": "./dist/base/index.d.ts",
+      "default": "./dist/base/index.mjs"
+    },
+    "./react": {
+      "types": "./dist/react/react.d.ts",
+      "default": "./dist/react/react.mjs"
+    }
+  },
   "homepage": "https://upstash.com/vector",
   "keywords": [
     "vector",
@@ -35,6 +47,7 @@
   "devDependencies": {
     "@commitlint/cli": "^19.2.2",
     "@commitlint/config-conventional": "^19.2.2",
+    "@types/react": "^18.3.3",
     "@typescript-eslint/eslint-plugin": "^7.0.1",
     "@typescript-eslint/parser": "^7.0.1",
     "bun-types": "latest",
@@ -59,8 +72,10 @@
   },
   "peerDependencies": {
     "@upstash/redis": "^1.31.3",
-    "@upstash/vector": "^1.1.1",
+    "@upstash/vector": "^1.1.2",
     "@upstash/ratelimit": "^1.1.3",
-    "@langchain/openai": "^0.0.34"
+    "@langchain/openai": "^0.0.34",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   }
 }

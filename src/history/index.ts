@@ -1,7 +1,6 @@
 import type { Redis } from "@upstash/redis";
-import { CustomInMemoryChatMessageHistory } from "./in-memory-custom-history";
-import { CustomUpstashRedisChatMessageHistory } from "./redis-custom-history";
-import { InternalUpstashError } from "../error";
+import { __InMemoryHistory } from "./__in-memory-history";
+import { __UpstashRedisHistory } from "./__redis-custom-history";
 
 type HistoryConfig = {
   redis?: Redis;
@@ -13,38 +12,19 @@ export type GetHistoryOptions = { sessionId: string; length?: number; sessionTTL
 export class History {
   private redis?: Redis;
   private metadata?: Record<string, unknown>;
-  private inMemoryChatHistory?: CustomInMemoryChatMessageHistory;
+  service: __UpstashRedisHistory | __InMemoryHistory;
 
   constructor(fields?: HistoryConfig) {
     const { metadata, redis } = fields ?? {};
 
-    this.redis = redis;
-    this.metadata = metadata;
-
-    if (!redis) {
-      this.inMemoryChatHistory = new CustomInMemoryChatMessageHistory({ metadata });
-    }
-  }
-
-  getMessageHistory({ length, sessionId, sessionTTL }: GetHistoryOptions) {
-    try {
-      if (this.redis) {
-        return new CustomUpstashRedisChatMessageHistory({
-          sessionId,
-          sessionTTL,
-          topLevelChatHistoryLength: length,
+    this.service = redis
+      ? new __UpstashRedisHistory({
           client: this.redis,
           metadata: this.metadata,
-        });
-      }
-    } catch (error) {
-      throw new InternalUpstashError(
-        `Could not retrieve message history. Details: ${(error as Error).message}`
-      );
-    }
-    if (this.inMemoryChatHistory) {
-      return this.inMemoryChatHistory;
-    }
-    throw new InternalUpstashError("Could not initialize in-memoroy chat history.");
+        })
+      : new __InMemoryHistory();
+
+    this.redis = redis;
+    this.metadata = metadata;
   }
 }

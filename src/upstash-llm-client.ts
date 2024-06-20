@@ -7,7 +7,6 @@ export type Model = "mistralai/Mistral-7B-Instruct-v0.2" | "meta-llama/Meta-Llam
 export type UpstashLLMClientConfig = {
   model: Model;
   apiKey: string;
-  streaming: boolean;
   maxTokens?: number;
   stop?: string[];
   topP?: number;
@@ -27,7 +26,6 @@ export class UpstashLLMClient extends ChatOpenAI {
   stop?: string[];
   temperature = 1;
   n = 1;
-  streaming: boolean;
   topP = 1;
   frequencyPenalty = 0;
   presencePenalty = 0;
@@ -41,7 +39,6 @@ export class UpstashLLMClient extends ChatOpenAI {
         modelName: config.model,
         apiKey: config.apiKey,
         maxTokens: config.maxTokens,
-        streaming: config.streaming,
         topP: config.topP,
         temperature: config.temperature,
         n: config.n,
@@ -59,7 +56,6 @@ export class UpstashLLMClient extends ChatOpenAI {
     this.modelName = config.model;
     this.apiKey = config.apiKey;
     this.maxTokens = config.maxTokens;
-    this.streaming = config.streaming;
     this.logitBias = config.logitBias;
     this.topLogprobs = config.topLogprobs;
     this.stop = config.stop;

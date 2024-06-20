@@ -1,0 +1,68 @@
+/* eslint-disable @typescript-eslint/no-unnecessary-condition */
+/* eslint-disable @typescript-eslint/require-await */
+/* eslint-disable no-var */
+
+import { DEFAULT_CHAT_SESSION_ID, DEFAULT_HISTORY_LENGTH } from "../constants";
+import type { UpstashMessage } from "../types";
+import type { BaseMessageHistory, HistoryAddMessage } from "./__chat-history";
+
+declare global {
+  var store: Record<
+    string,
+    {
+      messages: (UpstashMessage & { __internal_order: number })[];
+    }
+  >;
+}
+
+export type InMemoryHistoryConfig = {
+  sessionId: string;
+  sessionTTL?: number;
+  topLevelChatHistoryLength?: number;
+  metadata?: Record<string, unknown>;
+};
+
+export class __InMemoryHistory implements BaseMessageHistory {
+  constructor() {
+    if (!global.store) global.store = {};
+  }
+
+  async addMessage({
+    message,
+    sessionId = DEFAULT_CHAT_SESSION_ID,
+    sessionTTL: _,
+  }: HistoryAddMessage): Promise<void> {
+    const oldMessages = global.store[sessionId].messages || [];
+    const newMessages = [
+      {
+        ...message,
+        __internal_order: oldMessages.length,
+      },
+      ...oldMessages,
+    ];
+
+    if (!global.store[sessionId]) {
+      global.store[sessionId] = { messages: [] };
+    }
+
+    global.store[sessionId].messages = newMessages;
+  }
+
+  async clear(): Promise<void> {
+    global.store = {};
+  }
+
+  async getMessages({
+    sessionId = DEFAULT_CHAT_SESSION_ID,
+    amount = DEFAULT_HISTORY_LENGTH,
+  }): Promise<UpstashMessage[]> {
+    const messages = global.store[sessionId].messages || [];
+
+    const sortedMessages = messages
+      .slice(0, amount)
+      .sort((a, b) => (a.__internal_order > b.__internal_order ? -1 : 1));
+    const messagesWithoutOrder = sortedMessages.map(({ __internal_order, ...rest }) => rest);
+
+    return messagesWithoutOrder;
+  }
+}

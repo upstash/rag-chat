@@ -1,8 +1,9 @@
-import type { BaseLanguageModelInterface } from "@langchain/core/language_models/base";
-import type { PromptTemplate } from "@langchain/core/prompts";
+import type { ChatOpenAI } from "@langchain/openai";
 import type { Ratelimit } from "@upstash/ratelimit";
 import type { Redis } from "@upstash/redis";
 import type { Index } from "@upstash/vector";
+import type { CustomPrompt } from "./rag-chat-base";
+import type { UpstashLLMClient } from "./upstash-llm-client";
 
 declare const __brand: unique symbol;
 type Brand<B> = { [__brand]: B };
@@ -11,7 +12,7 @@ export type Branded<T, B> = T & Brand<B>;
 export type ChatOptions = {
   /** Set to `true` if working with web apps and you want to be interactive without stalling users.
    */
-  stream: boolean;
+  streaming: true | false;
 
   /** Chat session ID of the user interacting with the application.
    * @default "upstash-rag-chat-session"
@@ -53,11 +54,16 @@ export type ChatOptions = {
    * Namespace of the index you wanted to query.
    */
   namespace?: string;
+
+  /**
+   * Metadata for your chat message. This could be used to store anything in the chat history. By default RAG Chat SDK uses this to persist used model name in the history
+   */
+  metadata?: UpstashDict;
 };
 
 export type PrepareChatResult = {
   question: string;
-  facts: string;
+  context: string;
 };
 
 type RAGChatConfigCommon = {
@@ -70,7 +76,7 @@ type RAGChatConfigCommon = {
       apiKey,
     })
   */
-  model?: BaseLanguageModelInterface;
+  model?: UpstashLLMClient | ChatOpenAI;
   /**
    * If no Index name or instance is provided, falls back to the default.
    * @default
@@ -90,7 +96,7 @@ type RAGChatConfigCommon = {
         Question: {question}
         Helpful answer:`)
    */
-  prompt?: PromptTemplate;
+  prompt?: CustomPrompt;
   /**
    * Ratelimit instance
    * @example new Ratelimit({
@@ -119,7 +125,18 @@ export type AddContextOptions = {
    * Namespace of the index you wanted to insert. Default is empty string.
    * @default ""
    */
+
+  metadata?: UpstashDict;
   namespace?: string;
 };
 
 export type HistoryOptions = Pick<ChatOptions, "historyLength" | "sessionId">;
+
+export type UpstashDict = Record<string, unknown>;
+
+export type UpstashMessage<TMetadata extends UpstashDict = UpstashDict> = {
+  role: "assistant" | "user";
+  content: string;
+  metadata?: TMetadata | undefined;
+  id?: string | undefined;
+};

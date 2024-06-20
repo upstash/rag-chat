@@ -56,10 +56,24 @@ export type VectorPayload = {
   namespace?: string;
 };
 
+export type ResetOptions = {
+  namespace: string;
+};
+
 export class Database {
   private index: Index;
   constructor(index: Index) {
     this.index = index;
+  }
+
+  async reset(options?: ResetOptions | undefined) {
+    await (options?.namespace
+      ? this.index.reset({ namespace: options.namespace })
+      : this.index.reset());
+  }
+
+  async delete(ids: string[]) {
+    await this.index.delete(ids);
   }
 
   /**

@@ -1,35 +1,53 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import type { AIMessage, BaseMessage } from "@langchain/core/messages";
-import type { RunnableConfig } from "@langchain/core/runnables";
-import { RunnableSequence, RunnableWithMessageHistory } from "@langchain/core/runnables";
-import { LangChainAdapter, StreamingTextResponse } from "ai";
+import { HumanMessage, type BaseMessage } from "@langchain/core/messages";
 
 import type { BaseLanguageModelInterface } from "@langchain/core/language_models/base";
-import type { PromptTemplate } from "@langchain/core/prompts";
-import type { ChatOptions, PrepareChatResult } from "./types";
-import { formatChatHistory, sanitizeQuestion } from "./utils";
+import type { Redis } from "@upstash/redis";
+import { createStreamableValue } from "ai/rsc";
+import { ContextService } from "./context";
 import type { Database, VectorPayload } from "./database";
-import type { History } from "./history";
+import { __InMemoryHistory } from "./history/__in-memory-history";
+import { __UpstashRedisHistory } from "./history/__redis-custom-history";
+import type { PrepareChatResult } from "./types";
+import { sanitizeQuestion } from "./utils";
+import type { IterableReadableStreamInterface } from "@langchain/core/utils/stream";
 
-type CustomInputValues = { chat_history?: BaseMessage[]; question: string; context: string };
+export type PromptParameters = { chatHistory?: string; question: string; context: string };
+
+export type CustomPrompt = ({ question, chatHistory, context }: PromptParameters) => string;
+
+export type Message = { id: string; content: string; role: "ai" | "user" };
+
+export type UpstashMessage<TMetadata extends Record<string, unknown> = Record<string, unknown>> = {
+  role: "assistant" | "user";
+  content: string;
+  metadata: TMetadata;
+  id: string;
+};
 
 export class RAGChatBase {
-  protected vectorService: Database;
-  protected historyService: History;
+  protected vectorService: Database; // internal
+  context: ContextService; // exposed API
+  history: __UpstashRedisHistory | __InMemoryHistory;
 
   #model: BaseLanguageModelInterface;
-  #prompt: PromptTemplate;
 
   constructor(
     vectorService: Database,
-    historyService: History,
-    config: { model: BaseLanguageModelInterface; prompt: PromptTemplate }
+    historyConfig: { redis: Redis | undefined; metadata: Record<string, unknown> },
+    config: { model: BaseLanguageModelInterface; prompt: CustomPrompt }
   ) {
     this.vectorService = vectorService;
-    this.historyService = historyService;
+    this.context = new ContextService(vectorService);
+
+    this.history = historyConfig.redis
+      ? new __UpstashRedisHistory({
+          client: historyConfig.redis,
+          metadata: historyConfig.metadata,
+        })
+      : new __InMemoryHistory();
 
     this.#model = config.model;
-    this.#prompt = config.prompt;
   }
 
   protected async prepareChat({
@@ -40,64 +58,57 @@ export class RAGChatBase {
     namespace,
   }: VectorPayload): Promise<PrepareChatResult> {
     const question = sanitizeQuestion(input);
-    const facts = await this.vectorService.retrieve({
-      question,
+    const context = await this.vectorService.retrieve({
+      question: input,
       similarityThreshold,
       metadataKey,
       topK,
       namespace,
     });
-    return { question, facts };
+    return { question, context };
   }
 
-  /** This method first gets required params, then returns another function depending on streaming param input */
-  protected chainCall(chatOptions: ChatOptions, question: string, facts: string) {
-    const formattedHistoryChain = RunnableSequence.from<CustomInputValues>([
-      {
-        chat_history: (input) => formatChatHistory(input.chat_history ?? []),
-        question: (input) => input.question,
-        context: (input) => input.context,
-      },
-      this.#prompt,
-      this.#model,
-    ]);
+  protected async makeAiRequest({
+    streaming,
+    prompt,
+    onComplete,
+  }: {
+    streaming: boolean;
+    prompt: string;
+    onComplete?: (output: string) => void;
+  }) {
+    if (streaming) {
+      const stream = createStreamableValue("");
+      let accumulatorOutput = "";
 
-    const chainWithMessageHistory = new RunnableWithMessageHistory({
-      runnable: formattedHistoryChain,
-      getMessageHistory: (sessionId: string) =>
-        this.historyService.getMessageHistory({
-          sessionId,
-          sessionTTL: chatOptions.historyTTL,
-          length: chatOptions.historyLength,
-        }),
-      inputMessagesKey: "question",
-      historyMessagesKey: "chat_history",
-    });
-    const runnableArgs = {
-      input: {
-        question,
-        context: facts,
-      },
-      options: {
-        configurable: { sessionId: chatOptions.sessionId },
-      },
-    };
+      (async () => {
+        try {
+          const rawStream = (await this.#model.stream([
+            new HumanMessage(prompt),
+          ])) as IterableReadableStreamInterface<UpstashMessage>;
 
-    return (streaming: boolean) =>
-      streaming
-        ? this.streamingChainCall(chainWithMessageHistory, runnableArgs)
-        : (chainWithMessageHistory.invoke(
-            runnableArgs.input,
-            runnableArgs.options
-          ) as Promise<AIMessage>);
-  }
+          for await (const chunk of rawStream) {
+            stream.append(chunk.content);
+            accumulatorOutput += chunk.content;
+          }
+        } catch (error) {
+          console.error("Stream writing error:", error);
+        } finally {
+          stream.done();
 
-  protected async streamingChainCall(
-    runnable: RunnableWithMessageHistory<CustomInputValues, any>,
-    runnableArgs: { input: CustomInputValues; options?: Partial<RunnableConfig> | undefined }
-  ) {
-    const stream = await runnable.stream(runnableArgs.input, runnableArgs.options);
-    const wrappedStream = LangChainAdapter.toAIStream(stream);
-    return new StreamingTextResponse(wrappedStream, {});
+          onComplete?.(accumulatorOutput);
+        }
+      })().catch((error: unknown) => {
+        console.error(error);
+      });
+
+      return { output: stream.value, isStream: true };
+    } else {
+      const { content } = (await this.#model.invoke(prompt)) as BaseMessage;
+
+      onComplete?.(content as string);
+
+      return { output: content, isStream: false };
+    }
   }
 }
