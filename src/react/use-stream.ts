@@ -26,13 +26,17 @@ export const useStream = ({ sessionId, messageHandler, historyGetter }: UseStrea
   const [messages, setMessages] = useState<UpstashMessage[]>([]);
   const [aiResponseStream, setAiResponseStream] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
-
   const [variables, setVariables] = useState<string>("");
 
   useEffect(() => {
     const initMessages = async () => {
-      const history = await historyGetter({ sessionId });
-      setMessages(history);
+      try {
+        const history = await historyGetter({ sessionId });
+        setMessages(history);
+      } catch (error) {
+        console.error(error);
+        setMessages([]);
+      }
     };
 
     initMessages().catch((error: unknown) => {

@@ -27,11 +27,10 @@ export class ContextService {
    * ```
    */
   async add(context: AddContextPayload, options?: AddContextOptions) {
-    const retrievalServiceStatus = await this.#vectorService.save(context, options);
-    return retrievalServiceStatus === "Success" ? "OK" : "NOT-OK";
+    return await this.#vectorService.save(context, options);
   }
 
-  async reset(options?: ResetOptions | undefined) {
+  async deleteEntireContext(options?: ResetOptions | undefined) {
     await this.#vectorService.reset(
       options?.namespace ? { namespace: options.namespace } : undefined
     );

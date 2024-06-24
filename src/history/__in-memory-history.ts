@@ -3,14 +3,14 @@
 /* eslint-disable no-var */
 
 import { DEFAULT_CHAT_SESSION_ID, DEFAULT_HISTORY_LENGTH } from "../constants";
-import type { UpstashMessage } from "../types";
+import type { UpstashDict, UpstashMessage } from "../types";
 import type { BaseMessageHistory, HistoryAddMessage } from "./__chat-history";
 
 declare global {
   var store: Record<
     string,
     {
-      messages: (UpstashMessage & { __internal_order: number })[];
+      messages: (Omit<UpstashMessage, "id"> & { __internal_order: number })[];
     }
   >;
 }
@@ -19,7 +19,7 @@ export type InMemoryHistoryConfig = {
   sessionId: string;
   sessionTTL?: number;
   topLevelChatHistoryLength?: number;
-  metadata?: Record<string, unknown>;
+  metadata?: UpstashDict;
 };
 
 export class __InMemoryHistory implements BaseMessageHistory {
@@ -32,6 +32,10 @@ export class __InMemoryHistory implements BaseMessageHistory {
     sessionId = DEFAULT_CHAT_SESSION_ID,
     sessionTTL: _,
   }: HistoryAddMessage): Promise<void> {
+    if (!global.store[sessionId]) {
+      global.store[sessionId] = { messages: [] };
+    }
+
     const oldMessages = global.store[sessionId].messages || [];
     const newMessages = [
       {
@@ -40,10 +44,6 @@ export class __InMemoryHistory implements BaseMessageHistory {
       },
       ...oldMessages,
     ];
-
-    if (!global.store[sessionId]) {
-      global.store[sessionId] = { messages: [] };
-    }
 
     global.store[sessionId].messages = newMessages;
   }
@@ -56,13 +56,16 @@ export class __InMemoryHistory implements BaseMessageHistory {
     sessionId = DEFAULT_CHAT_SESSION_ID,
     amount = DEFAULT_HISTORY_LENGTH,
   }): Promise<UpstashMessage[]> {
-    const messages = global.store[sessionId].messages || [];
+    const messages = global.store[sessionId]?.messages || [];
 
     const sortedMessages = messages
       .slice(0, amount)
       .sort((a, b) => (a.__internal_order > b.__internal_order ? -1 : 1));
-    const messagesWithoutOrder = sortedMessages.map(({ __internal_order, ...rest }) => rest);
+    const messagesInOrder = sortedMessages.map(({ __internal_order, ...rest }) => ({
+      ...rest,
+      id: __internal_order.toString(),
+    }));
 
-    return messagesWithoutOrder;
+    return messagesInOrder;
   }
 }

@@ -1,7 +1,7 @@
 import type { UpstashMessage } from "../types";
 
 export type HistoryAddMessage = {
-  message: UpstashMessage;
+  message: Omit<UpstashMessage, "id">;
   sessionId?: string;
   sessionTTL?: number;
 };

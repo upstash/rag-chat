@@ -2,10 +2,10 @@ import type { WebBaseLoaderParams } from "@langchain/community/document_loaders/
 import type { Index } from "@upstash/vector";
 import type { RecursiveCharacterTextSplitterParams } from "langchain/text_splitter";
 import { nanoid } from "nanoid";
-import { DEFAULT_SIMILARITY_THRESHOLD, DEFAULT_METADATA_KEY, DEFAULT_TOP_K } from "./constants";
-import { FileDataLoader } from "./file-loader";
-import { formatFacts } from "./utils";
+import { DEFAULT_METADATA_KEY, DEFAULT_SIMILARITY_THRESHOLD, DEFAULT_TOP_K } from "./constants";
 import type { AddContextOptions } from "./types";
+import { formatFacts } from "./utils";
+import { FileDataLoader } from "./file-loader";
 
 export type IndexUpsertPayload = { input: number[]; id?: string | number; metadata?: string };
 export type FilePath = string;
@@ -59,6 +59,8 @@ export type VectorPayload = {
 export type ResetOptions = {
   namespace: string;
 };
+
+type SaveOperationResult = { success: true; ids: string[] } | { success: false; error: string };
 
 export class Database {
   private index: Index;
@@ -117,26 +119,42 @@ export class Database {
    * A method that allows you to add various data types into a vector database.
    * It supports plain text, embeddings, PDF, HTML, Text file and CSV. Additionally, it handles text-splitting for CSV, PDF and Text file.
    */
-  async save(input: AddContextPayload, options?: AddContextOptions): Promise<string | undefined> {
+  async save(input: AddContextPayload, options?: AddContextOptions): Promise<SaveOperationResult> {
     const { metadataKey = "text", namespace } = options ?? {};
 
     if (typeof input === "string") {
-      return this.index.upsert(
-        {
-          data: input,
-          id: nanoid(),
-          metadata: { [metadataKey]: input },
-        },
-        { namespace }
-      );
+      try {
+        const vectorId = nanoid();
+
+        await this.index.upsert(
+          {
+            data: input,
+            id: vectorId,
+            metadata: { [metadataKey]: input },
+          },
+          { namespace }
+        );
+
+        return { success: true, ids: [vectorId] };
+      } catch (error) {
+        return { success: false, error: JSON.stringify(error) };
+      }
     }
 
     if (input.dataType === "text") {
-      return this.index.upsert({
-        data: input.data,
-        id: input.id ?? nanoid(),
-        metadata: { [metadataKey]: input.data },
-      });
+      try {
+        const vectorId = input.id ?? nanoid();
+
+        await this.index.upsert({
+          data: input.data,
+          id: vectorId.toString(),
+          metadata: { [metadataKey]: input.data },
+        });
+
+        return { success: true, ids: [vectorId.toString()] };
+      } catch (error) {
+        return { success: false, error: JSON.stringify(error) };
+      }
     } else if (input.dataType === "embedding") {
       const items = input.data.map((context) => {
         return {
@@ -146,14 +164,27 @@ export class Database {
         };
       });
 
-      return this.index.upsert(items);
-    } else {
-      const fileArgs = "pdfOpts" in input ? input.pdfOpts : "csvOpts" in input ? input.csvOpts : {};
-      const transformOrSplit = await new FileDataLoader(input, metadataKey).loadFile(fileArgs);
+      try {
+        await this.index.upsert(items);
 
-      const transformArgs = "opts" in input ? input.opts : {};
-      const transformDocuments = await transformOrSplit(transformArgs);
-      await this.index.upsert(transformDocuments);
+        return { success: true, ids: items.map((item) => item.id.toString()) };
+      } catch (error) {
+        return { success: false, error: JSON.stringify(error) };
+      }
+    } else {
+      try {
+        const fileArgs =
+          "pdfOpts" in input ? input.pdfOpts : "csvOpts" in input ? input.csvOpts : {};
+        const transformOrSplit = await new FileDataLoader(input, metadataKey).loadFile(fileArgs);
+
+        const transformArgs = "opts" in input ? input.opts : {};
+        const transformDocuments = await transformOrSplit(transformArgs);
+        await this.index.upsert(transformDocuments);
+
+        return { success: true, ids: transformDocuments.map((document) => document.id) };
+      } catch (error) {
+        return { success: false, error: JSON.stringify(error) };
+      }
     }
   }
 }

@@ -54,7 +54,7 @@ export class RAGChat extends RAGChatBase {
     options: T
   ): Promise<
     T["streaming"] extends true
-      ? { output: StreamableValue<string>; isStream: boolean }
+      ? { output: StreamableValue<string>; isStream: true }
       : { output: string; isStream: false }
   > {
     try {
@@ -73,8 +73,9 @@ export class RAGChat extends RAGChatBase {
         });
       }
 
+      // 👇 when ragChat.chat is called, we first add the user message to chat history (without real id)
       await this.history.addMessage({
-        message: { content: input, id: "test", metadata: options.metadata ?? {}, role: "user" },
+        message: { content: input, metadata: options.metadata ?? {}, role: "user" },
         sessionId: options.sessionId,
       });
 
@@ -107,14 +108,14 @@ export class RAGChat extends RAGChatBase {
         prompt,
         onComplete: async (output) => {
           await this.history.addMessage({
-            message: { content: output, id: "test", metadata: {}, role: "assistant" },
+            message: { content: output, metadata: {}, role: "assistant" },
             sessionId: options.sessionId,
           });
         },
       });
 
       return aiResponse as T["streaming"] extends true
-        ? { output: StreamableValue<string>; isStream: boolean }
+        ? { output: StreamableValue<string>; isStream: true }
         : { output: string; isStream: false };
     } catch (error) {
       console.error(error);

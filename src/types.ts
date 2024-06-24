@@ -138,5 +138,5 @@ export type UpstashMessage<TMetadata extends UpstashDict = UpstashDict> = {
   role: "assistant" | "user";
   content: string;
   metadata?: TMetadata | undefined;
-  id?: string | undefined;
+  id: string;
 };
