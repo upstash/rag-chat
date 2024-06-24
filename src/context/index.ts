@@ -1,5 +1,4 @@
 import type { AddContextPayload, Database, ResetOptions } from "../database";
-import type { AddContextOptions } from "../types";
 
 export class ContextService {
   #vectorService: Database;
@@ -26,8 +25,9 @@ export class ContextService {
    * });
    * ```
    */
-  async add(context: AddContextPayload, options?: AddContextOptions) {
-    return await this.#vectorService.save(context, options);
+  async add(args: AddContextPayload) {
+    const { options, ...rest } = args;
+    return await this.#vectorService.save(rest, options);
   }
 
   async deleteEntireContext(options?: ResetOptions | undefined) {

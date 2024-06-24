@@ -92,13 +92,11 @@ describe("RAG Chat with ratelimit", () => {
   test.skip(
     "should throw ratelimit error",
     async () => {
-      await ragChat.context.add(
-        {
-          dataType: "text",
-          data: "Paris, the capital of France, is renowned for its iconic landmark, the Eiffel Tower, which was completed in 1889 and stands at 330 meters tall.",
-        },
-        { metadataKey: "text" }
-      );
+      await ragChat.context.add({
+        dataType: "text",
+        data: "Paris, the capital of France, is renowned for its iconic landmark, the Eiffel Tower, which was completed in 1889 and stands at 330 meters tall.",
+        options: { metadataKey: "text" },
+      });
       await awaitUntilIndexed(vector);
 
       await ragChat.chat(
@@ -140,10 +138,11 @@ describe("RAG Chat with custom template", () => {
   test.skip(
     "should get result without streaming",
     async () => {
-      await ragChat.context.add(
-        { dataType: "text", data: "Ankara is the capital of Turkiye." },
-        { metadataKey: "text" }
-      );
+      await ragChat.context.add({
+        dataType: "text",
+        data: "Ankara is the capital of Turkiye.",
+        options: { metadataKey: "text" },
+      });
 
       // Wait for it to be indexed
       // eslint-disable-next-line @typescript-eslint/no-magic-numbers
@@ -190,7 +189,7 @@ describe("RAG Chat addContext using PDF", () => {
       await ragChat.context.add({
         dataType: "pdf",
         fileSource: "./data/the_wonderful_wizard_of_oz.pdf",
-        opts: { chunkSize: 500, chunkOverlap: 50 },
+        config: { chunkSize: 500, chunkOverlap: 50 },
       });
       await awaitUntilIndexed(vector);
       const result = await ragChat.chat("Whats the author of The Wonderful Wizard of Oz?", {
@@ -315,7 +314,7 @@ describe("RAG Chat addContext using text-file", () => {
       await ragChat.context.add({
         dataType: "text-file",
         fileSource: "./data/the_wonderful_wizard_of_oz_summary.txt",
-        opts: { chunkSize: 500, chunkOverlap: 50 },
+        config: { chunkSize: 500, chunkOverlap: 50 },
       });
       await awaitUntilIndexed(vector);
 
@@ -396,13 +395,10 @@ describe("RAGChat with namespaces", () => {
   test.skip(
     "should be able to insert data into a namespace and query it",
     async () => {
-      await ragChat.context.add("Tokyo is the Capital of Japan.", {
-        namespace,
-        metadataKey: "text",
-      });
+      await ragChat.context.add({ dataType: "text", data: "Tokyo is the capital of Japan." });
       await awaitUntilIndexed(vector);
 
-      const result = await ragChat.chat("Where is the capital of Japan?", {
+      const result = await ragChat.chat("What is the capital of Japan?", {
         streaming: false,
         metadataKey: "text",
         namespace,

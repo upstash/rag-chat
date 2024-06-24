@@ -15,37 +15,41 @@ export type DatasWithFileSource =
   | {
       dataType: "pdf";
       fileSource: FilePath | Blob;
-      opts?: Partial<RecursiveCharacterTextSplitterParams>;
-      pdfOpts?: { parsedItemSeparator?: string; splitPages?: boolean };
+      options?: AddContextOptions;
+      config?: Partial<RecursiveCharacterTextSplitterParams>;
+      pdfConfig?: { parsedItemSeparator?: string; splitPages?: boolean };
     }
   | {
       dataType: "csv";
       fileSource: FilePath | Blob;
-      csvOpts?: { column?: string; separator?: string };
+      options?: AddContextOptions;
+      csvConfig?: { column?: string; separator?: string };
     }
   | {
       dataType: "text-file";
       fileSource: FilePath | Blob;
-      opts?: Partial<RecursiveCharacterTextSplitterParams>;
+      options?: AddContextOptions;
+      config?: Partial<RecursiveCharacterTextSplitterParams>;
     }
   | (
       | {
           dataType: "html";
           fileSource: URL;
-          htmlOpts?: WebBaseLoaderParams;
-          opts: Partial<RecursiveCharacterTextSplitterParams>;
+          htmlConfig?: WebBaseLoaderParams;
+          options?: AddContextOptions;
+          config: Partial<RecursiveCharacterTextSplitterParams>;
         }
       | {
           dataType: "html";
           fileSource: FilePath | Blob;
-          opts?: Partial<RecursiveCharacterTextSplitterParams>;
+          options?: AddContextOptions;
+          config?: Partial<RecursiveCharacterTextSplitterParams>;
         }
     );
 
 export type AddContextPayload =
-  | string
-  | { dataType: "text"; data: string; id?: string | number }
-  | { dataType: "embedding"; data: IndexUpsertPayload[] }
+  | { dataType: "text"; data: string; options?: AddContextOptions; id?: string | number }
+  | { dataType: "embedding"; options?: AddContextOptions; data: IndexUpsertPayload[] }
   | DatasWithFileSource;
 
 export type VectorPayload = {
@@ -120,7 +124,9 @@ export class Database {
    * It supports plain text, embeddings, PDF, HTML, Text file and CSV. Additionally, it handles text-splitting for CSV, PDF and Text file.
    */
   async save(input: AddContextPayload, options?: AddContextOptions): Promise<SaveOperationResult> {
-    const { metadataKey = "text", namespace } = options ?? {};
+    const { metadataKey = "text", namespace: _rawNamespace } = options ?? {};
+
+    const namespace = `${_rawNamespace}`;
 
     if (typeof input === "string") {
       try {
@@ -145,11 +151,14 @@ export class Database {
       try {
         const vectorId = input.id ?? nanoid();
 
-        await this.index.upsert({
-          data: input.data,
-          id: vectorId.toString(),
-          metadata: { [metadataKey]: input.data },
-        });
+        await this.index.upsert(
+          {
+            data: input.data,
+            id: vectorId.toString(),
+            metadata: { [metadataKey]: input.data },
+          },
+          { namespace }
+        );
 
         return { success: true, ids: [vectorId.toString()] };
       } catch (error) {
@@ -165,7 +174,7 @@ export class Database {
       });
 
       try {
-        await this.index.upsert(items);
+        await this.index.upsert(items, { namespace });
 
         return { success: true, ids: items.map((item) => item.id.toString()) };
       } catch (error) {
@@ -177,12 +186,13 @@ export class Database {
           "pdfOpts" in input ? input.pdfOpts : "csvOpts" in input ? input.csvOpts : {};
         const transformOrSplit = await new FileDataLoader(input, metadataKey).loadFile(fileArgs);
 
-        const transformArgs = "opts" in input ? input.opts : {};
+        const transformArgs = "config" in input ? input.config : {};
         const transformDocuments = await transformOrSplit(transformArgs);
-        await this.index.upsert(transformDocuments);
+        await this.index.upsert(transformDocuments, { namespace });
 
         return { success: true, ids: transformDocuments.map((document) => document.id) };
       } catch (error) {
+        console.error(error);
         return { success: false, error: JSON.stringify(error) };
       }
     }
