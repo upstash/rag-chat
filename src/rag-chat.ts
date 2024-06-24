@@ -85,12 +85,15 @@ export class RAGChat extends RAGChatBase {
         similarityThreshold: options_.similarityThreshold,
         metadataKey: options_.metadataKey,
         topK: options_.topK,
-        namespace: options.namespace,
+        namespace: options.namespace ?? options.sessionId,
       });
 
       // Calls LLM service with organized prompt. Prompt holds chat_history, facts gathered from vector db and sanitized question.
       // Allows either streaming call via Vercel AI SDK or non-streaming call
-      const chatHistory = await this.history.getMessages({ sessionId: options.sessionId });
+      const chatHistory = await this.history.getMessages({
+        sessionId: options.sessionId,
+        amount: options.historyLength,
+      });
 
       const formattedHistory = chatHistory
         .reverse()

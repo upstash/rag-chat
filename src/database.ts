@@ -124,28 +124,7 @@ export class Database {
    * It supports plain text, embeddings, PDF, HTML, Text file and CSV. Additionally, it handles text-splitting for CSV, PDF and Text file.
    */
   async save(input: AddContextPayload, options?: AddContextOptions): Promise<SaveOperationResult> {
-    const { metadataKey = "text", namespace: _rawNamespace } = options ?? {};
-
-    const namespace = `${_rawNamespace}`;
-
-    if (typeof input === "string") {
-      try {
-        const vectorId = nanoid();
-
-        await this.index.upsert(
-          {
-            data: input,
-            id: vectorId,
-            metadata: { [metadataKey]: input },
-          },
-          { namespace }
-        );
-
-        return { success: true, ids: [vectorId] };
-      } catch (error) {
-        return { success: false, error: JSON.stringify(error) };
-      }
-    }
+    const { metadataKey = DEFAULT_METADATA_KEY, namespace } = options ?? {};
 
     if (input.dataType === "text") {
       try {
@@ -188,6 +167,7 @@ export class Database {
 
         const transformArgs = "config" in input ? input.config : {};
         const transformDocuments = await transformOrSplit(transformArgs);
+
         await this.index.upsert(transformDocuments, { namespace });
 
         return { success: true, ids: transformDocuments.map((document) => document.id) };

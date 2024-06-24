@@ -45,9 +45,8 @@ export class __UpstashRedisHistory implements BaseMessageHistory {
 
   async getMessages({
     sessionId = DEFAULT_CHAT_SESSION_ID,
-    amount: _amount = DEFAULT_HISTORY_LENGTH,
+    amount = DEFAULT_HISTORY_LENGTH,
   }): Promise<UpstashMessage[]> {
-    const amount = _amount;
     const startIndex = typeof amount === "number" ? 0 : amount[0];
     const endIndex = typeof amount === "number" ? amount : amount[1];
 

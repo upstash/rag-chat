@@ -6,8 +6,14 @@ export type HistoryAddMessage = {
   sessionTTL?: number;
 };
 
-export declare abstract class BaseMessageHistory {
-  abstract getMessages({ sessionId }: { sessionId: string }): Promise<UpstashMessage[]>;
+export abstract class BaseMessageHistory {
+  abstract getMessages({
+    sessionId,
+    amount,
+  }: {
+    sessionId: string;
+    amount: number;
+  }): Promise<UpstashMessage[]>;
   abstract addMessage(data: HistoryAddMessage): Promise<void>;
   abstract deleteMessages({ sessionId }: { sessionId: string }): Promise<void>;
 }

@@ -73,9 +73,20 @@ const initializeModel = () => {
   if (openAIToken) {
     return new ChatOpenAI({
       modelName: "gpt-4o",
-      streaming: true,
       verbose: false,
       apiKey: openAIToken,
     });
+  }
+
+  if (!qstashToken) {
+    throw new Error(
+      "[RagChat Error]: Your QSTASH_TOKEN environment variable to use an Upstash RAGChat model is not defined. You can find this token in your QStash dashboard."
+    );
+  }
+
+  if (!qstashToken) {
+    throw new Error(
+      "[RagChat Error]: Your OPENAI_API_KEY environment variable to use an OpenAI RAGChat model is not defined. You can find this token in your OpenAI dashboard."
+    );
   }
 };
