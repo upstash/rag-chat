@@ -48,8 +48,12 @@ export class __InMemoryHistory implements BaseMessageHistory {
     global.store[sessionId].messages = newMessages;
   }
 
-  async clear(): Promise<void> {
-    global.store = {};
+  async deleteMessages({ sessionId }: { sessionId: string }): Promise<void> {
+    if (!global.store[sessionId]) {
+      return;
+    }
+
+    global.store[sessionId].messages = [];
   }
 
   async getMessages({

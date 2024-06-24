@@ -39,8 +39,8 @@ export class __UpstashRedisHistory implements BaseMessageHistory {
     }
   }
 
-  async clear(): Promise<void> {
-    // to be implemented
+  async deleteMessages({ sessionId }: { sessionId: string }): Promise<void> {
+    await this.client.del(sessionId);
   }
 
   async getMessages({

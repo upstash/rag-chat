@@ -9,5 +9,5 @@ export type HistoryAddMessage = {
 export declare abstract class BaseMessageHistory {
   abstract getMessages({ sessionId }: { sessionId: string }): Promise<UpstashMessage[]>;
   abstract addMessage(data: HistoryAddMessage): Promise<void>;
-  clear(): Promise<void>;
+  abstract deleteMessages({ sessionId }: { sessionId: string }): Promise<void>;
 }
