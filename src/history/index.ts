@@ -1,6 +1,6 @@
 import type { Redis } from "@upstash/redis";
-import { __InMemoryHistory } from "./__in-memory-history";
-import { __UpstashRedisHistory } from "./__redis-custom-history";
+import { __InMemoryHistory } from "./in-memory-history";
+import { __UpstashRedisHistory } from "./redis-custom-history";
 
 type HistoryConfig = {
   redis?: Redis;

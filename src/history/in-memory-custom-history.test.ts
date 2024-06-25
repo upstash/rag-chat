@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { __InMemoryHistory } from "./__in-memory-history";
+import { __InMemoryHistory } from "./in-memory-history";
 
 test.skip("should give last 3 messages from in-memory", async () => {
   const messageHistoryLength = 3;

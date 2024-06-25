@@ -36,7 +36,7 @@ export class ContextService {
     );
   }
 
-  async delete(id: string | string[]) {
-    await this.#vectorService.delete(typeof id === "string" ? [id] : id);
+  async delete({ id, namespace }: { id: string | string[]; namespace?: string }) {
+    await this.#vectorService.delete({ ids: typeof id === "string" ? [id] : id, namespace });
   }
 }

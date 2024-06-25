@@ -1,7 +1,6 @@
 import { UpstashModelError } from "./error/model";
 import { RatelimitUpstashError } from "./error/ratelimit";
 
-import type { StreamableValue } from "ai/rsc";
 import { Config } from "./config";
 import { MODEL_NAME_WITH_PROVIDER_SPLITTER } from "./constants.ts";
 import { Database } from "./database";
@@ -54,7 +53,7 @@ export class RAGChat extends RAGChatBase {
     options: T
   ): Promise<
     T["streaming"] extends true
-      ? { output: StreamableValue<string>; isStream: true }
+      ? { output: AsyncIterable<string>; isStream: true }
       : { output: string; isStream: false }
   > {
     try {
@@ -118,7 +117,7 @@ export class RAGChat extends RAGChatBase {
       });
 
       return aiResponse as T["streaming"] extends true
-        ? { output: StreamableValue<string>; isStream: true }
+        ? { output: AsyncIterable<string>; isStream: true }
         : { output: string; isStream: false };
     } catch (error) {
       console.error(error);

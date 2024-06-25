@@ -2,7 +2,7 @@ import type { RedisConfigNodejs } from "@upstash/redis";
 import { Redis } from "@upstash/redis";
 import { DEFAULT_CHAT_SESSION_ID, DEFAULT_HISTORY_LENGTH } from "../constants";
 import type { UpstashMessage } from "../types";
-import type { BaseMessageHistory, HistoryAddMessage } from "./__chat-history";
+import type { BaseMessageHistory, HistoryAddMessage } from "./chat-history";
 
 export type UpstashRedisHistoryConfig = {
   config?: RedisConfigNodejs;
@@ -47,8 +47,8 @@ export class __UpstashRedisHistory implements BaseMessageHistory {
     sessionId = DEFAULT_CHAT_SESSION_ID,
     amount = DEFAULT_HISTORY_LENGTH,
   }): Promise<UpstashMessage[]> {
-    const startIndex = typeof amount === "number" ? 0 : amount[0];
-    const endIndex = typeof amount === "number" ? amount : amount[1];
+    const startIndex = 0;
+    const endIndex = amount;
 
     const storedMessages: UpstashMessage[] = await this.client.lrange<UpstashMessage>(
       sessionId,

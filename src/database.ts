@@ -78,8 +78,8 @@ export class Database {
       : this.index.reset());
   }
 
-  async delete(ids: string[]) {
-    await this.index.delete(ids);
+  async delete({ ids, namespace }: { ids: string[]; namespace?: string }) {
+    await this.index.delete(ids, { namespace });
   }
 
   /**
