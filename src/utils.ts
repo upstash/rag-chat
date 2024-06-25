@@ -8,6 +8,7 @@ import {
   DEFAULT_TOP_K,
   DEFAULT_HISTORY_LENGTH,
   DEFAULT_HISTORY_TTL,
+  DEFAULT_NAMESPACE,
 } from "./constants";
 
 export const sanitizeQuestion = (question: string) => {
@@ -38,6 +39,7 @@ export function appendDefaultsIfNeeded(options: ChatOptions) {
     topK: options.topK ?? DEFAULT_TOP_K,
     historyLength: options.historyLength ?? DEFAULT_HISTORY_LENGTH,
     historyTTL: options.historyLength ?? DEFAULT_HISTORY_TTL,
+    namespace: options.namespace ?? DEFAULT_NAMESPACE,
   };
 }
 

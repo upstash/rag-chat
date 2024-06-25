@@ -10,6 +10,14 @@ import { RateLimitService } from "./ratelimit";
 import type { ChatOptions, RAGChatConfig } from "./types";
 import { appendDefaultsIfNeeded } from "./utils";
 
+type ChatReturnType<T extends ChatOptions> = Promise<
+  T["streaming"] extends true
+    ? AsyncIterable<{
+        output: string;
+        isStream: true;
+      }>
+    : { output: string; isStream: false }
+>;
 export class RAGChat extends RAGChatBase {
   #ratelimitService: RateLimitService;
   protected promptFn: CustomPrompt;
@@ -48,14 +56,10 @@ export class RAGChat extends RAGChatBase {
    *})
    * ```
    */
-  async chat<const T extends ChatOptions>(
+  async chat<const TChatOptions extends ChatOptions>(
     input: string,
-    options: T
-  ): Promise<
-    T["streaming"] extends true
-      ? { output: AsyncIterable<string>; isStream: true }
-      : { output: string; isStream: false }
-  > {
+    options: TChatOptions
+  ): ChatReturnType<TChatOptions> {
     try {
       // Adds all the necessary default options that users can skip in the options parameter above.
       const options_ = appendDefaultsIfNeeded(options);
@@ -75,7 +79,7 @@ export class RAGChat extends RAGChatBase {
       // 👇 when ragChat.chat is called, we first add the user message to chat history (without real id)
       await this.history.addMessage({
         message: { content: input, metadata: options.metadata ?? {}, role: "user" },
-        sessionId: options.sessionId,
+        sessionId: options_.sessionId,
       });
 
       // Sanitizes the given input by stripping all the newline chars. Then, queries vector db with sanitized question.
@@ -84,16 +88,16 @@ export class RAGChat extends RAGChatBase {
         similarityThreshold: options_.similarityThreshold,
         metadataKey: options_.metadataKey,
         topK: options_.topK,
-        namespace: options.namespace ?? options.sessionId,
+        namespace: options_.namespace,
       });
 
-      // Calls LLM service with organized prompt. Prompt holds chat_history, facts gathered from vector db and sanitized question.
-      // Allows either streaming call via Vercel AI SDK or non-streaming call
+      // Gets the chat history from redis or in-memory store.
       const chatHistory = await this.history.getMessages({
-        sessionId: options.sessionId,
-        amount: options.historyLength,
+        sessionId: options_.sessionId,
+        amount: options_.historyLength,
       });
 
+      // Formats the chat history for better accuracy when querying LLM
       const formattedHistory = chatHistory
         .reverse()
         .map((message) => {
@@ -103,10 +107,12 @@ export class RAGChat extends RAGChatBase {
         })
         .join("\n");
 
+      // Allows users to pass type-safe prompts
       const prompt = this.promptFn({ context, question, chatHistory: formattedHistory });
 
-      const aiResponse = await this.makeAiRequest({
-        streaming: options.streaming,
+      // Either calls streaming or non-streaming function from RAGChatBase. Streaming function returns AsyncIterator and allows callbacks like onComplete.
+      //@ts-expect-error TS can't infer types because of .call()
+      return (options.streaming ? this.makeStreamingAiRequest : this.makeAiRequest).call(this, {
         prompt,
         onComplete: async (output) => {
           await this.history.addMessage({
@@ -114,11 +120,7 @@ export class RAGChat extends RAGChatBase {
             sessionId: options.sessionId,
           });
         },
-      });
-
-      return aiResponse as T["streaming"] extends true
-        ? { output: AsyncIterable<string>; isStream: true }
-        : { output: string; isStream: false };
+      }) as unknown as ChatReturnType<TChatOptions>;
     } catch (error) {
       console.error(error);
       throw error;

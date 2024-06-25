@@ -3,7 +3,6 @@ import { HumanMessage, type BaseMessage } from "@langchain/core/messages";
 
 import type { BaseLanguageModelInterface } from "@langchain/core/language_models/base";
 import type { Redis } from "@upstash/redis";
-import { createStreamableValue } from "ai/rsc";
 import { ContextService } from "./context";
 import type { Database, VectorPayload } from "./database";
 import { __InMemoryHistory } from "./history/in-memory-history";
@@ -68,47 +67,40 @@ export class RAGChatBase {
     return { question, context };
   }
 
-  protected async makeAiRequest({
-    streaming,
+  protected async *makeStreamingAiRequest({
     prompt,
     onComplete,
   }: {
-    streaming: boolean;
     prompt: string;
     onComplete?: (output: string) => void;
-  }) {
-    if (streaming) {
-      const stream = createStreamableValue("");
-      let accumulatorOutput = "";
+  }): AsyncIterable<{ output: string; isStream: true }> {
+    let accumulatorOutput = "";
 
-      (async () => {
-        try {
-          const rawStream = (await this.#model.stream([
-            new HumanMessage(prompt),
-          ])) as IterableReadableStreamInterface<UpstashMessage>;
+    try {
+      const stream = (await this.#model.stream([
+        new HumanMessage(prompt),
+      ])) as IterableReadableStreamInterface<UpstashMessage>;
 
-          for await (const chunk of rawStream) {
-            stream.append(chunk.content);
-            accumulatorOutput += chunk.content;
-          }
-        } catch (error) {
-          console.error("Stream writing error:", error);
-        } finally {
-          stream.done();
-
-          onComplete?.(accumulatorOutput);
-        }
-      })().catch((error: unknown) => {
-        console.error(error);
-      });
-
-      return { output: stream.value, isStream: true };
-    } else {
-      const { content } = (await this.#model.invoke(prompt)) as BaseMessage;
-
-      onComplete?.(content as string);
-
-      return { output: content, isStream: false };
+      for await (const chunk of stream) {
+        accumulatorOutput += chunk.content;
+        yield { output: chunk.content, isStream: true };
+      }
+    } catch (error) {
+      console.error("Stream writing error:", error);
+    } finally {
+      onComplete?.(accumulatorOutput);
     }
+  }
+
+  protected async makeAiRequest({
+    prompt,
+    onComplete,
+  }: {
+    prompt: string;
+    onComplete?: (output: string) => void;
+  }): Promise<{ output: string; isStream: false }> {
+    const { content } = (await this.#model.invoke(prompt)) as BaseMessage;
+    onComplete?.(content as string);
+    return { output: content as string, isStream: false };
   }
 }
