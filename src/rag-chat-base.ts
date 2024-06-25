@@ -53,14 +53,12 @@ export class RAGChatBase {
     question: input,
     similarityThreshold,
     topK,
-    metadataKey,
     namespace,
   }: VectorPayload): Promise<PrepareChatResult> {
     const question = sanitizeQuestion(input);
     const context = await this.vectorService.retrieve({
       question,
       similarityThreshold,
-      metadataKey,
       topK,
       namespace,
     });

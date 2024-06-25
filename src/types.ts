@@ -44,12 +44,6 @@ export type ChatOptions = {
    */
   topK?: number;
 
-  /** Key of metadata that we use to store additional content .
-   * @default "text"
-   * @example {text: "Capital of France is Paris"}
-   *
-   */
-  metadataKey?: string;
   /**
    * Namespace of the index you wanted to query.
    */
@@ -115,12 +109,6 @@ export type RAGChatConfig = {
 } & RAGChatConfigCommon;
 
 export type AddContextOptions = {
-  /** Key of metadata that we use to store additional content .
-   * @default "text"
-   * @example {text: "Capital of France is Paris"}
-   *
-   */
-  metadataKey?: string;
   /**
    * Namespace of the index you wanted to insert. Default is empty string.
    * @default ""

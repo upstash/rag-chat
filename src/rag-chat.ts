@@ -86,7 +86,6 @@ export class RAGChat extends RAGChatBase {
       const { question, context } = await this.prepareChat({
         question: input,
         similarityThreshold: options_.similarityThreshold,
-        metadataKey: options_.metadataKey,
         topK: options_.topK,
         namespace: options_.namespace,
       });

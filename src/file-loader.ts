@@ -8,16 +8,13 @@ import type { Document } from "@langchain/core/documents";
 import { TextLoader } from "langchain/document_loaders/fs/text";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { nanoid } from "nanoid";
-import { DEFAULT_METADATA_KEY } from "./constants";
 import type { DatasWithFileSource, FilePath, URL } from "./database";
 
 export class FileDataLoader {
   private config: Pick<DatasWithFileSource, "dataType" | "fileSource">;
-  private metadataKey: string;
 
-  constructor(config: Pick<DatasWithFileSource, "dataType" | "fileSource">, dataKey?: string) {
+  constructor(config: Pick<DatasWithFileSource, "dataType" | "fileSource">) {
     this.config = config;
-    this.metadataKey = dataKey ?? DEFAULT_METADATA_KEY;
   }
 
   async loadFile(args: any) {
@@ -69,18 +66,18 @@ export class FileDataLoader {
         const splitter = new RecursiveCharacterTextSplitter(args);
         const splittedDocuments = await splitter.splitDocuments(documents);
 
-        return mapDocumentsIntoInsertPayload(splittedDocuments, this.metadataKey);
+        return mapDocumentsIntoInsertPayload(splittedDocuments);
       }
 
       case "csv": {
-        return mapDocumentsIntoInsertPayload(documents, this.metadataKey);
+        return mapDocumentsIntoInsertPayload(documents);
       }
 
       case "text-file": {
         const splitter = new RecursiveCharacterTextSplitter(args);
 
         const splittedDocuments = await splitter.splitDocuments(documents);
-        return mapDocumentsIntoInsertPayload(splittedDocuments, this.metadataKey);
+        return mapDocumentsIntoInsertPayload(splittedDocuments);
       }
 
       case "html": {
@@ -91,7 +88,7 @@ export class FileDataLoader {
 
         const newDocuments = await sequence.invoke(documents);
 
-        return mapDocumentsIntoInsertPayload(newDocuments, this.metadataKey);
+        return mapDocumentsIntoInsertPayload(newDocuments);
       }
 
       default: {
@@ -99,10 +96,9 @@ export class FileDataLoader {
       }
     }
 
-    function mapDocumentsIntoInsertPayload(splittedDocuments: Document[], metadataKey: string) {
+    function mapDocumentsIntoInsertPayload(splittedDocuments: Document[]) {
       return splittedDocuments.map((document) => ({
         data: document.pageContent,
-        metadata: { [metadataKey]: document.pageContent },
         id: nanoid(),
       }));
     }

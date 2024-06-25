@@ -100,7 +100,6 @@ describe("RAG Chat with ratelimit", () => {
       await ragChat.context.add({
         dataType: "text",
         data: "Paris, the capital of France, is renowned for its iconic landmark, the Eiffel Tower, which was completed in 1889 and stands at 330 meters tall.",
-        options: { metadataKey: "text" },
       });
       await awaitUntilIndexed(vector);
 
@@ -146,7 +145,6 @@ describe("RAG Chat with custom template", () => {
       await ragChat.context.add({
         dataType: "text",
         data: "Ankara is the capital of Turkiye.",
-        options: { metadataKey: "text" },
       });
 
       await awaitUntilIndexed(vector);
@@ -438,7 +436,7 @@ describe("RAGChat init without model", () => {
       await ragChat.context.add({
         dataType: "text",
         data: "Tokyo is the Capital of Japan.",
-        options: { namespace, metadataKey: "text" },
+        options: { namespace },
       });
       await awaitUntilIndexed(vector);
 

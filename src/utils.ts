@@ -3,7 +3,6 @@ import type { ChatOptions } from "./types";
 import {
   DEFAULT_CHAT_SESSION_ID,
   DEFAULT_CHAT_RATELIMIT_SESSION_ID,
-  DEFAULT_METADATA_KEY,
   DEFAULT_SIMILARITY_THRESHOLD,
   DEFAULT_TOP_K,
   DEFAULT_HISTORY_LENGTH,
@@ -33,7 +32,6 @@ export function appendDefaultsIfNeeded(options: ChatOptions) {
   return {
     ...options,
     sessionId: options.sessionId ?? DEFAULT_CHAT_SESSION_ID,
-    metadataKey: options.metadataKey ?? DEFAULT_METADATA_KEY,
     ratelimitSessionId: options.ratelimitSessionId ?? DEFAULT_CHAT_RATELIMIT_SESSION_ID,
     similarityThreshold: options.similarityThreshold ?? DEFAULT_SIMILARITY_THRESHOLD,
     topK: options.topK ?? DEFAULT_TOP_K,

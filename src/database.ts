@@ -2,10 +2,10 @@ import type { WebBaseLoaderParams } from "@langchain/community/document_loaders/
 import type { Index } from "@upstash/vector";
 import type { RecursiveCharacterTextSplitterParams } from "langchain/text_splitter";
 import { nanoid } from "nanoid";
-import { DEFAULT_METADATA_KEY, DEFAULT_SIMILARITY_THRESHOLD, DEFAULT_TOP_K } from "./constants";
+import { DEFAULT_SIMILARITY_THRESHOLD, DEFAULT_TOP_K } from "./constants";
+import { FileDataLoader } from "./file-loader";
 import type { AddContextOptions } from "./types";
 import { formatFacts } from "./utils";
-import { FileDataLoader } from "./file-loader";
 
 export type IndexUpsertPayload = { input: number[]; id?: string | number; metadata?: string };
 export type FilePath = string;
@@ -55,7 +55,6 @@ export type AddContextPayload =
 export type VectorPayload = {
   question: string;
   similarityThreshold: number;
-  metadataKey: string;
   topK: number;
   namespace?: string;
 };
@@ -73,9 +72,7 @@ export class Database {
   }
 
   async reset(options?: ResetOptions | undefined) {
-    await (options?.namespace
-      ? this.index.reset({ namespace: options.namespace })
-      : this.index.reset());
+    await this.index.reset({ namespace: options?.namespace });
   }
 
   async delete({ ids, namespace }: { ids: string[]; namespace?: string }) {
@@ -90,7 +87,6 @@ export class Database {
   async retrieve({
     question,
     similarityThreshold = DEFAULT_SIMILARITY_THRESHOLD,
-    metadataKey = DEFAULT_METADATA_KEY,
     topK = DEFAULT_TOP_K,
     namespace,
   }: VectorPayload): Promise<string> {
@@ -99,15 +95,11 @@ export class Database {
       {
         data: question,
         topK,
-        includeMetadata: true,
-        includeVectors: false,
+        includeData: true,
       },
       { namespace }
     );
-
-    const allValuesUndefined = result.every(
-      (embedding) => embedding.metadata?.[metadataKey] === undefined
-    );
+    const allValuesUndefined = result.every((embedding) => embedding.data === undefined);
 
     if (allValuesUndefined) {
       throw new TypeError("There is no answer for this question in the provided context.");
@@ -115,7 +107,7 @@ export class Database {
 
     const facts = result
       .filter((x) => x.score >= similarityThreshold)
-      .map((embedding) => `- ${embedding.metadata?.[metadataKey] ?? ""}`);
+      .map((embedding) => `- ${embedding.data ?? ""}`);
     return formatFacts(facts);
   }
 
@@ -124,7 +116,7 @@ export class Database {
    * It supports plain text, embeddings, PDF, HTML, Text file and CSV. Additionally, it handles text-splitting for CSV, PDF and Text file.
    */
   async save(input: AddContextPayload, options?: AddContextOptions): Promise<SaveOperationResult> {
-    const { metadataKey = DEFAULT_METADATA_KEY, namespace } = options ?? {};
+    const { namespace } = options ?? {};
 
     if (input.dataType === "text") {
       try {
@@ -134,7 +126,6 @@ export class Database {
           {
             data: input.data,
             id: vectorId.toString(),
-            metadata: { [metadataKey]: input.data },
           },
           { namespace }
         );
@@ -148,7 +139,6 @@ export class Database {
         return {
           vector: context.input,
           id: context.id ?? nanoid(),
-          metadata: { [metadataKey]: context.metadata },
         };
       });
 
@@ -163,7 +153,7 @@ export class Database {
       try {
         const fileArgs =
           "pdfOpts" in input ? input.pdfOpts : "csvOpts" in input ? input.csvOpts : {};
-        const transformOrSplit = await new FileDataLoader(input, metadataKey).loadFile(fileArgs);
+        const transformOrSplit = await new FileDataLoader(input).loadFile(fileArgs);
 
         const transformArgs = "config" in input ? input.config : {};
         const transformDocuments = await transformOrSplit(transformArgs);
