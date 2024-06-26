@@ -10,7 +10,7 @@ import type { LangChainAIMessageChunk } from "../types";
  *   - isStream: A boolean indicating if the response is a stream.
  * @returns StreamingTextResponse - The adapted response for use with the useChat hook.
  */
-export const useChatAdapter = (response: {
+export const aiUseChatAdapter = (response: {
   output: ReadableStream<LangChainAIMessageChunk>;
   isStream: boolean;
 }) => {

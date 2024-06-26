@@ -1,1 +1,1 @@
-export * from "./src/nextjs/use-chat-adapter";
+export * from "./src/nextjs/chat-adapter";
