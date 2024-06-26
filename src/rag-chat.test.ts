@@ -1,12 +1,29 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { ChatOpenAI } from "@langchain/openai";
+import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import { Index } from "@upstash/vector";
+import { LangChainAdapter, StreamingTextResponse } from "ai";
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import { RatelimitUpstashError } from "./error/ratelimit";
 import { RAGChat } from "./rag-chat";
 import { awaitUntilIndexed } from "./test-utils";
-import { Ratelimit } from "@upstash/ratelimit";
-import { RatelimitUpstashError } from "./error/ratelimit";
+import type { LangChainAIMessageChunk } from "./types";
+
+async function checkStream(
+  stream: ReadableStream<LangChainAIMessageChunk>,
+  expectInStream: string[] // array of strings to expect in stream
+): Promise<void> {
+  const _stream = LangChainAdapter.toAIStream(stream);
+  const textResponse = new StreamingTextResponse(_stream);
+  const text = await textResponse.text();
+
+  const lines = text.split("\n").filter((line) => line.length > 0);
+
+  expect(lines.length).toBeGreaterThan(0);
+  expect(lines.some((line) => line.startsWith('0:"'))).toBeTrue(); // all lines start with `0:"`
+  expect(expectInStream.every((token) => text.includes(token))).toBeTrue();
+}
 
 describe("RAG Chat with advance configs and direct instances", () => {
   const vector = new Index({
@@ -54,11 +71,7 @@ describe("RAG Chat with advance configs and direct instances", () => {
         streaming: true,
       }
     );
-    let result = "";
-    for await (const chunk of streamResult) {
-      result += chunk.output;
-    }
-    expect(result).toContain("330");
+    await checkStream(streamResult.output, ["330"]);
   });
 });
 

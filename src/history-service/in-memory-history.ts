@@ -1,11 +1,11 @@
-/* eslint-disable @typescript-eslint/no-unnecessary-condition */
 /* eslint-disable @typescript-eslint/require-await */
+/* eslint-disable @typescript-eslint/no-unnecessary-condition */
 /* eslint-disable no-var */
-
 import { DEFAULT_CHAT_SESSION_ID, DEFAULT_HISTORY_LENGTH } from "../constants";
 import type { UpstashDict, UpstashMessage } from "../types";
-import type { BaseMessageHistory, HistoryAddMessage } from "./chat-history";
+import type { BaseMessageHistory, HistoryAddMessage } from "./base-message-history";
 
+//TODO: Josh lets document this type with comments.
 declare global {
   var store: Record<
     string,
@@ -22,7 +22,7 @@ export type InMemoryHistoryConfig = {
   metadata?: UpstashDict;
 };
 
-export class __InMemoryHistory implements BaseMessageHistory {
+export class InMemoryHistory implements BaseMessageHistory {
   constructor() {
     if (!global.store) global.store = {};
   }
@@ -60,7 +60,7 @@ export class __InMemoryHistory implements BaseMessageHistory {
     sessionId = DEFAULT_CHAT_SESSION_ID,
     amount = DEFAULT_HISTORY_LENGTH,
   }): Promise<UpstashMessage[]> {
-    const messages = global.store[sessionId]?.messages || [];
+    const messages = global.store[sessionId].messages || [];
 
     const sortedMessages = messages
       .slice(0, amount)

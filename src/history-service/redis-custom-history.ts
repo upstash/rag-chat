@@ -2,7 +2,7 @@ import type { RedisConfigNodejs } from "@upstash/redis";
 import { Redis } from "@upstash/redis";
 import { DEFAULT_CHAT_SESSION_ID, DEFAULT_HISTORY_LENGTH } from "../constants";
 import type { UpstashMessage } from "../types";
-import type { BaseMessageHistory, HistoryAddMessage } from "./chat-history";
+import type { BaseMessageHistory, HistoryAddMessage } from "./base-message-history";
 
 export type UpstashRedisHistoryConfig = {
   config?: RedisConfigNodejs;
@@ -10,7 +10,7 @@ export type UpstashRedisHistoryConfig = {
   metadata?: Record<string, unknown>;
 };
 
-export class __UpstashRedisHistory implements BaseMessageHistory {
+export class UpstashRedisHistory implements BaseMessageHistory {
   public client: Redis;
 
   constructor(_config: UpstashRedisHistoryConfig) {

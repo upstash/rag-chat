@@ -1,6 +1,6 @@
 {
   "name": "@upstash/rag-chat",
-  "version": "0.0.34-alpha",
+  "version": "0.0.40-alpha",
   "main": "./dist/base/index.mjs",
   "types": "./dist/base/index.d.ts",
   "scripts": {
@@ -23,11 +23,13 @@
   "exports": {
     ".": {
       "types": "./dist/base/index.d.ts",
-      "default": "./dist/base/index.mjs"
+      "import": "./dist/base/index.mjs",
+      "require": "./dist/base/index.js"
     },
     "./react": {
       "types": "./dist/react/react.d.ts",
-      "default": "./dist/react/react.mjs"
+      "import": "./dist/react/react.mjs",
+      "require": "./dist/react/react.js"
     }
   },
   "homepage": "https://upstash.com/vector",

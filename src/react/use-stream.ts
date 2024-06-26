@@ -52,7 +52,8 @@ export const useStream = ({ sessionId, messageHandler, historyGetter }: UseStrea
       const { output, isStream } = await messageHandler({ message, sessionId });
 
       if (isStream) {
-        for await (const value of readStreamableValue(output)) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any
+        for await (const value of readStreamableValue(output as any)) {
           setAiResponseStream(value as string);
         }
       } else {

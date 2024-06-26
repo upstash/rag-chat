@@ -5,11 +5,7 @@ import { Index } from "@upstash/vector";
 import { awaitUntilIndexed } from "./test-utils";
 
 describe("Database", () => {
-  const vector = new Index({
-    url: "https://hot-beagle-88683-us1-vector.upstash.io",
-    token:
-      "ABQFMGhvdC1iZWFnbGUtODg2ODMtdXMxYWRtaW5aREEwTURGalpUa3RNV1l3TmkwME4yWmxMVGszTm1JdE9UQTRaREF3WWpjNFpUQXc=",
-  });
+  const vector = new Index();
 
   afterAll(async () => await vector.reset());
 

@@ -2,14 +2,14 @@
 import { HumanMessage, type BaseMessage } from "@langchain/core/messages";
 
 import type { BaseLanguageModelInterface } from "@langchain/core/language_models/base";
-import type { Redis } from "@upstash/redis";
-import { ContextService } from "./context";
+import type { IterableReadableStreamInterface } from "@langchain/core/utils/stream";
+import { ContextService } from "./context-service";
 import type { Database, VectorPayload } from "./database";
-import { __InMemoryHistory } from "./history/in-memory-history";
-import { __UpstashRedisHistory } from "./history/redis-custom-history";
+import type { HistoryService } from "./history-service";
 import type { PrepareChatResult } from "./types";
 import { sanitizeQuestion } from "./utils";
-import type { IterableReadableStreamInterface } from "@langchain/core/utils/stream";
+import type { InMemoryHistory } from "./history-service/in-memory-history";
+import type { UpstashRedisHistory } from "./history-service/redis-custom-history";
 
 export type PromptParameters = { chatHistory?: string; question: string; context: string };
 
@@ -23,71 +23,110 @@ export type UpstashMessage<TMetadata extends Record<string, unknown> = Record<st
   metadata: TMetadata;
   id: string;
 };
-
+const TRUE = 1;
 export class RAGChatBase {
-  protected vectorService: Database; // internal
-  context: ContextService; // exposed API
-  history: __UpstashRedisHistory | __InMemoryHistory;
+  // Database service for vector operations.
+  protected vectorService: Database;
 
+  // Service for managing conversation context.
+  context: ContextService;
+
+  // History service to store conversation history.
+  history: UpstashRedisHistory | InMemoryHistory;
+
+  // Private field holding the language model instance.
   #model: BaseLanguageModelInterface;
 
   constructor(
     vectorService: Database,
-    historyConfig: { redis: Redis | undefined; metadata: Record<string, unknown> },
+    historyService: HistoryService,
     config: { model: BaseLanguageModelInterface; prompt: CustomPrompt }
   ) {
     this.vectorService = vectorService;
-    this.context = new ContextService(vectorService);
 
-    this.history = historyConfig.redis
-      ? new __UpstashRedisHistory({
-          client: historyConfig.redis,
-          metadata: historyConfig.metadata,
-        })
-      : new __InMemoryHistory();
+    this.history = historyService.service;
+    this.context = new ContextService(vectorService);
 
     this.#model = config.model;
   }
 
+  /**
+   * Prepares the chat environment by retrieving context for the given question.
+   * @returns Promise that resolves to PrepareChatResult, containing the sanitized question and retrieved context.
+   */
   protected async prepareChat({
     question: input,
     similarityThreshold,
     topK,
     namespace,
   }: VectorPayload): Promise<PrepareChatResult> {
+    // Sanitize the input question to ensure consistency.
     const question = sanitizeQuestion(input);
+
+    // Retrieve context relevant to the sanitized question using vector operations.
     const context = await this.vectorService.retrieve({
       question,
       similarityThreshold,
       topK,
       namespace,
     });
+
+    // Return the sanitized question and the retrieved context for further processing.
     return { question, context };
   }
 
-  protected async *makeStreamingAiRequest({
+  protected async makeStreamingAiRequest({
     prompt,
     onComplete,
   }: {
     prompt: string;
     onComplete?: (output: string) => void;
-  }): AsyncIterable<{ output: string; isStream: true }> {
-    let accumulatorOutput = "";
+  }): Promise<{
+    output: ReadableStream<UpstashMessage>;
+    isStream: boolean;
+  }> {
+    const stream = (await this.#model.stream([
+      new HumanMessage(prompt),
+    ])) as IterableReadableStreamInterface<UpstashMessage>;
 
-    try {
-      const stream = (await this.#model.stream([
-        new HumanMessage(prompt),
-      ])) as IterableReadableStreamInterface<UpstashMessage>;
+    const reader = stream.getReader();
+    let concatenatedOutput = "";
 
-      for await (const chunk of stream) {
-        accumulatorOutput += chunk.content;
-        yield { output: chunk.content, isStream: true };
-      }
-    } catch (error) {
-      console.error("Stream writing error:", error);
-    } finally {
-      onComplete?.(accumulatorOutput);
-    }
+    const newStream = new ReadableStream<UpstashMessage>({
+      start(controller) {
+        const processStream = async () => {
+          let done: boolean | undefined;
+          let value: UpstashMessage | undefined;
+
+          try {
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+            while (TRUE) {
+              ({ done, value } = await reader.read());
+              if (done) {
+                break;
+              }
+              const message = value?.content ?? "";
+              concatenatedOutput += message;
+
+              controller.enqueue(value);
+            }
+
+            controller.close();
+
+            // Call the onComplete callback with the concatenated output
+            if (onComplete) {
+              onComplete(concatenatedOutput);
+            }
+          } catch (error) {
+            controller.error(error);
+          }
+        };
+
+        void processStream();
+      },
+    });
+
+    return { output: newStream, isStream: true };
   }
 
   protected async makeAiRequest({

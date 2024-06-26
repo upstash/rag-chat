@@ -2,22 +2,23 @@ import { UpstashModelError } from "./error/model";
 import { RatelimitUpstashError } from "./error/ratelimit";
 
 import { Config } from "./config";
-import { MODEL_NAME_WITH_PROVIDER_SPLITTER } from "./constants.ts";
 import { Database } from "./database";
 import type { CustomPrompt } from "./rag-chat-base";
 import { RAGChatBase } from "./rag-chat-base";
-import { RateLimitService } from "./ratelimit";
-import type { ChatOptions, RAGChatConfig } from "./types";
+import { RateLimitService } from "./ratelimit-service";
+import type { ChatOptions, LangChainAIMessageChunk, RAGChatConfig } from "./types";
 import { appendDefaultsIfNeeded } from "./utils";
+import { HistoryService } from "./history-service";
 
 type ChatReturnType<T extends ChatOptions> = Promise<
   T["streaming"] extends true
-    ? AsyncIterable<{
-        output: string;
-        isStream: true;
-      }>
+    ? {
+        output: ReadableStream<LangChainAIMessageChunk>;
+        isStream: boolean;
+      }
     : { output: string; isStream: false }
 >;
+
 export class RAGChat extends RAGChatBase {
   #ratelimitService: RateLimitService;
   protected promptFn: CustomPrompt;
@@ -25,16 +26,13 @@ export class RAGChat extends RAGChatBase {
   constructor(config: RAGChatConfig) {
     const { vector: index, redis, model, prompt } = new Config(config);
     const vectorService = new Database(index);
+    const historyService = new HistoryService({
+      redis,
+    });
 
     if (!model) {
       throw new UpstashModelError("Model can not be undefined!");
     }
-    const historyService = {
-      redis,
-      metadata: {
-        modelNameWithProvider: `${model.getName()}${MODEL_NAME_WITH_PROVIDER_SPLITTER}${model.getName()}`,
-      },
-    };
 
     super(vectorService, historyService, {
       model,
@@ -78,7 +76,7 @@ export class RAGChat extends RAGChatBase {
 
       // 👇 when ragChat.chat is called, we first add the user message to chat history (without real id)
       await this.history.addMessage({
-        message: { content: input, metadata: options.metadata ?? {}, role: "user" },
+        message: { content: input, role: "user" },
         sessionId: options_.sessionId,
       });
 
@@ -115,7 +113,7 @@ export class RAGChat extends RAGChatBase {
         prompt,
         onComplete: async (output) => {
           await this.history.addMessage({
-            message: { content: output, metadata: {}, role: "assistant" },
+            message: { content: output, metadata: options.metadata ?? {}, role: "assistant" },
             sessionId: options.sessionId,
           });
         },
