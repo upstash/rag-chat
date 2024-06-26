@@ -6,7 +6,7 @@ import type { IterableReadableStreamInterface } from "@langchain/core/utils/stre
 import { ContextService } from "./context-service";
 import type { Database, VectorPayload } from "./database";
 import type { HistoryService } from "./history-service";
-import type { PrepareChatResult } from "./types";
+import type { PrepareChatResult, UpstashMessage } from "./types";
 import { sanitizeQuestion } from "./utils";
 import type { InMemoryHistory } from "./history-service/in-memory-history";
 import type { UpstashRedisHistory } from "./history-service/redis-custom-history";
@@ -17,12 +17,6 @@ export type CustomPrompt = ({ question, chatHistory, context }: PromptParameters
 
 export type Message = { id: string; content: string; role: "ai" | "user" };
 
-export type UpstashMessage<TMetadata extends Record<string, unknown> = Record<string, unknown>> = {
-  role: "assistant" | "user";
-  content: string;
-  metadata: TMetadata;
-  id: string;
-};
 const TRUE = 1;
 export class RAGChatBase {
   // Database service for vector operations.

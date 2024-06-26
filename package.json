@@ -1,15 +1,16 @@
 {
   "name": "@upstash/rag-chat",
-  "version": "0.0.40-alpha",
+  "version": "0.0.41-alpha",
   "main": "./dist/base/index.mjs",
   "types": "./dist/base/index.d.ts",
   "scripts": {
     "test": "",
     "fmt": "prettier --write .",
     "lint": "tsc && eslint \"src/**/*.{js,ts,tsx}\" --quiet --fix",
-    "build": "bun run build:base && bun run build:react",
+    "build": "bun run build:base && bun run build:react && bun run build:nextjs",
     "build:base": "tsup index.ts --format cjs,esm --dts --outDir dist/base/",
     "build:react": "tsup react.ts --format cjs,esm --dts --outDir dist/react/",
+    "build:nextjs": "tsup nextjs.ts --format cjs,esm --dts --outDir dist/nextjs/",
     "prepare": "husky install",
     "a": "yarn build && yarn pack ./dist"
   },
@@ -30,6 +31,11 @@
       "types": "./dist/react/react.d.ts",
       "import": "./dist/react/react.mjs",
       "require": "./dist/react/react.js"
+    },
+    "./nextjs": {
+      "types": "./dist/nextjs/nextjs.d.ts",
+      "import": "./dist/nextjs/nextjs.mjs",
+      "require": "./dist/nextjs/nextjs.js"
     }
   },
   "homepage": "https://upstash.com/vector",
