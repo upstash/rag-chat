@@ -4,7 +4,7 @@ import type { Message } from "ai/react";
 import { useChat } from "ai/react";
 import { useState } from "react";
 
-export default function Chat() {
+export default function Page() {
   const { messages, input, handleInputChange, handleSubmit } = useChat({
     api: "/api/use-chat",
     initialInput:
