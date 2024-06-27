@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import type { UpstashMessage } from "../types";
 import type { StreamableValue } from "ai/rsc";
 import { readStreamableValue } from "ai/rsc";
-import { serverFn } from "./serverfn";
+import { useEffect, useState } from "react";
+import type { UpstashMessage } from "../types";
 
 export type MessageHandlerProps = {
   message: string;
@@ -51,8 +50,6 @@ export const useStream = ({ sessionId, messageHandler, historyGetter }: UseStrea
       setVariables(message);
 
       const { output, isStream } = await messageHandler({ message, sessionId });
-
-      console.log("output is:", output);
 
       if (isStream) {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any
