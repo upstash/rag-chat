@@ -1,16 +1,19 @@
 # Upstash RAG Chat SDK
 
-The `@upstash/rag-chat` SDK simplifies RAG (retrieval-augmented generation) chat development.
+The `@upstash/rag-chat` package makes it easy to develop powerful retrieval-augmented generation (RAG) chat applications with minimal setup and configuration.
 
 Features:
 
-- Creates a Redis instance for your chat history, fully configurable.
-- Creates a Vector store for your knowledge base.
-- Integrates with Next.js using streams and is compatible with other frameworks.
-- Leverages LangChain, Vercel AI SDK, and Upstash products.
-- Allows you to add various data types into your Vector store.
+- Next.js compatibility with streaming support
+- Ingest entire websites, PDFs and more out of the box
+- Built-in Vector store for your knowledge base
+- Built-in Redis compatibility for fast chat history management
 
-## Installation
+## Getting started
+
+### Installation
+
+Choose your package manager:
 
 ```sh
 pnpm add @upstash/rag-chat
@@ -20,151 +23,135 @@ bun add @upstash/rag-chat
 npm i @upstash/rag-chat
 ```
 
-### Basic Usage of Initilization and `chat()`
+### Quick start
 
-If you are planning to use the most basic version of our SDK, make sure you have those files in your `.env`.
+1. Set up your environment variables:
 
 ```sh
 UPSTASH_VECTOR_REST_URL="XXXXX"
 UPSTASH_VECTOR_REST_TOKEN="XXXXX"
 
+# OPTIONAL - Otherwise kept in-memory automatically
 UPSTASH_REDIS_REST_URL="XXXXX"
 UPSTASH_REDIS_REST_TOKEN="XXXXX"
 ```
 
-Now, you are all set. Required Redis and Vector instances will be created for you.
+2. Initialize and use RAGChat:
 
 ```typescript
 import { RAGChat } from "@upstash/rag-chat";
 
 const ragChat = new RAGChat();
-await ragchat.chat("Say Hello To My Little Friend", { stream: true });
+
+await ragChat.chat("Tell me about machine learning", { streaming: true });
 ```
 
-### Usage of Initialization with QStash LLM
+### Choosing a Model to chat with
 
-It's possible to use the RAG Chat SDK with the LLMs provided by Upstash.
+RAGChat supports both Upstash-hosted models and all OpenAI models out of the box:
+
+```typescript
+import { RAGChat, openaiModel } from "@upstash/rag-chat";
+
+export const ragChat = new RAGChat({
+  model: openaiModel("gpt-4-turbo"),
+});
+```
+
+or to use Upstash-hosted open-source models:
+
+```typescript
+import { RAGChat, upstashModel } from "@upstash/rag-chat";
+
+export const ragChat = new RAGChat({
+  model: upstashModel("mistralai/Mistral-7B-Instruct-v0.2"),
+});
+```
 
 <details>
-  <summary>How to setup QStash LLM?</summary><br>
+  <summary>Where do I find my Upstash API key?</summary><br>
 
-It only takes few clicks.
-
-- First, navigate to [Upstash Console](https://console.upstash.com/qstash).
+- Navigate to your [Upstash QStash Console](https://console.upstash.com/qstash).
 - Scroll down to the **Environment Keys** section and copy the `QSTASH_TOKEN` to your `.env` file.
 - ![QStash Credentials](./img/qstash.png)
 
 </details>
 
+### Configuration options
+
+This package offers extensive customization options. Here's an example of a more custom setup:
+
 ```typescript
-const ragChat = new RAGChat({
-  model: new UpstashLLMClient({
-    model: "meta-llama/Meta-Llama-3-8B-Instruct",
-    apiKey: process.env.QSTASH_TOKEN!,
-    streaming: true,
-  }),
+import { RAGChat, openaiModel } from "@upstash/rag-chat";
+
+export const ragChat = new RAGChat({
+  model: openaiModel("gpt-4-turbo"),
+  prompt: ({ context, question, chatHistory }) =>
+    `You are an AI assistant with access to an Upstash Vector Store.
+Use the provided context and chat history to answer the question.
+If the answer isn't available, politely inform the user.
+
+Chat history:
+${chatHistory}
+
+Context:
+${context}
+
+Question: ${question}
+Answer:`,
 });
 ```
 
-### Advance Usage of Initilization and `chat()`
+### Adding knowledge to your chat
+
+Easily add different types of data to your RAG application:
 
 ```typescript
-import { ChatOpenAI } from "@langchain/openai";
-import { PromptTemplate } from "@langchain/core/prompts";
-import { Index } from "@upstash/vector";
-import { Redis } from "@upstash/redis";
-import { Ratelimit } from "@upstash/ratelimit";
-
-const ragChat = new RAGChat({
-  model: new ChatOpenAI({
-    modelName: "gpt-3.5-turbo",
-    streaming: false,
-    verbose: false,
-    temperature: 0,
-    apiKey: process.env.OPENAI_API_KEY,
-  }),
-  vector: new Index(),
-  redis: new Redis(),
-  prompt: PromptTemplate.fromTemplate("Just say `I'm a cookie monster`. Nothing else."),
-  ratelimit: new Ratelimit({
-    redis,
-    limiter: Ratelimit.tokenBucket(1, "1d", 1),
-    prefix: "@upstash/rag-chat-ratelimit",
-  }),
-});
-
-await ragchat.chat("Say Hello To My Little Friend", {
-  stream: true,
-  includeHistory: 5,
-  ratelimitSessionId: "user-ip",
-  sessionId: "chat-session-id",
-  similarityThreshold: 0.8,
-  topK: 10,
+await ragChat.context.add({
+  dataType: "text",
+  data: "The speed of light is approximately 299,792,458 meters per second.",
 });
 ```
 
-### Usage of `addContext()`
-
-There are various way to add data into your RAG application, but the most simple one is this:
-
 ```typescript
-const ragChat = new RAGChat({...});
-await ragChat.addContext("Tokyo is the capital of Japan.");
-
-await ragchat.chat("Where is the capital of Japan.", { stream: true });
-```
-
-But, you can also add various files:
-
-```typescript
-//Adding embeddings
-await ragChat.addContext(
-  {
-    dataType: "embedding",
-    data: [{ input: [1, 2, 3, 4], id: "embedding-data", metadata: "My custom embedding data" }], // Metadata value will be mapped your `metadataKey`
-  },
-  { metadataKey: "text" }
-);
-
-// Adding text with better control
-await ragChat.addContext(
-  {
-    dataType: "text",
-    data: "Hello there!", //This will also be your metadata
-    id: "my-custom-id",
-  },
-  { metadataKey: "text" }
-);
-
-//Adding PDF
-await ragChat.addContext({
+await ragChat.context.add({
   dataType: "pdf",
-  fileSource: "./data/the_wonderful_wizard_of_oz.pdf",
-  opts: { chunkSize: 500, chunkOverlap: 50 },
-});
+  fileSource: "./data/quantum_computing_basics.pdf",
 
-//Adding CSV
-await ragChat.addContext({
-  dataType: "csv",
-  fileSource: "./data/list_of_user_info.csv",
+  // optional 👇: only add this knowledge to a specific namespace
+  options: { namespace: "user-123-documents" },
 });
+```
 
-//Adding TXT
-await ragChat.addContext({
-  dataType: "text-file",
-  fileSource: "./data/the_wonderful_wizard_of_oz_summary.txt",
-  opts: { chunkSize: 500, chunkOverlap: 50 },
-});
-
-//Adding HTML
-await ragChat.addContext({
+```typescript
+await ragChat.context.add({
   dataType: "html",
-  fileSource: "./data/the_wonderful_wizard_of_oz_summary.html",
-});
+  fileSource: "https://en.wikipedia.org/wiki/Quantum_computing",
 
-//You can even add remote HTML page, but this requires OpenAI key in order to organize the content on the page.
-await ragChat.addContext({
-  dataType: "html",
-  fileSource: "https://en.wikipedia.org/wiki/Tokyo",
+  // optional 👇: custom page parsing settings
+  config: { chunkOverlap: 50, chunkSize: 200 },
 });
+```
+
+Each addition to your context returns the IDs of the created documents, in case you ever want to delete them later:
+
+```typescript
+await ragChat.context.delete({ id: "1", namespace: "..." });
+```
+
+or deleting multiple documents:
+
+## Handling responses
+
+If a response is not streamed, you can simply grab the string output to display in your application:
+
+```typescript
+const { output } = await ragChat.chat("How are you", { streaming: false });
+```
+
+As you can see by checking your message history, the AI response is automatically added to the message history:
+
+```typescript
+const history = await ragChat.history.getMessages({ amount: 10 });
+console.log(history);
 ```
