@@ -45,7 +45,7 @@ const initializeRedis = () => {
  * It first looks for QStash LLM tokens, if not present, looks for OpenAI tokens. If both of them are missing returns undefined.
  */
 const initializeModel = () => {
-  const qstashToken = process.env.UPSTASH_LLM_REST_TOKEN;
+  const qstashToken = process.env.QSTASH_TOKEN;
   const openAIToken = process.env.OPENAI_API_KEY;
 
   if (qstashToken)
