@@ -2,7 +2,7 @@ import { RAGChat, upstashModel } from "@upstash/rag-chat";
 import { aiUseChatAdapter } from "@upstash/rag-chat/nextjs";
 import type { Message } from "ai";
 
-// Allow streaming responses up to 30 seconds
+// 👇 allow streaming responses up to 30 seconds
 export const maxDuration = 30;
 
 export async function POST(request: Request) {
@@ -13,11 +13,10 @@ export async function POST(request: Request) {
 
   const ragChat = new RAGChat({
     model: upstashModel("meta-llama/Meta-Llama-3-8B-Instruct"),
+
+    // 👇 ALTERNATIVE
+    // model: openaiModel("gpt-4-turbo")
   });
-  //OR
-  //   const ragChat = new RAGChat({
-  //     model: openaiModel("gpt-4"),
-  //   });
 
   const response = await ragChat.chat(question, { streaming: true });
 
