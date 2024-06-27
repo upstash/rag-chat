@@ -69,14 +69,14 @@ export class RAGChatBase {
     return { question, context };
   }
 
-  protected async makeStreamingAiRequest({
+  protected async makeStreamingLLMRequest({
     prompt,
     onComplete,
   }: {
     prompt: string;
     onComplete?: (output: string) => void;
   }): Promise<{
-    output: ReadableStream<UpstashMessage>;
+    output: ReadableStream<string>;
     isStream: boolean;
   }> {
     const stream = (await this.#model.stream([
@@ -86,7 +86,7 @@ export class RAGChatBase {
     const reader = stream.getReader();
     let concatenatedOutput = "";
 
-    const newStream = new ReadableStream<UpstashMessage>({
+    const newStream = new ReadableStream<string>({
       start(controller) {
         const processStream = async () => {
           let done: boolean | undefined;
@@ -102,7 +102,7 @@ export class RAGChatBase {
               const message = value?.content ?? "";
               concatenatedOutput += message;
 
-              controller.enqueue(value);
+              controller.enqueue(message);
             }
 
             controller.close();
@@ -123,7 +123,7 @@ export class RAGChatBase {
     return { output: newStream, isStream: true };
   }
 
-  protected async makeAiRequest({
+  protected async makeLLMRequest({
     prompt,
     onComplete,
   }: {

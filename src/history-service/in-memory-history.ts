@@ -10,7 +10,7 @@ declare global {
   var store: Record<
     string,
     {
-      messages: (Omit<UpstashMessage, "id"> & { __internal_order: number })[];
+      messages: Omit<UpstashMessage, "id">[];
     }
   >;
 }
@@ -40,7 +40,7 @@ export class InMemoryHistory implements BaseMessageHistory {
     const newMessages = [
       {
         ...message,
-        __internal_order: oldMessages.length,
+        // __internal_order: oldMessages.length,
       },
       ...oldMessages,
     ];
@@ -60,16 +60,18 @@ export class InMemoryHistory implements BaseMessageHistory {
     sessionId = DEFAULT_CHAT_SESSION_ID,
     amount = DEFAULT_HISTORY_LENGTH,
   }): Promise<UpstashMessage[]> {
-    const messages = global.store[sessionId].messages || [];
+    if (!global.store[sessionId]) {
+      global.store[sessionId] = { messages: [] };
+    }
 
-    const sortedMessages = messages
-      .slice(0, amount)
-      .sort((a, b) => (a.__internal_order > b.__internal_order ? -1 : 1));
-    const messagesInOrder = sortedMessages.map(({ __internal_order, ...rest }) => ({
-      ...rest,
-      id: __internal_order.toString(),
+    const messages = global.store[sessionId]?.messages ?? [];
+
+    const sortedMessages = messages.slice(0, amount);
+    const messagesWithId = sortedMessages.map((msg, index) => ({
+      ...msg,
+      id: index.toString(),
     }));
 
-    return messagesInOrder;
+    return messagesWithId;
   }
 }

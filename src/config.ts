@@ -63,6 +63,6 @@ const initializeModel = () => {
   }
 
   throw new Error(
-    "[RagChat Error]: Unable to create model. Pass one of OPENAI_API_KEY or QSTASH_TOKEN environment variables."
+    "[RagChat Error]: Unable to connect to model. Pass one of OPENAI_API_KEY or QSTASH_TOKEN environment variables."
   );
 };

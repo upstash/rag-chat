@@ -3,17 +3,17 @@ import { RatelimitUpstashError } from "./error/ratelimit";
 
 import { Config } from "./config";
 import { Database } from "./database";
+import { HistoryService } from "./history-service";
 import type { CustomPrompt } from "./rag-chat-base";
 import { RAGChatBase } from "./rag-chat-base";
 import { RateLimitService } from "./ratelimit-service";
-import type { ChatOptions, LangChainAIMessageChunk, RAGChatConfig } from "./types";
+import type { ChatOptions, RAGChatConfig } from "./types";
 import { appendDefaultsIfNeeded } from "./utils";
-import { HistoryService } from "./history-service";
 
 type ChatReturnType<T extends ChatOptions> = Promise<
   T["streaming"] extends true
     ? {
-        output: ReadableStream<LangChainAIMessageChunk>;
+        output: ReadableStream<string>;
         isStream: boolean;
       }
     : { output: string; isStream: false }
@@ -109,7 +109,7 @@ export class RAGChat extends RAGChatBase {
 
       // Either calls streaming or non-streaming function from RAGChatBase. Streaming function returns AsyncIterator and allows callbacks like onComplete.
       //@ts-expect-error TS can't infer types because of .call()
-      return (options.streaming ? this.makeStreamingAiRequest : this.makeAiRequest).call(this, {
+      return (options.streaming ? this.makeStreamingLLMRequest : this.makeLLMRequest).call(this, {
         prompt,
         onComplete: async (output) => {
           await this.history.addMessage({

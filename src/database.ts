@@ -102,7 +102,8 @@ export class Database {
     const allValuesUndefined = result.every((embedding) => embedding.data === undefined);
 
     if (allValuesUndefined) {
-      throw new TypeError("There is no answer for this question in the provided context.");
+      console.error("There is no answer for this question in the provided context.");
+      return formatFacts(["There is no answer for this question in the provided context."]);
     }
 
     const facts = result

@@ -8,10 +8,9 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { RatelimitUpstashError } from "./error/ratelimit";
 import { RAGChat } from "./rag-chat";
 import { awaitUntilIndexed } from "./test-utils";
-import type { LangChainAIMessageChunk } from "./types";
 
 async function checkStream(
-  stream: ReadableStream<LangChainAIMessageChunk>,
+  stream: ReadableStream<string>,
   expectInStream: string[] // array of strings to expect in stream
 ): Promise<void> {
   const _stream = LangChainAdapter.toAIStream(stream);
