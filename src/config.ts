@@ -6,7 +6,7 @@ import { Index } from "@upstash/vector";
 import type { CustomPrompt } from "./rag-chat-base";
 import type { RAGChatConfig } from "./types";
 import { UpstashLLMClient } from "./upstash-llm-client";
-import { defaultPrompt } from "./constants";
+import { DEFAULT_PROMPT } from "./constants";
 
 export class Config {
   public readonly vector: Index;
@@ -23,7 +23,7 @@ export class Config {
     this.ratelimit = config?.ratelimit;
 
     this.model = config?.model ?? initializeModel();
-    this.prompt = config?.prompt ?? defaultPrompt;
+    this.prompt = config?.prompt ?? DEFAULT_PROMPT;
   }
 }
 
