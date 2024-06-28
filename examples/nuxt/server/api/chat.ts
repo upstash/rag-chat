@@ -20,11 +20,10 @@ export default defineLazyEventHandler(async () => {
         url: apiKey.UPSTASH_VECTOR_REST_URL,
       }),
       model: upstashModel("meta-llama/Meta-Llama-3-8B-Instruct", { apiKey: apiKey.QSTASH_TOKEN }),
+
+      // 👇 ALTERNATIVE
+      // model: openaiModel("gpt-4"),
     });
-    //OR
-    //   const ragChat = new RAGChat({
-    //     model: openaiModel("gpt-4"),
-    //   });
 
     const response = await ragChat.chat(question, { streaming: true });
 

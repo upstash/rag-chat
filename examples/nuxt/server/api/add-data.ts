@@ -1,11 +1,6 @@
 import { RAGChat, upstashModel } from "@upstash/rag-chat";
-import { aiUseChatAdapter } from "@upstash/rag-chat/nextjs";
 import { Index } from "@upstash/vector";
-import { Message } from "ai";
 
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
 export default defineLazyEventHandler(async () => {
   const apiKey = useRuntimeConfig();
 
@@ -42,8 +37,12 @@ export default defineLazyEventHandler(async () => {
     ]);
 
     // 👇 slight delay to allow for vector indexing
-    await sleep(10);
+    await sleep(3000);
 
     return new Response("OK");
   });
 });
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}

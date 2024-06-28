@@ -1,6 +1,6 @@
 # RAGChat with Nuxt.js Example
 
-This project demonstrates how to implement RAGChat (Retrieval-Augmented Generation Chat) using Nuxt.js. For easy message management, we also use the Vercel AI-SDK. This is fully optional and simplifies our example.
+This project demonstrates how to implement RAGChat (Retrieval-Augmented Generation Chat) using Next.js server actions.
 
 ## Getting started
 
@@ -20,11 +20,10 @@ The app will start running on `http://localhost:3000`.
 
 ### How It Works
 
-1. Chat Interface: The frontend uses the Vercel AI SDK to manage chat messages and interactions.
-   API Routes:
+1. Server actions: The server actions for adding data as well as chatting are located in `actions.ts`:
 
-   - `/api/chat`: Handles chat requests, retrieves relevant information using RAG, and streams responses back to the client.
-   - `/api/add-data`: Adds new data to the knowledge base for future retrieval.
+   - `server_chat`: Handles chat requests, retrieves relevant information using RAG, and streams responses back to the client.
+   - `server_add_data`: Adds new data to the knowledge base for future retrieval.
 
 2. RAG Implementation: The RAGChat class from @upstash/rag-chat is used to integrate the vector database and language model.
 3. Vector Database: Upstash Vector is used to store and retrieve context-relevant information.

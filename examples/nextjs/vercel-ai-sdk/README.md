@@ -1,6 +1,6 @@
-# RAGChat with Solid.js Example
+# RAGChat with Next.js Example
 
-This project demonstrates how to implement RAGChat (Retrieval-Augmented Generation Chat) using Solid.js. For easy message management, we also use the Vercel AI-SDK. This is fully optional and simplifies our example.
+This project demonstrates how to implement RAGChat (Retrieval-Augmented Generation Chat) using Next.js route handlers. For easy message management, we also use the Vercel AI-SDK. This is fully optional and simplifies our example.
 
 ## Getting started
 

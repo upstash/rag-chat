@@ -6,7 +6,7 @@ import { useState } from "react";
 
 export default function Page() {
   const { messages, input, handleInputChange, handleSubmit } = useChat({
-    api: "/api/use-chat",
+    api: "/api/chat",
     initialInput:
       "What year was the construction of the Eiffel Tower completed, and what is its height?",
   });

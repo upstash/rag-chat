@@ -1,32 +1,35 @@
-# Vercel AI SDK, Svelte, and OpenAI Chat Example
+# RAGChat with SvelteKit Example
 
-This example shows how to use the [Vercel AI SDK](https://sdk.vercel.ai/docs) with [Svelte](https://svelte.dev/) and [OpenAI](https://openai.com) to create a ChatGPT-like AI-powered streaming chat bot.
+This project demonstrates how to implement RAGChat (Retrieval-Augmented Generation Chat) using SvelteKit. For easy message management, we also use the Vercel AI-SDK. This is fully optional and simplifies our example.
 
-## Deploy your own
+## Getting started
 
-Deploy the example using [Vercel](https://vercel.com?utm_source=github&utm_medium=readme&utm_campaign=ai-sdk-example):
+### 1. Install packages
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvercel%2Fai%2Ftree%2Fmain%2Fexamples%2Fsveltekit-openai&env=OPENAI_API_KEY&envDescription=OpenAI%20API%20Key&envLink=https%3A%2F%2Fplatform.openai.com%2Faccount%2Fapi-keys&project-name=vercel-ai-chat-svelte&repository-name=vercel-ai-chat-svelte)
+```bash
+npm install
+```
 
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+### 2. Start the app
 
 ```bash
 npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
 ```
 
-## Building
+The app will start running on `http://localhost:3000`.
 
-To create a production version of your app:
+### How It Works
 
-```bash
-npm run build
-```
+1. Chat Interface: The frontend uses the Vercel AI SDK to manage chat messages and interactions.
+   API Routes:
 
-You can preview the production build with `npm run preview`.
+   - `/api/chat`: Handles chat requests, retrieves relevant information using RAG, and streams responses back to the client.
+   - `/api/add-data`: Adds new data to the knowledge base for future retrieval.
 
-> To deploy your app, you may need to install an [adapter](https://kit.svelte.dev/docs/adapters) for your target environment.
+2. RAG Implementation: The RAGChat class from @upstash/rag-chat is used to integrate the vector database and language model.
+3. Vector Database: Upstash Vector is used to store and retrieve context-relevant information.
+4. Language Model: The example uses Meta's Llama 3 8B Instruct model via QStash, but can be easily switched to OpenAI's GPT models.
+
+### Customization
+
+Upstash RAGChat is highly customizable to suit your needs. For all available options, please refer to our RAGChat documentation.
