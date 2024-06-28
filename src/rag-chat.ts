@@ -10,7 +10,7 @@ import { RateLimitService } from "./ratelimit-service";
 import type { ChatOptions, RAGChatConfig } from "./types";
 import { appendDefaultsIfNeeded } from "./utils";
 
-type ChatReturnType<T extends ChatOptions> = Promise<
+type ChatReturnType<T extends Partial<ChatOptions>> = Promise<
   T["streaming"] extends true
     ? {
         output: ReadableStream<string>;
@@ -54,10 +54,10 @@ export class RAGChat extends RAGChatBase {
    *})
    * ```
    */
-  async chat<const TChatOptions extends ChatOptions>(
+  async chat<const TChatOptions extends Partial<ChatOptions>>(
     input: string,
-    options: TChatOptions
-  ): ChatReturnType<TChatOptions> {
+    options?: Partial<TChatOptions>
+  ): Promise<ChatReturnType<TChatOptions>> {
     try {
       // Adds all the necessary default options that users can skip in the options parameter above.
       const options_ = appendDefaultsIfNeeded(options);
@@ -109,15 +109,15 @@ export class RAGChat extends RAGChatBase {
 
       // Either calls streaming or non-streaming function from RAGChatBase. Streaming function returns AsyncIterator and allows callbacks like onComplete.
       //@ts-expect-error TS can't infer types because of .call()
-      return (options.streaming ? this.makeStreamingLLMRequest : this.makeLLMRequest).call(this, {
+      return (options_.streaming ? this.makeStreamingLLMRequest : this.makeLLMRequest).call(this, {
         prompt,
         onComplete: async (output) => {
           await this.history.addMessage({
-            message: { content: output, metadata: options.metadata ?? {}, role: "assistant" },
-            sessionId: options.sessionId,
+            message: { content: output, metadata: options_.metadata, role: "assistant" },
+            sessionId: options_.sessionId,
           });
         },
-      }) as unknown as ChatReturnType<TChatOptions>;
+      }) as ChatReturnType<TChatOptions>;
     } catch (error) {
       console.error(error);
       throw error;
