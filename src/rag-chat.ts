@@ -23,7 +23,7 @@ export class RAGChat extends RAGChatBase {
   #ratelimitService: RateLimitService;
   protected promptFn: CustomPrompt;
 
-  constructor(config: RAGChatConfig) {
+  constructor(config?: RAGChatConfig) {
     const { vector: index, redis, model, prompt } = new Config(config);
     const vectorService = new Database(index);
     const historyService = new HistoryService({
@@ -41,7 +41,7 @@ export class RAGChat extends RAGChatBase {
 
     this.promptFn = prompt;
 
-    this.#ratelimitService = new RateLimitService(config.ratelimit);
+    this.#ratelimitService = new RateLimitService(config?.ratelimit);
   }
 
   /**
