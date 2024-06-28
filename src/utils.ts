@@ -28,18 +28,6 @@ export const formatChatHistory = (chatHistory: BaseMessage[]) => {
   return formatFacts(formattedDialogueTurns);
 };
 
-export const DEFAULT_OPTIONS: ChatOptions = {
-  streaming: false,
-  metadata: {},
-  sessionId: DEFAULT_CHAT_SESSION_ID,
-  ratelimitSessionId: DEFAULT_CHAT_RATELIMIT_SESSION_ID,
-  similarityThreshold: DEFAULT_SIMILARITY_THRESHOLD,
-  topK: DEFAULT_TOP_K,
-  historyLength: DEFAULT_HISTORY_LENGTH,
-  historyTTL: DEFAULT_HISTORY_TTL,
-  namespace: DEFAULT_NAMESPACE,
-} satisfies ChatOptions;
-
 export function appendDefaultsIfNeeded(options: Partial<ChatOptions> | undefined): ChatOptions {
   return {
     ...options,
