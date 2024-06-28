@@ -17,42 +17,42 @@ export type ChatOptions = {
   /** Chat session ID of the user interacting with the application.
    * @default "upstash-rag-chat-session"
    */
-  sessionId?: string;
+  sessionId: string;
 
   /** Length of the conversation history to include in your LLM query. Increasing this may lead to hallucinations. Retrieves the last N messages.
    * @default 5
    */
-  historyLength?: number;
+  historyLength: number;
 
   /** Configuration to retain chat history. After the specified time, the history will be automatically cleared.
    * @default 86_400 // 1 day in seconds
    */
-  historyTTL?: number;
+  historyTTL: number;
 
   /** Configuration to adjust the accuracy of results.
    * @default 0.5
    */
-  similarityThreshold?: number;
+  similarityThreshold: number;
 
   /** Rate limit session ID of the user interacting with the application.
    * @default "upstash-rag-chat-ratelimit-session"
    */
-  ratelimitSessionId?: string;
+  ratelimitSessionId: string;
 
   /** Amount of data points to include in your LLM query.
    * @default 5
    */
-  topK?: number;
+  topK: number;
 
   /**
    * Namespace of the index you wanted to query.
    */
-  namespace?: string;
+  namespace: string;
 
   /**
    * Metadata for your chat message. This could be used to store anything in the chat history. By default RAG Chat SDK uses this to persist used model name in the history
    */
-  metadata?: UpstashDict;
+  metadata: UpstashDict;
 };
 
 export type PrepareChatResult = {
