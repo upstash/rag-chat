@@ -40,7 +40,8 @@ export default defineLazyEventHandler(async () => {
         data: "Paris boasts a rich culinary scene, with a plethora of bistros, cafés, and Michelin-starred restaurants serving exquisite French cuisine.",
       }),
     ]);
-    //Make sure datas are indexed properly
+
+    // 👇 slight delay to allow for vector indexing
     await sleep(10);
 
     return new Response("OK");

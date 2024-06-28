@@ -1,16 +1,13 @@
-import { env } from "$env/dynamic/private";
-import type { RequestHandler } from "@sveltejs/kit";
-import { RAGChat, upstashModel } from "@upstash/rag-chat";
+/* eslint-disable @typescript-eslint/no-magic-numbers */
+import { RAGChat } from "@upstash/rag-chat";
 import { Index } from "@upstash/vector";
 
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-export const POST = (async () => {
+export async function POST() {
   const ragChat = new RAGChat({
-    vector: new Index({ token: env.UPSTASH_VECTOR_REST_TOKEN, url: env.UPSTASH_VECTOR_REST_URL }),
-    model: upstashModel("meta-llama/Meta-Llama-3-8B-Instruct", { apiKey: env.QSTASH_TOKEN }),
+    vector: new Index({
+      token: import.meta.env.UPSTASH_VECTOR_REST_TOKEN,
+      url: import.meta.env.UPSTASH_VECTOR_REST_URL,
+    }),
   });
   await Promise.all([
     ragChat.context.add({
@@ -34,8 +31,13 @@ export const POST = (async () => {
       data: "Paris boasts a rich culinary scene, with a plethora of bistros, cafés, and Michelin-starred restaurants serving exquisite French cuisine.",
     }),
   ]);
+
   // 👇 slight delay to allow for vector indexing
   await sleep(10);
 
   return new Response("OK");
-}) satisfies RequestHandler;
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
