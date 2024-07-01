@@ -1,5 +1,4 @@
 import { defineConfig } from "tsup";
-
 export default defineConfig([
   {
     entry: ["./index.ts"],
@@ -22,7 +21,6 @@ export default defineConfig([
   {
     entry: ["src/nextjs/index.ts"],
     outDir: "dist/nextjs",
-    format: ["esm"],
     dts: true,
     outExtension() {
       return {

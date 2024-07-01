@@ -27,7 +27,7 @@ export async function POST() {
   ]);
 
   // 👇 slight delay to allow for vector indexing
-  await sleep(10);
+  await sleep(5000);
 
   return new Response("OK");
 }
