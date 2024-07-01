@@ -128,32 +128,3 @@ export type UpstashMessage<TMetadata extends UpstashDict = UpstashDict> = {
   metadata?: TMetadata | undefined;
   id: string;
 };
-
-type LangChainImageDetail = "auto" | "low" | "high";
-type LangChainMessageContentText = {
-  type: "text";
-  text: string;
-};
-type LangChainMessageContentImageUrl = {
-  type: "image_url";
-  image_url:
-    | string
-    | {
-        url: string;
-        detail?: LangChainImageDetail;
-      };
-};
-type LangChainMessageContentComplex =
-  | LangChainMessageContentText
-  | LangChainMessageContentImageUrl
-  | (Record<string, unknown> & {
-      // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
-      type?: "text" | "image_url" | string;
-    })
-  | (Record<string, unknown> & {
-      type?: never;
-    });
-type LangChainMessageContent = string | LangChainMessageContentComplex[];
-export type LangChainAIMessageChunk = {
-  content: LangChainMessageContent;
-};

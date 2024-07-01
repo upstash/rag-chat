@@ -1,5 +1,4 @@
 import { LangChainAdapter, StreamingTextResponse } from "ai";
-import type { LangChainAIMessageChunk } from "../types";
 
 /**
  * Converts a ReadableStream response from the chat() function into a StreamingTextResponse
@@ -11,7 +10,7 @@ import type { LangChainAIMessageChunk } from "../types";
  * @returns StreamingTextResponse - The adapted response for use with the useChat hook.
  */
 export const aiUseChatAdapter = (response: {
-  output: ReadableStream<LangChainAIMessageChunk>;
+  output: ReadableStream<string>;
   isStream: boolean;
 }) => {
   const wrappedStream = LangChainAdapter.toAIStream(response.output);
