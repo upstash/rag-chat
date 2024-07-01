@@ -22,6 +22,7 @@ export default defineConfig([
   {
     entry: ["src/nextjs/index.ts"],
     outDir: "dist/nextjs",
+    format: ["esm"],
     dts: true,
     outExtension() {
       return {
