@@ -1,4 +1,4 @@
-import { Chat } from "./components/Chat";
+import { Chat } from "./components/chat";
 import { ragChat } from "./rag-chat";
 
 export default async function Page() {
