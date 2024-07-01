@@ -114,7 +114,7 @@ Add various types of data to your RAG application:
 
 ```typescript
 await ragChat.context.add({
-  dataType: "text",
+  type: "text",
   data: "The speed of light is approximately 299,792,458 meters per second.",
 });
 ```
@@ -123,7 +123,7 @@ await ragChat.context.add({
 
 ```typescript
 await ragChat.context.add({
-  dataType: "pdf",
+  type: "pdf",
   fileSource: "./data/quantum_computing_basics.pdf",
 
   // optional 👇: only add this knowledge to a specific namespace
@@ -135,8 +135,8 @@ await ragChat.context.add({
 
 ```typescript
 await ragChat.context.add({
-  dataType: "html",
-  fileSource: "https://en.wikipedia.org/wiki/Quantum_computing",
+  type: "html",
+  source: "https://en.wikipedia.org/wiki/Quantum_computing",
 
   // optional 👇: custom page parsing settings
   config: { chunkOverlap: 50, chunkSize: 200 },
