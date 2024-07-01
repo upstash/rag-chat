@@ -11,17 +11,8 @@ export default defineConfig([
     minify: false,
   },
   {
-    entry: ["./react.ts"],
-    outDir: "dist/react",
-    format: ["cjs", "esm"],
-    sourcemap: false,
-    clean: true,
-    dts: true,
-    minify: false,
-  },
-  {
-    entry: ["src/rsc/rsc-server.ts", "src/rsc/rsc-client.ts"],
-    outDir: "dist/rsc",
+    entry: ["src/nextjs/rsc-server.ts", "src/nextjs/rsc-client.ts"],
+    outDir: "dist/nextjs",
     format: ["esm"],
     external: ["react"],
     dts: true,
@@ -29,8 +20,8 @@ export default defineConfig([
     sourcemap: true,
   },
   {
-    entry: ["src/rsc/index.ts"],
-    outDir: "dist/rsc",
+    entry: ["src/nextjs/index.ts"],
+    outDir: "dist/nextjs",
     dts: true,
     outExtension() {
       return {

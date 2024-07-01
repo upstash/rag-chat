@@ -1,3 +1,3 @@
-export * from "./src/rsc/chat-adapter";
-export * from "./src/rsc/server-action-adapter";
-export * from "./src/rsc/server-action-read-adapter";
+export * from "./src/nextjs/chat-adapter";
+export * from "./src/nextjs/server-action-write-adapter";
+export * from "./src/nextjs/server-action-read-adapter";
