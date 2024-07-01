@@ -3,7 +3,7 @@
 import type { UpstashMessage } from "@upstash/rag-chat";
 import { readServerActionStream } from "@upstash/rag-chat/nextjs";
 import { useState } from "react";
-import { server_add_data, server_chat } from "../actions";
+import { serverAddData, serverChat } from "../actions";
 
 export const Chat = ({ initialMessages }: { initialMessages?: UpstashMessage[] }) => {
   const [messages, setMessages] = useState<UpstashMessage[]>(initialMessages ?? []);
@@ -20,7 +20,7 @@ export const Chat = ({ initialMessages }: { initialMessages?: UpstashMessage[] }
     setIsLoading(true);
 
     try {
-      const stream = await server_chat({ userMessage });
+      const stream = await serverChat({ userMessage });
       let aiMessage: UpstashMessage = {
         content: "",
         role: "assistant",
@@ -46,7 +46,7 @@ export const Chat = ({ initialMessages }: { initialMessages?: UpstashMessage[] }
   const handleAddData = async () => {
     setIsLoading(true);
     try {
-      await server_add_data();
+      await serverAddData();
     } catch (error) {
       console.error("Error adding data:", error);
     } finally {

@@ -4,7 +4,7 @@ import type { UpstashMessage } from "@upstash/rag-chat";
 import { createServerActionStream } from "@upstash/rag-chat/nextjs";
 import { ragChat } from "./rag-chat";
 
-export const server_chat = async ({ userMessage }: { userMessage: UpstashMessage }) => {
+export const serverChat = async ({ userMessage }: { userMessage: UpstashMessage }) => {
   const { output } = await ragChat.chat(userMessage.content, { streaming: true });
 
   // 👇 adapter to convert standard readable stream into rsc-compatible stream
@@ -13,7 +13,7 @@ export const server_chat = async ({ userMessage }: { userMessage: UpstashMessage
   return stream;
 };
 
-export const server_add_data = async () => {
+export const serverAddData = async () => {
   await Promise.all([
     ragChat.context.add({
       type: "text",
