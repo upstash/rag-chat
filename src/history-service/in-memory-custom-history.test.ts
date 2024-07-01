@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { InMemoryHistory } from "./in-memory-history";
 
-test.skip("should give last 3 messages from in-memory", async () => {
+test("should give last 3 messages from in-memory", async () => {
   const messageHistoryLength = 3;
   const history = new InMemoryHistory();
   await history.addMessage({ message: { content: "Hello!", role: "user" } });
@@ -14,10 +14,10 @@ test.skip("should give last 3 messages from in-memory", async () => {
   const final = (await history.getMessages({ amount: messageHistoryLength })).map(
     (message) => message.content
   );
-  expect(["Whats your name?", "Upstash", "Good."]).toEqual(final);
+  expect(["What's your name?", "Upstash", "Good."]).toEqual(final);
 });
 
-test.skip("should give all the messages", async () => {
+test("should give all the messages", async () => {
   const history = new InMemoryHistory();
   await history.addMessage({ message: { content: "Hello!", role: "user" } });
   await history.addMessage({ message: { content: "Hello, human.", role: "assistant" } });
@@ -27,5 +27,5 @@ test.skip("should give all the messages", async () => {
 
   // eslint-disable-next-line unicorn/no-await-expression-member
   const final = (await history.getMessages({ amount: 5 })).map((message) => message.content);
-  expect(["Hello!", "Hello, human.", "Whats your name?", "Upstash", "Good."]).toEqual(final);
+  expect(["Hello!", "Hello, human.", "What's your name?", "Upstash", "Good."]).toEqual(final);
 });

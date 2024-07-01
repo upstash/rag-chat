@@ -9,6 +9,7 @@ import { RAGChatBase } from "./rag-chat-base";
 import { RateLimitService } from "./ratelimit-service";
 import type { ChatOptions, RAGChatConfig } from "./types";
 import { appendDefaultsIfNeeded } from "./utils";
+import { UpstashVectorError } from "./error/vector";
 
 type ChatReturnType<T extends Partial<ChatOptions>> = Promise<
   T["streaming"] extends true
@@ -25,6 +26,11 @@ export class RAGChat extends RAGChatBase {
 
   constructor(config?: RAGChatConfig) {
     const { vector: index, redis, model, prompt } = new Config(config);
+
+    if (!index) {
+      throw new UpstashVectorError("Vector can not be undefined!");
+    }
+
     const vectorService = new Database(index);
     const historyService = new HistoryService({
       redis,

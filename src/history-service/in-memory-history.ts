@@ -66,7 +66,7 @@ export class InMemoryHistory implements BaseMessageHistory {
 
     const messages = global.store[sessionId]?.messages ?? [];
 
-    const sortedMessages = messages.slice(0, amount);
+    const sortedMessages = messages.slice(0, amount).reverse();
     const messagesWithId = sortedMessages.map((message, index) => ({
       ...message,
       id: index.toString(),

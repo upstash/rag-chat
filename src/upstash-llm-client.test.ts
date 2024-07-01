@@ -18,7 +18,7 @@ describe("RAG Chat with Upstash LLM Client", () => {
   describe("meta-llama/Meta-Llama-3-8B-Instruct", () => {
     const client = new UpstashLLMClient({
       model: "meta-llama/Meta-Llama-3-8B-Instruct",
-      apiKey: process.env.UPSTASH_LLM_REST_TOKEN!,
+      apiKey: process.env.QSTASH_TOKEN!,
     });
 
     const ragChat = new RAGChat({
@@ -38,7 +38,7 @@ describe("RAG Chat with Upstash LLM Client", () => {
       await awaitUntilIndexed(vector);
     });
 
-    test.skip(
+    test(
       "should get result without streaming",
       async () => {
         const result = await ragChat.chat(
@@ -51,7 +51,7 @@ describe("RAG Chat with Upstash LLM Client", () => {
       { timeout: 10000 }
     );
 
-    test.skip(
+    test(
       "should get result with streaming",
       async () => {
         const result = await ragChat.chat(
@@ -70,7 +70,7 @@ describe("RAG Chat with Upstash LLM Client", () => {
   describe("mistralai/Mistral-7B-Instruct-v0.2", () => {
     const client = new UpstashLLMClient({
       model: "mistralai/Mistral-7B-Instruct-v0.2",
-      apiKey: process.env.UPSTASH_LLM_REST_TOKEN!,
+      apiKey: process.env.QSTASH_TOKEN!,
     });
 
     const ragChat = new RAGChat({

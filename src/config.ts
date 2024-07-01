@@ -9,7 +9,7 @@ import { UpstashLLMClient } from "./upstash-llm-client";
 import { DEFAULT_PROMPT } from "./constants";
 
 export class Config {
-  public readonly vector: Index;
+  public readonly vector?: Index;
   public readonly redis?: Redis;
   public readonly ratelimit?: Ratelimit;
 

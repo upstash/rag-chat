@@ -7,7 +7,6 @@ import type { BaseMessageHistory, HistoryAddMessage } from "./base-message-histo
 export type UpstashRedisHistoryConfig = {
   config?: RedisConfigNodejs;
   client?: Redis;
-  metadata?: Record<string, unknown>;
 };
 
 export class UpstashRedisHistory implements BaseMessageHistory {
@@ -46,9 +45,9 @@ export class UpstashRedisHistory implements BaseMessageHistory {
   async getMessages({
     sessionId = DEFAULT_CHAT_SESSION_ID,
     amount = DEFAULT_HISTORY_LENGTH,
+    startIndex = 0,
   }): Promise<UpstashMessage[]> {
-    const startIndex = 0;
-    const endIndex = amount;
+    const endIndex = startIndex + amount - 1;
 
     const storedMessages: UpstashMessage[] = await this.client.lrange<UpstashMessage>(
       sessionId,
@@ -56,7 +55,8 @@ export class UpstashRedisHistory implements BaseMessageHistory {
       endIndex
     );
 
-    const messagesWithIndex: UpstashMessage[] = storedMessages.map((message, index) => ({
+    const orderedMessages = storedMessages.reverse();
+    const messagesWithIndex: UpstashMessage[] = orderedMessages.map((message, index) => ({
       ...message,
       id: (startIndex + index).toString(),
     }));
