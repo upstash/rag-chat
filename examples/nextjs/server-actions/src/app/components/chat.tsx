@@ -1,7 +1,7 @@
 "use client";
 
-import { UpstashMessage } from "@upstash/rag-chat";
-import { readServerActionStream } from "@upstash/rag-chat/rsc";
+import type { UpstashMessage } from "@upstash/rag-chat";
+import { readServerActionStream } from "@upstash/rag-chat/nextjs";
 import { useState } from "react";
 import { server_add_data, server_chat } from "../actions";
 
