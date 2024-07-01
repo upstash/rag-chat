@@ -1,9 +1,8 @@
 {
   "name": "@upstash/rag-chat",
-  "version": "0.0.35-alpha",
-  "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
-  "types": "./dist/index.d.ts",
+  "version": "1.0.1",
+  "main": "./dist/base/index.mjs",
+  "types": "./dist/base/index.d.ts",
   "scripts": {
     "test": "bun test",
     "fmt": "prettier --write .",
@@ -18,6 +17,18 @@
   "files": [
     "dist"
   ],
+  "exports": {
+    ".": {
+      "types": "./dist/base/index.d.ts",
+      "import": "./dist/base/index.mjs",
+      "require": "./dist/base/index.js"
+    },
+    "./nextjs": {
+      "types": "./dist/nextjs/index.d.ts",
+      "react-server": "./dist/nextjs/rsc-server.mjs",
+      "import": "./dist/nextjs/rsc-client.mjs"
+    }
+  },
   "homepage": "https://upstash.com/vector",
   "keywords": [
     "vector",
@@ -35,6 +46,7 @@
   "devDependencies": {
     "@commitlint/cli": "^19.2.2",
     "@commitlint/config-conventional": "^19.2.2",
+    "@types/react": "^18.3.3",
     "@typescript-eslint/eslint-plugin": "^7.0.1",
     "@typescript-eslint/parser": "^7.0.1",
     "bun-types": "latest",
@@ -47,8 +59,9 @@
     "vitest": "latest"
   },
   "dependencies": {
-    "@langchain/community": "^0.2.1",
-    "@langchain/core": "^0.1.58",
+    "@langchain/community": "^0.2.13",
+    "@langchain/core": "^0.2.9",
+    "@upstash/vector": "^1.1.3",
     "ai": "^3.1.1",
     "cheerio": "^1.0.0-rc.12",
     "d3-dsv": "^3.0.1",
@@ -59,8 +72,10 @@
   },
   "peerDependencies": {
     "@upstash/redis": "^1.31.3",
-    "@upstash/vector": "^1.1.1",
+    "@upstash/vector": "^1.1.3",
     "@upstash/ratelimit": "^1.1.3",
-    "@langchain/openai": "^0.0.34"
+    "@langchain/openai": "^0.2.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   }
 }

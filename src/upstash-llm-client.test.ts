@@ -1,9 +1,7 @@
 /* eslint-disable unicorn/numeric-separators-style */
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import type { AIMessage } from "@langchain/core/messages";
 import { Redis } from "@upstash/redis";
 import { Index } from "@upstash/vector";
-import type { StreamingTextResponse } from "ai";
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 
 import { RAGChat } from "./rag-chat";
@@ -20,8 +18,7 @@ describe("RAG Chat with Upstash LLM Client", () => {
   describe("meta-llama/Meta-Llama-3-8B-Instruct", () => {
     const client = new UpstashLLMClient({
       model: "meta-llama/Meta-Llama-3-8B-Instruct",
-      apiKey: process.env.UPSTASH_LLM_REST_TOKEN!,
-      streaming: true,
+      apiKey: process.env.QSTASH_TOKEN!,
     });
 
     const ragChat = new RAGChat({
@@ -34,8 +31,8 @@ describe("RAG Chat with Upstash LLM Client", () => {
     });
 
     beforeAll(async () => {
-      await ragChat.addContext({
-        dataType: "text",
+      await ragChat.context.add({
+        type: "text",
         data: "Paris, the capital of France, is renowned for its iconic landmark, the Eiffel Tower, which was completed in 1889 and stands at 330 meters tall.",
       });
       await awaitUntilIndexed(vector);
@@ -44,12 +41,12 @@ describe("RAG Chat with Upstash LLM Client", () => {
     test(
       "should get result without streaming",
       async () => {
-        const result = (await ragChat.chat(
+        const result = await ragChat.chat(
           "What year was the construction of the Eiffel Tower completed, and what is its height?",
-          { stream: false }
-        )) as AIMessage;
+          { streaming: false }
+        );
 
-        expect(result.content).toContain("330");
+        expect(result.output).toContain("330");
       },
       { timeout: 10000 }
     );
@@ -57,12 +54,12 @@ describe("RAG Chat with Upstash LLM Client", () => {
     test(
       "should get result with streaming",
       async () => {
-        const result = (await ragChat.chat(
+        const result = await ragChat.chat(
           "Which famous artworks can be found in the Louvre Museum?",
           {
-            stream: true,
+            streaming: true,
           }
-        )) as StreamingTextResponse;
+        );
 
         expect(result).toBeTruthy();
       },
@@ -73,8 +70,7 @@ describe("RAG Chat with Upstash LLM Client", () => {
   describe("mistralai/Mistral-7B-Instruct-v0.2", () => {
     const client = new UpstashLLMClient({
       model: "mistralai/Mistral-7B-Instruct-v0.2",
-      apiKey: process.env.UPSTASH_LLM_REST_TOKEN!,
-      streaming: true,
+      apiKey: process.env.QSTASH_TOKEN!,
     });
 
     const ragChat = new RAGChat({
@@ -87,8 +83,8 @@ describe("RAG Chat with Upstash LLM Client", () => {
     });
 
     beforeAll(async () => {
-      await ragChat.addContext({
-        dataType: "text",
+      await ragChat.context.add({
+        type: "text",
         data: "Paris, the capital of France, is renowned for its iconic landmark, the Eiffel Tower, which was completed in 1889 and stands at 330 meters tall.",
       });
       await awaitUntilIndexed(vector);
@@ -99,12 +95,12 @@ describe("RAG Chat with Upstash LLM Client", () => {
     test(
       "should get result without streaming",
       async () => {
-        const result = (await ragChat.chat(
+        const result = await ragChat.chat(
           "What year was the construction of the Eiffel Tower completed, and what is its height?",
-          { stream: false }
-        )) as AIMessage;
+          { streaming: false }
+        );
 
-        expect(result.content).toContain("330");
+        expect(result.output).toContain("330");
       },
       { timeout: 10000 }
     );
@@ -112,12 +108,12 @@ describe("RAG Chat with Upstash LLM Client", () => {
     test(
       "should get result with streaming",
       async () => {
-        const result = (await ragChat.chat(
+        const result = await ragChat.chat(
           "Which famous artworks can be found in the Louvre Museum?",
           {
-            stream: true,
+            streaming: true,
           }
-        )) as StreamingTextResponse;
+        );
 
         expect(result).toBeTruthy();
       },

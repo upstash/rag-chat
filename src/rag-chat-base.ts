@@ -1,104 +1,137 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import type { AIMessage, BaseMessage } from "@langchain/core/messages";
-import type { RunnableConfig } from "@langchain/core/runnables";
-import { RunnableSequence, RunnableWithMessageHistory } from "@langchain/core/runnables";
-import { LangChainAdapter, StreamingTextResponse } from "ai";
+import { HumanMessage, type BaseMessage } from "@langchain/core/messages";
 
 import type { BaseLanguageModelInterface } from "@langchain/core/language_models/base";
-import type { PromptTemplate } from "@langchain/core/prompts";
-import type { ChatOptions, PrepareChatResult } from "./types";
-import { formatChatHistory, sanitizeQuestion } from "./utils";
+import type { IterableReadableStreamInterface } from "@langchain/core/utils/stream";
+import { ContextService } from "./context-service";
 import type { Database, VectorPayload } from "./database";
-import type { History } from "./history";
+import type { HistoryService } from "./history-service";
+import type { PrepareChatResult, UpstashMessage } from "./types";
+import { sanitizeQuestion } from "./utils";
+import type { InMemoryHistory } from "./history-service/in-memory-history";
+import type { UpstashRedisHistory } from "./history-service/redis-custom-history";
 
-type CustomInputValues = { chat_history?: BaseMessage[]; question: string; context: string };
+export type PromptParameters = { chatHistory?: string; question: string; context: string };
 
+export type CustomPrompt = ({ question, chatHistory, context }: PromptParameters) => string;
+
+export type Message = { id: string; content: string; role: "ai" | "user" };
+
+const TRUE = 1;
 export class RAGChatBase {
+  // Database service for vector operations.
   protected vectorService: Database;
-  protected historyService: History;
 
+  // Service for managing conversation context.
+  context: ContextService;
+
+  // History service to store conversation history.
+  history: UpstashRedisHistory | InMemoryHistory;
+
+  // Private field holding the language model instance.
   #model: BaseLanguageModelInterface;
-  #prompt: PromptTemplate;
 
   constructor(
     vectorService: Database,
-    historyService: History,
-    config: { model: BaseLanguageModelInterface; prompt: PromptTemplate }
+    historyService: HistoryService,
+    config: { model: BaseLanguageModelInterface; prompt: CustomPrompt }
   ) {
     this.vectorService = vectorService;
-    this.historyService = historyService;
+
+    this.history = historyService.service;
+    this.context = new ContextService(vectorService);
 
     this.#model = config.model;
-    this.#prompt = config.prompt;
   }
 
+  /**
+   * Prepares the chat environment by retrieving context for the given question.
+   * @returns Promise that resolves to PrepareChatResult, containing the sanitized question and retrieved context.
+   */
   protected async prepareChat({
     question: input,
     similarityThreshold,
     topK,
-    metadataKey,
     namespace,
   }: VectorPayload): Promise<PrepareChatResult> {
+    // Sanitize the input question to ensure consistency.
     const question = sanitizeQuestion(input);
-    const facts = await this.vectorService.retrieve({
+
+    // Retrieve context relevant to the sanitized question using vector operations.
+    const context = await this.vectorService.retrieve({
       question,
       similarityThreshold,
-      metadataKey,
       topK,
       namespace,
     });
-    return { question, facts };
+
+    // Return the sanitized question and the retrieved context for further processing.
+    return { question, context };
   }
 
-  /** This method first gets required params, then returns another function depending on streaming param input */
-  protected chainCall(chatOptions: ChatOptions, question: string, facts: string) {
-    const formattedHistoryChain = RunnableSequence.from<CustomInputValues>([
-      {
-        chat_history: (input) => formatChatHistory(input.chat_history ?? []),
-        question: (input) => input.question,
-        context: (input) => input.context,
-      },
-      this.#prompt,
-      this.#model,
-    ]);
+  protected async makeStreamingLLMRequest({
+    prompt,
+    onComplete,
+  }: {
+    prompt: string;
+    onComplete?: (output: string) => void;
+  }): Promise<{
+    output: ReadableStream<string>;
+    isStream: boolean;
+  }> {
+    const stream = (await this.#model.stream([
+      new HumanMessage(prompt),
+    ])) as IterableReadableStreamInterface<UpstashMessage>;
 
-    const chainWithMessageHistory = new RunnableWithMessageHistory({
-      runnable: formattedHistoryChain,
-      getMessageHistory: (sessionId: string) =>
-        this.historyService.getMessageHistory({
-          sessionId,
-          sessionTTL: chatOptions.historyTTL,
-          length: chatOptions.historyLength,
-          metadata: chatOptions.metadata,
-        }),
-      inputMessagesKey: "question",
-      historyMessagesKey: "chat_history",
+    const reader = stream.getReader();
+    let concatenatedOutput = "";
+
+    const newStream = new ReadableStream<string>({
+      start(controller) {
+        const processStream = async () => {
+          let done: boolean | undefined;
+          let value: UpstashMessage | undefined;
+
+          try {
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+            while (TRUE) {
+              ({ done, value } = await reader.read());
+              if (done) {
+                break;
+              }
+              const message = value?.content ?? "";
+              concatenatedOutput += message;
+
+              controller.enqueue(message);
+            }
+
+            controller.close();
+
+            // Call the onComplete callback with the concatenated output
+            if (onComplete) {
+              onComplete(concatenatedOutput);
+            }
+          } catch (error) {
+            controller.error(error);
+          }
+        };
+
+        void processStream();
+      },
     });
-    const runnableArgs = {
-      input: {
-        question,
-        context: facts,
-      },
-      options: {
-        configurable: { sessionId: chatOptions.sessionId },
-      },
-    };
 
-    return (streaming: boolean) =>
-      streaming
-        ? this.streamingChainCall(chainWithMessageHistory, runnableArgs)
-        : (chainWithMessageHistory.invoke(
-            runnableArgs.input,
-            runnableArgs.options
-          ) as Promise<AIMessage>);
+    return { output: newStream, isStream: true };
   }
 
-  protected async streamingChainCall(
-    runnable: RunnableWithMessageHistory<CustomInputValues, any>,
-    runnableArgs: { input: CustomInputValues; options?: Partial<RunnableConfig> | undefined }
-  ) {
-    const stream = await runnable.stream(runnableArgs.input, runnableArgs.options);
-    const wrappedStream = LangChainAdapter.toAIStream(stream);
-    return new StreamingTextResponse(wrappedStream, {});
+  protected async makeLLMRequest({
+    prompt,
+    onComplete,
+  }: {
+    prompt: string;
+    onComplete?: (output: string) => void;
+  }): Promise<{ output: string; isStream: false }> {
+    const { content } = (await this.#model.invoke(prompt)) as BaseMessage;
+    onComplete?.(content as string);
+    return { output: content as string, isStream: false };
   }
 }

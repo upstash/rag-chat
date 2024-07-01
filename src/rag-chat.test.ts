@@ -1,15 +1,28 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import type { AIMessage } from "@langchain/core/messages";
-import { PromptTemplate } from "@langchain/core/prompts";
 import { ChatOpenAI } from "@langchain/openai";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import { Index } from "@upstash/vector";
-import type { StreamingTextResponse } from "ai";
+import { LangChainAdapter, StreamingTextResponse } from "ai";
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { RatelimitUpstashError } from "./error/ratelimit";
 import { RAGChat } from "./rag-chat";
 import { awaitUntilIndexed } from "./test-utils";
+
+async function checkStream(
+  stream: ReadableStream<string>,
+  expectInStream: string[] // array of strings to expect in stream
+): Promise<void> {
+  const _stream = LangChainAdapter.toAIStream(stream);
+  const textResponse = new StreamingTextResponse(_stream);
+  const text = await textResponse.text();
+
+  const lines = text.split("\n").filter((line) => line.length > 0);
+
+  expect(lines.length).toBeGreaterThan(0);
+  expect(lines.some((line) => line.startsWith('0:"'))).toBeTrue(); // all lines start with `0:"`
+  expect(expectInStream.every((token) => text.includes(token))).toBeTrue();
+}
 
 describe("RAG Chat with advance configs and direct instances", () => {
   const vector = new Index({
@@ -33,8 +46,8 @@ describe("RAG Chat with advance configs and direct instances", () => {
   });
 
   beforeAll(async () => {
-    await ragChat.addContext({
-      dataType: "text",
+    await ragChat.context.add({
+      type: "text",
       data: "Paris, the capital of France, is renowned for its iconic landmark, the Eiffel Tower, which was completed in 1889 and stands at 330 meters tall.",
     });
     await awaitUntilIndexed(vector);
@@ -43,20 +56,21 @@ describe("RAG Chat with advance configs and direct instances", () => {
   afterAll(async () => await vector.reset());
 
   test("should get result without streaming", async () => {
-    const result = (await ragChat.chat(
+    const result = await ragChat.chat(
       "What year was the construction of the Eiffel Tower completed, and what is its height?",
-      { stream: false }
-    )) as AIMessage;
-
-    expect(result.content).toContain("330");
+      { streaming: false }
+    );
+    expect(result.output).toContain("330");
   });
 
   test("should get result with streaming", async () => {
-    const result = (await ragChat.chat("Which famous artworks can be found in the Louvre Museum?", {
-      stream: true,
-    })) as StreamingTextResponse;
-
-    expect(result).toBeTruthy();
+    const streamResult = await ragChat.chat(
+      "What year was the construction of the Eiffel Tower completed, and what is its height?",
+      {
+        streaming: true,
+      }
+    );
+    await checkStream(streamResult.output, ["330"]);
   });
 });
 
@@ -95,22 +109,19 @@ describe("RAG Chat with ratelimit", () => {
   test(
     "should throw ratelimit error",
     async () => {
-      await ragChat.addContext(
-        {
-          dataType: "text",
-          data: "Paris, the capital of France, is renowned for its iconic landmark, the Eiffel Tower, which was completed in 1889 and stands at 330 meters tall.",
-        },
-        { metadataKey: "text" }
-      );
+      await ragChat.context.add({
+        type: "text",
+        data: "Paris, the capital of France, is renowned for its iconic landmark, the Eiffel Tower, which was completed in 1889 and stands at 330 meters tall.",
+      });
       await awaitUntilIndexed(vector);
 
       await ragChat.chat(
         "What year was the construction of the Eiffel Tower completed, and what is its height?",
-        { stream: false, metadataKey: "text" }
+        { streaming: false, metadataKey: "text" }
       );
 
       const throwable = async () => {
-        await ragChat.chat("You shall not pass", { stream: false });
+        await ragChat.chat("You shall not pass", { streaming: false });
       };
 
       expect(throwable).toThrowError(RatelimitUpstashError);
@@ -130,7 +141,7 @@ describe("RAG Chat with custom template", () => {
       token: process.env.UPSTASH_REDIS_REST_TOKEN!,
       url: process.env.UPSTASH_REDIS_REST_URL!,
     }),
-    prompt: PromptTemplate.fromTemplate("Just say `I'm a cookie monster`. Nothing else."),
+    prompt: () => "Just say `I'm a cookie monster`. Nothing else.",
     model: new ChatOpenAI({
       modelName: "gpt-3.5-turbo",
       streaming: false,
@@ -143,20 +154,18 @@ describe("RAG Chat with custom template", () => {
   test(
     "should get result without streaming",
     async () => {
-      await ragChat.addContext(
-        { dataType: "text", data: "Ankara is the capital of Turkiye." },
-        { metadataKey: "text" }
-      );
+      await ragChat.context.add({
+        type: "text",
+        data: "Ankara is the capital of Turkiye.",
+      });
 
-      // Wait for it to be indexed
-      // eslint-disable-next-line @typescript-eslint/no-magic-numbers
       await awaitUntilIndexed(vector);
 
-      const result = (await ragChat.chat("Where is the capital of Turkiye?", {
-        stream: false,
-      })) as AIMessage;
+      const result = await ragChat.chat("Where is the capital of Turkiye?", {
+        streaming: false,
+      });
 
-      expect(result.content).toContain("I'm a cookie monster");
+      expect(result.output).toContain("I'm a cookie monster");
     },
     { timeout: 30_000 }
   );
@@ -190,16 +199,16 @@ describe("RAG Chat addContext using PDF", () => {
   test(
     "should be able to successfully query embedded book",
     async () => {
-      await ragChat.addContext({
-        dataType: "pdf",
+      await ragChat.context.add({
+        type: "pdf",
         fileSource: "./data/the_wonderful_wizard_of_oz.pdf",
-        opts: { chunkSize: 500, chunkOverlap: 50 },
+        config: { chunkSize: 500, chunkOverlap: 50 },
       });
       await awaitUntilIndexed(vector);
-      const result = (await ragChat.chat("Whats the author of The Wonderful Wizard of Oz?", {
-        stream: false,
-      })) as AIMessage;
-      expect(result.content).toContain("Frank");
+      const result = await ragChat.chat("Whats the author of The Wonderful Wizard of Oz?", {
+        streaming: false,
+      });
+      expect(result.output).toContain("Frank");
     },
     { timeout: 30_000 }
   );
@@ -229,25 +238,25 @@ describe("RAG Chat without Redis, but In-memory chat history", () => {
   test(
     "should reply back using in-memory db",
     async () => {
-      await ragChat.addContext({ data: "Ankara is the capital of Turkiye.", dataType: "text" });
+      await ragChat.context.add({ data: "Ankara is the capital of Turkiye.", type: "text" });
       await awaitUntilIndexed(vector);
 
       await ragChat.chat("Hello, my name is Oz!", {
-        stream: false,
+        streaming: false,
         sessionId: "find-name",
         historyLength: 5,
       });
       await ragChat.chat("How are you?", {
-        stream: false,
+        streaming: false,
         sessionId: "find-name",
         historyLength: 5,
       });
       const result = await ragChat.chat("Do you remember my name?", {
-        stream: false,
+        streaming: false,
         sessionId: "find-name",
         historyLength: 5,
       });
-      expect((result as AIMessage).content).toInclude("Oz");
+      expect(result.output).toInclude("Oz");
     },
     { timeout: 10_000 }
   );
@@ -277,15 +286,15 @@ describe("RAG Chat addContext using CSV", () => {
   test(
     "should be able to successfully query csv",
     async () => {
-      await ragChat.addContext({
-        dataType: "csv",
+      await ragChat.context.add({
+        type: "csv",
         fileSource: "./data/list_of_user_info.csv",
       });
       await awaitUntilIndexed(vector);
-      const result = (await ragChat.chat("Whats username of Rachel Booker?", {
-        stream: false,
-      })) as AIMessage;
-      expect(result.content).toContain("booker12");
+      const result = await ragChat.chat("Whats username of Rachel Booker?", {
+        streaming: false,
+      });
+      expect(result.output).toContain("booker12");
     },
     { timeout: 30_000 }
   );
@@ -315,19 +324,19 @@ describe("RAG Chat addContext using text-file", () => {
   test(
     "should be able to successfully query txt file",
     async () => {
-      await ragChat.addContext({
-        dataType: "text-file",
+      await ragChat.context.add({
+        type: "text-file",
         fileSource: "./data/the_wonderful_wizard_of_oz_summary.txt",
-        opts: { chunkSize: 500, chunkOverlap: 50 },
+        config: { chunkSize: 500, chunkOverlap: 50 },
       });
       await awaitUntilIndexed(vector);
 
-      const result = (await ragChat.chat("Whats the author of The Wonderful Wizard of Oz?", {
-        stream: false,
+      const result = await ragChat.chat("Whats the author of The Wonderful Wizard of Oz?", {
+        streaming: false,
         metadataKey: "text",
-      })) as AIMessage;
+      });
 
-      expect(result.content).toContain("Frank");
+      expect(result.output).toContain("Frank");
     },
     { timeout: 30_000 }
   );
@@ -357,18 +366,18 @@ describe("RAG Chat addContext using HTML", () => {
   test(
     "should be able to successfully query html file",
     async () => {
-      await ragChat.addContext({
-        dataType: "html",
-        fileSource: "./data/the_wonderful_wizard_of_oz_summary.html",
+      await ragChat.context.add({
+        type: "html",
+        source: "./data/the_wonderful_wizard_of_oz_summary.html",
       });
       await awaitUntilIndexed(vector);
 
-      const result = (await ragChat.chat("Whats the author of The Wonderful Wizard of Oz?", {
-        stream: false,
+      const result = await ragChat.chat("Whats the author of The Wonderful Wizard of Oz?", {
+        streaming: false,
         metadataKey: "text",
-      })) as AIMessage;
+      });
 
-      expect(result.content).toContain("Frank");
+      expect(result.output).toContain("Frank");
     },
     { timeout: 30_000 }
   );
@@ -399,19 +408,20 @@ describe("RAGChat with namespaces", () => {
   test(
     "should be able to insert data into a namespace and query it",
     async () => {
-      await ragChat.addContext("Tokyo is the Capital of Japan.", {
-        namespace,
-        metadataKey: "text",
+      await ragChat.context.add({
+        type: "text",
+        data: "Tokyo is the capital of Japan.",
+        options: { namespace },
       });
       await awaitUntilIndexed(vector);
 
-      const result = (await ragChat.chat("Where is the capital of Japan?", {
-        stream: false,
+      const result = await ragChat.chat("What is the capital of Japan?", {
+        streaming: false,
         metadataKey: "text",
         namespace,
-      })) as AIMessage;
+      });
 
-      expect(result.content).toContain("Tokyo");
+      expect(result.output).toContain("Tokyo");
     },
     { timeout: 30_000 }
   );
@@ -435,56 +445,19 @@ describe("RAGChat init without model", () => {
   test(
     "should be able to insert data into a namespace and query it",
     async () => {
-      await ragChat.addContext("Tokyo is the Capital of Japan.", {
-        namespace,
-        metadataKey: "text",
+      await ragChat.context.add({
+        type: "text",
+        data: "Tokyo is the Capital of Japan.",
+        options: { namespace },
       });
       await awaitUntilIndexed(vector);
 
-      const result = (await ragChat.chat("Where is the capital of Japan?", {
-        stream: false,
+      const result = await ragChat.chat("Where is the capital of Japan?", {
+        streaming: false,
         metadataKey: "text",
         namespace,
-      })) as AIMessage;
-      expect(result.content).toContain("Tokyo");
-    },
-    { timeout: 30_000 }
-  );
-});
-
-describe("RAGChat with chat metadata", () => {
-  const namespace = "japan";
-  const vector = new Index({
-    token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
-    url: process.env.UPSTASH_VECTOR_REST_URL!,
-  });
-
-  const ragChat = new RAGChat({
-    vector,
-  });
-
-  afterAll(async () => {
-    await vector.reset({ namespace });
-  });
-
-  test(
-    "should be able to insert data into a namespace and query it",
-    async () => {
-      await ragChat.addContext("Tokyo is the Capital of Japan.", {
-        namespace,
-        metadataKey: "text",
       });
-      await awaitUntilIndexed(vector);
-
-      (await ragChat.chat("Where is the capital of Japan?", {
-        stream: false,
-        metadataKey: "text",
-        namespace,
-        metadata: { usedModel: "testing-cookie" },
-      })) as AIMessage;
-      const messages = await ragChat.getMessageHistory<{ usedModel: string }>();
-
-      expect(messages.find((x) => x.metadata.usedModel === "testing-cookie"));
+      expect(result.output).toContain("Tokyo");
     },
     { timeout: 30_000 }
   );

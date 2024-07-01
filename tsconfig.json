@@ -17,5 +17,5 @@
       "bun-types" // add Bun global
     ]
   },
-  "exclude": ["dist"]
+  "exclude": ["dist", "examples"]
 }

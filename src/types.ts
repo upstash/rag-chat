@@ -1,8 +1,9 @@
-import type { BaseLanguageModelInterface } from "@langchain/core/language_models/base";
-import type { PromptTemplate } from "@langchain/core/prompts";
+import type { ChatOpenAI } from "@langchain/openai";
 import type { Ratelimit } from "@upstash/ratelimit";
 import type { Redis } from "@upstash/redis";
 import type { Index } from "@upstash/vector";
+import type { CustomPrompt } from "./rag-chat-base";
+import type { UpstashLLMClient } from "./upstash-llm-client";
 
 declare const __brand: unique symbol;
 type Brand<B> = { [__brand]: B };
@@ -11,57 +12,52 @@ export type Branded<T, B> = T & Brand<B>;
 export type ChatOptions = {
   /** Set to `true` if working with web apps and you want to be interactive without stalling users.
    */
-  stream: boolean;
+  streaming: true | false;
 
   /** Chat session ID of the user interacting with the application.
    * @default "upstash-rag-chat-session"
    */
-  sessionId?: string;
+  sessionId: string;
 
   /** Length of the conversation history to include in your LLM query. Increasing this may lead to hallucinations. Retrieves the last N messages.
    * @default 5
    */
-  historyLength?: number;
+  historyLength: number;
 
   /** Configuration to retain chat history. After the specified time, the history will be automatically cleared.
    * @default 86_400 // 1 day in seconds
    */
-  historyTTL?: number;
+  historyTTL: number;
 
   /** Configuration to adjust the accuracy of results.
    * @default 0.5
    */
-  similarityThreshold?: number;
+  similarityThreshold: number;
 
   /** Rate limit session ID of the user interacting with the application.
    * @default "upstash-rag-chat-ratelimit-session"
    */
-  ratelimitSessionId?: string;
+  ratelimitSessionId: string;
 
   /** Amount of data points to include in your LLM query.
    * @default 5
    */
-  topK?: number;
+  topK: number;
 
-  /** Key of metadata that we use to store additional content .
-   * @default "text"
-   * @example {text: "Capital of France is Paris"}
-   *
-   */
-  metadataKey?: string;
   /**
    * Namespace of the index you wanted to query.
    */
-  namespace?: string;
+  namespace: string;
+
   /**
    * Metadata for your chat message. This could be used to store anything in the chat history. By default RAG Chat SDK uses this to persist used model name in the history
    */
-  metadata?: UpstashDict;
+  metadata: UpstashDict;
 };
 
 export type PrepareChatResult = {
   question: string;
-  facts: string;
+  context: string;
 };
 
 type RAGChatConfigCommon = {
@@ -74,7 +70,7 @@ type RAGChatConfigCommon = {
       apiKey,
     })
   */
-  model?: BaseLanguageModelInterface;
+  model?: UpstashLLMClient | ChatOpenAI;
   /**
    * If no Index name or instance is provided, falls back to the default.
    * @default
@@ -94,7 +90,7 @@ type RAGChatConfigCommon = {
         Question: {question}
         Helpful answer:`)
    */
-  prompt?: PromptTemplate;
+  prompt?: CustomPrompt;
   /**
    * Ratelimit instance
    * @example new Ratelimit({
@@ -113,49 +109,22 @@ export type RAGChatConfig = {
 } & RAGChatConfigCommon;
 
 export type AddContextOptions = {
-  /** Key of metadata that we use to store additional content .
-   * @default "text"
-   * @example {text: "Capital of France is Paris"}
-   *
-   */
-  metadataKey?: string;
   /**
    * Namespace of the index you wanted to insert. Default is empty string.
    * @default ""
    */
+
+  metadata?: UpstashDict;
   namespace?: string;
 };
 
-export type HistoryOptions = {
-  /**
-   * Specifies the number of messages to get from the conversation history.
-   * A negative value (default is -1) means the entire conversation history will be retrieved.
-   * Set this to a positive number to limit the history to that many recent messages.
-   *
-   * @default -1
-   */
-  length?: number;
-
-  /**
-   * Defines the number of most recent messages to skip in the conversation history.
-   * For example, if offset is set to 2, the two most recent messages will be skipped.
-   * Default value is 0, meaning no messages will be skipped.
-   *
-   * @default 0
-   */
-  offset?: number;
-
-  /** Chat session ID of the user interacting with the application.
-   * @default "upstash-rag-chat-session"
-   */
-  sessionId?: string;
-};
+export type HistoryOptions = Pick<ChatOptions, "historyLength" | "sessionId">;
 
 export type UpstashDict = Record<string, unknown>;
 
 export type UpstashMessage<TMetadata extends UpstashDict = UpstashDict> = {
   role: "assistant" | "user";
   content: string;
-  metadata: TMetadata;
+  metadata?: TMetadata | undefined;
   id: string;
 };

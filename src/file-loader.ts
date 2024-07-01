@@ -8,16 +8,13 @@ import type { Document } from "@langchain/core/documents";
 import { TextLoader } from "langchain/document_loaders/fs/text";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { nanoid } from "nanoid";
-import { DEFAULT_METADATA_KEY } from "./constants";
 import type { DatasWithFileSource, FilePath, URL } from "./database";
 
 export class FileDataLoader {
-  private config: Pick<DatasWithFileSource, "dataType" | "fileSource">;
-  private metadataKey: string;
+  private config: DatasWithFileSource;
 
-  constructor(config: Pick<DatasWithFileSource, "dataType" | "fileSource">, dataKey?: string) {
+  constructor(config: DatasWithFileSource) {
     this.config = config;
-    this.metadataKey = dataKey ?? DEFAULT_METADATA_KEY;
   }
 
   async loadFile(args: any) {
@@ -28,18 +25,18 @@ export class FileDataLoader {
   }
 
   private createLoader(args: any) {
-    switch (this.config.dataType) {
+    switch (this.config.type) {
       case "pdf": {
         return new PDFLoader(
           this.config.fileSource,
-          args satisfies Extract<DatasWithFileSource, { dataType: "pdf" }>
+          args satisfies Extract<DatasWithFileSource, { type: "pdf" }>
         );
       }
 
       case "csv": {
         return new CSVLoader(
           this.config.fileSource,
-          args satisfies Extract<DatasWithFileSource, { dataType: "csv" }>
+          args satisfies Extract<DatasWithFileSource, { type: "csv" }>
         );
       }
 
@@ -48,13 +45,14 @@ export class FileDataLoader {
       }
 
       case "html": {
-        return this.isURL(this.config.fileSource)
-          ? new CheerioWebBaseLoader(this.config.fileSource)
-          : new TextLoader(this.config.fileSource);
+        return this.isURL(this.config.source)
+          ? new CheerioWebBaseLoader(this.config.source)
+          : new TextLoader(this.config.source);
       }
 
       default: {
-        throw new Error(`Unsupported data type: ${this.config.dataType}`);
+        // @ts-expect-error config type is set as never
+        throw new Error(`Unsupported data type: ${this.config.type}`);
       }
     }
   }
@@ -64,23 +62,23 @@ export class FileDataLoader {
   }
 
   private async transformDocument(documents: Document[], args: any) {
-    switch (this.config.dataType) {
+    switch (this.config.type) {
       case "pdf": {
         const splitter = new RecursiveCharacterTextSplitter(args);
         const splittedDocuments = await splitter.splitDocuments(documents);
 
-        return mapDocumentsIntoInsertPayload(splittedDocuments, this.metadataKey);
+        return mapDocumentsIntoInsertPayload(splittedDocuments);
       }
 
       case "csv": {
-        return mapDocumentsIntoInsertPayload(documents, this.metadataKey);
+        return mapDocumentsIntoInsertPayload(documents);
       }
 
       case "text-file": {
         const splitter = new RecursiveCharacterTextSplitter(args);
 
         const splittedDocuments = await splitter.splitDocuments(documents);
-        return mapDocumentsIntoInsertPayload(splittedDocuments, this.metadataKey);
+        return mapDocumentsIntoInsertPayload(splittedDocuments);
       }
 
       case "html": {
@@ -91,18 +89,18 @@ export class FileDataLoader {
 
         const newDocuments = await sequence.invoke(documents);
 
-        return mapDocumentsIntoInsertPayload(newDocuments, this.metadataKey);
+        return mapDocumentsIntoInsertPayload(newDocuments);
       }
 
       default: {
-        throw new Error(`Unsupported data type: ${this.config.dataType}`);
+        // @ts-expect-error config type is set as never
+        throw new Error(`Unsupported data type: ${this.config.type}`);
       }
     }
 
-    function mapDocumentsIntoInsertPayload(splittedDocuments: Document[], metadataKey: string) {
+    function mapDocumentsIntoInsertPayload(splittedDocuments: Document[]) {
       return splittedDocuments.map((document) => ({
         data: document.pageContent,
-        metadata: { [metadataKey]: document.pageContent },
         id: nanoid(),
       }));
     }
