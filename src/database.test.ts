@@ -12,15 +12,15 @@ describe("Database", () => {
   test("should save and retrieve info using data field ", async () => {
     const database = new Database(vector);
     await database.save({
-      dataType: "text",
+      type: "text",
       data: "Paris, the capital of France, is renowned for its iconic landmark, the Eiffel Tower, which was completed in 1889 and stands at 330 meters tall.",
     });
     await database.save({
-      dataType: "text",
+      type: "text",
       data: "The city is home to numerous world-class museums, including the Louvre Museum, housing famous works such as the Mona Lisa and Venus de Milo.",
     });
     await database.save({
-      dataType: "text",
+      type: "text",
       data: "Paris is often called the City of Light due to its significant role during the Age of Enlightenment and its early adoption of street lighting.",
     });
     await awaitUntilIndexed(vector);

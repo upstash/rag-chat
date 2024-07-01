@@ -11,9 +11,9 @@ import { nanoid } from "nanoid";
 import type { DatasWithFileSource, FilePath, URL } from "./database";
 
 export class FileDataLoader {
-  private config: Pick<DatasWithFileSource, "dataType" | "fileSource">;
+  private config: DatasWithFileSource;
 
-  constructor(config: Pick<DatasWithFileSource, "dataType" | "fileSource">) {
+  constructor(config: DatasWithFileSource) {
     this.config = config;
   }
 
@@ -25,18 +25,18 @@ export class FileDataLoader {
   }
 
   private createLoader(args: any) {
-    switch (this.config.dataType) {
+    switch (this.config.type) {
       case "pdf": {
         return new PDFLoader(
           this.config.fileSource,
-          args satisfies Extract<DatasWithFileSource, { dataType: "pdf" }>
+          args satisfies Extract<DatasWithFileSource, { type: "pdf" }>
         );
       }
 
       case "csv": {
         return new CSVLoader(
           this.config.fileSource,
-          args satisfies Extract<DatasWithFileSource, { dataType: "csv" }>
+          args satisfies Extract<DatasWithFileSource, { type: "csv" }>
         );
       }
 
@@ -45,13 +45,14 @@ export class FileDataLoader {
       }
 
       case "html": {
-        return this.isURL(this.config.fileSource)
-          ? new CheerioWebBaseLoader(this.config.fileSource)
-          : new TextLoader(this.config.fileSource);
+        return this.isURL(this.config.source)
+          ? new CheerioWebBaseLoader(this.config.source)
+          : new TextLoader(this.config.source);
       }
 
       default: {
-        throw new Error(`Unsupported data type: ${this.config.dataType}`);
+        // @ts-expect-error config type is set as never
+        throw new Error(`Unsupported data type: ${this.config.type}`);
       }
     }
   }
@@ -61,7 +62,7 @@ export class FileDataLoader {
   }
 
   private async transformDocument(documents: Document[], args: any) {
-    switch (this.config.dataType) {
+    switch (this.config.type) {
       case "pdf": {
         const splitter = new RecursiveCharacterTextSplitter(args);
         const splittedDocuments = await splitter.splitDocuments(documents);
@@ -92,7 +93,8 @@ export class FileDataLoader {
       }
 
       default: {
-        throw new Error(`Unsupported data type: ${this.config.dataType}`);
+        // @ts-expect-error config type is set as never
+        throw new Error(`Unsupported data type: ${this.config.type}`);
       }
     }
 

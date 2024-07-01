@@ -13,43 +13,43 @@ export type URL = string;
 
 export type DatasWithFileSource =
   | {
-      dataType: "pdf";
+      type: "pdf";
       fileSource: FilePath | Blob;
       options?: AddContextOptions;
       config?: Partial<RecursiveCharacterTextSplitterParams>;
       pdfConfig?: { parsedItemSeparator?: string; splitPages?: boolean };
     }
   | {
-      dataType: "csv";
+      type: "csv";
       fileSource: FilePath | Blob;
       options?: AddContextOptions;
       csvConfig?: { column?: string; separator?: string };
     }
   | {
-      dataType: "text-file";
+      type: "text-file";
       fileSource: FilePath | Blob;
       options?: AddContextOptions;
       config?: Partial<RecursiveCharacterTextSplitterParams>;
     }
   | (
       | {
-          dataType: "html";
-          fileSource: URL;
+          type: "html";
+          source: URL;
           htmlConfig?: WebBaseLoaderParams;
           options?: AddContextOptions;
           config: Partial<RecursiveCharacterTextSplitterParams>;
         }
       | {
-          dataType: "html";
-          fileSource: FilePath | Blob;
+          type: "html";
+          source: FilePath | Blob;
           options?: AddContextOptions;
           config?: Partial<RecursiveCharacterTextSplitterParams>;
         }
     );
 
 export type AddContextPayload =
-  | { dataType: "text"; data: string; options?: AddContextOptions; id?: string | number }
-  | { dataType: "embedding"; options?: AddContextOptions; data: IndexUpsertPayload[] }
+  | { type: "text"; data: string; options?: AddContextOptions; id?: string | number }
+  | { type: "embedding"; options?: AddContextOptions; data: IndexUpsertPayload[] }
   | DatasWithFileSource;
 
 export type VectorPayload = {
@@ -119,7 +119,7 @@ export class Database {
   async save(input: AddContextPayload, options?: AddContextOptions): Promise<SaveOperationResult> {
     const { namespace } = options ?? {};
 
-    if (input.dataType === "text") {
+    if (input.type === "text") {
       try {
         const vectorId = input.id ?? nanoid();
 
@@ -135,7 +135,7 @@ export class Database {
       } catch (error) {
         return { success: false, error: JSON.stringify(error) };
       }
-    } else if (input.dataType === "embedding") {
+    } else if (input.type === "embedding") {
       const items = input.data.map((context) => {
         return {
           vector: context.input,
@@ -154,6 +154,7 @@ export class Database {
       try {
         const fileArgs =
           "pdfOpts" in input ? input.pdfOpts : "csvOpts" in input ? input.csvOpts : {};
+
         const transformOrSplit = await new FileDataLoader(input).loadFile(fileArgs);
 
         const transformArgs = "config" in input ? input.config : {};

@@ -32,7 +32,7 @@ describe("RAG Chat with Upstash LLM Client", () => {
 
     beforeAll(async () => {
       await ragChat.context.add({
-        dataType: "text",
+        type: "text",
         data: "Paris, the capital of France, is renowned for its iconic landmark, the Eiffel Tower, which was completed in 1889 and stands at 330 meters tall.",
       });
       await awaitUntilIndexed(vector);
@@ -84,7 +84,7 @@ describe("RAG Chat with Upstash LLM Client", () => {
 
     beforeAll(async () => {
       await ragChat.context.add({
-        dataType: "text",
+        type: "text",
         data: "Paris, the capital of France, is renowned for its iconic landmark, the Eiffel Tower, which was completed in 1889 and stands at 330 meters tall.",
       });
       await awaitUntilIndexed(vector);

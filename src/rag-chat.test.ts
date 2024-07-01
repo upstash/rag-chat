@@ -47,7 +47,7 @@ describe("RAG Chat with advance configs and direct instances", () => {
 
   beforeAll(async () => {
     await ragChat.context.add({
-      dataType: "text",
+      type: "text",
       data: "Paris, the capital of France, is renowned for its iconic landmark, the Eiffel Tower, which was completed in 1889 and stands at 330 meters tall.",
     });
     await awaitUntilIndexed(vector);
@@ -110,7 +110,7 @@ describe("RAG Chat with ratelimit", () => {
     "should throw ratelimit error",
     async () => {
       await ragChat.context.add({
-        dataType: "text",
+        type: "text",
         data: "Paris, the capital of France, is renowned for its iconic landmark, the Eiffel Tower, which was completed in 1889 and stands at 330 meters tall.",
       });
       await awaitUntilIndexed(vector);
@@ -155,7 +155,7 @@ describe("RAG Chat with custom template", () => {
     "should get result without streaming",
     async () => {
       await ragChat.context.add({
-        dataType: "text",
+        type: "text",
         data: "Ankara is the capital of Turkiye.",
       });
 
@@ -200,7 +200,7 @@ describe("RAG Chat addContext using PDF", () => {
     "should be able to successfully query embedded book",
     async () => {
       await ragChat.context.add({
-        dataType: "pdf",
+        type: "pdf",
         fileSource: "./data/the_wonderful_wizard_of_oz.pdf",
         config: { chunkSize: 500, chunkOverlap: 50 },
       });
@@ -238,7 +238,7 @@ describe("RAG Chat without Redis, but In-memory chat history", () => {
   test(
     "should reply back using in-memory db",
     async () => {
-      await ragChat.context.add({ data: "Ankara is the capital of Turkiye.", dataType: "text" });
+      await ragChat.context.add({ data: "Ankara is the capital of Turkiye.", type: "text" });
       await awaitUntilIndexed(vector);
 
       await ragChat.chat("Hello, my name is Oz!", {
@@ -287,7 +287,7 @@ describe("RAG Chat addContext using CSV", () => {
     "should be able to successfully query csv",
     async () => {
       await ragChat.context.add({
-        dataType: "csv",
+        type: "csv",
         fileSource: "./data/list_of_user_info.csv",
       });
       await awaitUntilIndexed(vector);
@@ -325,7 +325,7 @@ describe("RAG Chat addContext using text-file", () => {
     "should be able to successfully query txt file",
     async () => {
       await ragChat.context.add({
-        dataType: "text-file",
+        type: "text-file",
         fileSource: "./data/the_wonderful_wizard_of_oz_summary.txt",
         config: { chunkSize: 500, chunkOverlap: 50 },
       });
@@ -367,8 +367,8 @@ describe("RAG Chat addContext using HTML", () => {
     "should be able to successfully query html file",
     async () => {
       await ragChat.context.add({
-        dataType: "html",
-        fileSource: "./data/the_wonderful_wizard_of_oz_summary.html",
+        type: "html",
+        source: "./data/the_wonderful_wizard_of_oz_summary.html",
       });
       await awaitUntilIndexed(vector);
 
@@ -409,7 +409,7 @@ describe("RAGChat with namespaces", () => {
     "should be able to insert data into a namespace and query it",
     async () => {
       await ragChat.context.add({
-        dataType: "text",
+        type: "text",
         data: "Tokyo is the capital of Japan.",
         options: { namespace },
       });
@@ -446,7 +446,7 @@ describe("RAGChat init without model", () => {
     "should be able to insert data into a namespace and query it",
     async () => {
       await ragChat.context.add({
-        dataType: "text",
+        type: "text",
         data: "Tokyo is the Capital of Japan.",
         options: { namespace },
       });
