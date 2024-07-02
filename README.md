@@ -307,7 +307,7 @@ RAGChat supports Next.js server actions natively. First, define your server acti
 "use server";
 
 import { ragChat } from "@/utils/rag-chat";
-import { createServerActionStream } from "@upstash/rag-chat/rsc";
+import { createServerActionStream } from "@upstash/rag-chat/nextjs";
 
 export const serverChat = async (message: string) => {
   const { output } = await ragChat.chat(message, { streaming: true });
@@ -322,7 +322,7 @@ Second, use the server action in your client component:
 ```typescript
 "use client";
 
-import { readServerActionStream } from "@upstash/rag-chat/rsc";
+import { readServerActionStream } from "@upstash/rag-chat/nextjs";
 
 export const ChatComponent = () => {
   const [response, setResponse] = useState('');
