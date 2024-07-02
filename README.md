@@ -104,21 +104,29 @@ Customize your RAGChat instance with advanced options:
 ```typescript
 import { RAGChat, openaiModel } from "@upstash/rag-chat";
 
-const ragChat = new RAGChat({
+// 👇 Optional: For built-in rate limiting
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
+
+export const ragChat = new RAGChat({
   model: openaiModel("gpt-4-turbo"),
   prompt: ({ context, question, chatHistory }) =>
     `You are an AI assistant with access to an Upstash Vector Store.
-Use the provided context and chat history to answer the question.
-If the answer isn't available, politely inform the user.
-
-Chat history:
-${chatHistory}
-
-Context:
-${context}
-
-Question: ${question}
-Answer:`,
+  Use the provided context and chat history to answer the question.
+  If the answer isn't available, politely inform the user.
+  
+  Chat history:
+  ${chatHistory}
+  
+  Context:
+  ${context}
+  
+  Question: ${question}
+  Answer:`,
+  ratelimit: new Ratelimit({
+    redis: Redis.fromEnv(),
+    limiter: Ratelimit.slidingWindow(10, "10 s"),
+  }),
 });
 ```
 
