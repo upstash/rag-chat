@@ -54,6 +54,8 @@ RAGChat supports both Upstash-hosted models and all OpenAI and OpenAI-compatible
 
 #### Using OpenAI Models
 
+To use an OpenAI model, first initialize RAGChat:
+
 ```typescript
 import { RAGChat, openaiModel } from "@upstash/rag-chat";
 
@@ -62,7 +64,15 @@ export const ragChat = new RAGChat({
 });
 ```
 
+And set your OpenAI API key as an environment variable:
+
+```bash
+OPENAI_API_KEY=...
+```
+
 #### Using Upstash-hosted Open-Source Models
+
+To use an OpenAI model, first initialize RAGChat:
 
 ```typescript
 import { RAGChat, upstashModel } from "@upstash/rag-chat";
@@ -70,6 +80,12 @@ import { RAGChat, upstashModel } from "@upstash/rag-chat";
 export const ragChat = new RAGChat({
   model: upstashModel("mistralai/Mistral-7B-Instruct-v0.2"),
 });
+```
+
+And set your Upstash QStash API key environment variable:
+
+```bash
+QSTASH_TOKEN=...
 ```
 
 <details>
