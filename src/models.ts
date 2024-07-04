@@ -34,7 +34,7 @@ export const upstashModel = (model: UpstashChatModel, options?: Omit<ModelOption
   return new LLMClient({
     model,
     baseUrl: "https://qstash.upstash.io/llm/v1",
-    apiKey: options?.apiKey ?? "",
+    apiKey: process.env.QSTASH_TOKEN ?? options?.apiKey ?? "",
     ...options,
   });
 };

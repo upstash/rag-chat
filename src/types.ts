@@ -53,6 +53,28 @@ export type ChatOptions = {
    * Metadata for your chat message. This could be used to store anything in the chat history. By default RAG Chat SDK uses this to persist used model name in the history
    */
   metadata: UpstashDict;
+
+  /**
+   *  Details of applied rate limit.
+   */
+  ratelimitDetails?: (response: Awaited<ReturnType<Ratelimit["limit"]>>) => void;
+
+  /**
+   * Hook to modify or get data and details of each chunk. Can be used to alter streamed content.
+   */
+  onChunk?: ({
+    content,
+    inputTokens,
+    chunkTokens,
+    totalTokens,
+    rawContent,
+  }: {
+    inputTokens: number;
+    chunkTokens: number;
+    totalTokens: number;
+    content: string;
+    rawContent: string;
+  }) => void;
 };
 
 export type PrepareChatResult = {
@@ -126,5 +148,10 @@ export type UpstashMessage<TMetadata extends UpstashDict = UpstashDict> = {
   role: "assistant" | "user";
   content: string;
   metadata?: TMetadata | undefined;
+  usage_metadata?: {
+    input_tokens: number;
+    output_tokens: number;
+    total_tokens: number;
+  };
   id: string;
 };
