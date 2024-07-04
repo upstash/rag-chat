@@ -6,7 +6,7 @@ import type { IterableReadableStreamInterface } from "@langchain/core/utils/stre
 import { ContextService } from "./context-service";
 import type { Database, VectorPayload } from "./database";
 import type { HistoryService } from "./history-service";
-import type { PrepareChatResult, UpstashMessage } from "./types";
+import type { ChatOptions, PrepareChatResult, UpstashMessage } from "./types";
 import { sanitizeQuestion } from "./utils";
 import type { InMemoryHistory } from "./history-service/in-memory-history";
 import type { UpstashRedisHistory } from "./history-service/redis-custom-history";
@@ -72,9 +72,11 @@ export class RAGChatBase {
   protected async makeStreamingLLMRequest({
     prompt,
     onComplete,
+    onChunk,
   }: {
     prompt: string;
     onComplete?: (output: string) => void;
+    onChunk?: ChatOptions["onChunk"];
   }): Promise<{
     output: ReadableStream<string>;
     isStream: boolean;
@@ -99,7 +101,16 @@ export class RAGChatBase {
               if (done) {
                 break;
               }
+
               const message = value?.content ?? "";
+              onChunk?.({
+                content: message,
+                inputTokens: value?.usage_metadata?.input_tokens ?? 0,
+                outputTokens: value?.usage_metadata?.output_tokens ?? 0,
+                totalTokens: value?.usage_metadata?.total_tokens ?? 0,
+                // This actually streamed output from LLM, but cast it to UpstashMessage above to make everything type.But, in this case its not needed
+                rawContent: value as unknown as string,
+              });
               concatenatedOutput += message;
 
               controller.enqueue(message);

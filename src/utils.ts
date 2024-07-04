@@ -40,7 +40,7 @@ export function appendDefaultsIfNeeded(options: Partial<ChatOptions> | undefined
     historyLength: options?.historyLength ?? DEFAULT_HISTORY_LENGTH,
     historyTTL: options?.historyLength ?? DEFAULT_HISTORY_TTL,
     namespace: options?.namespace ?? DEFAULT_NAMESPACE,
-    onRatelimit: undefined,
+    ratelimitDetails: undefined,
   };
 }
 

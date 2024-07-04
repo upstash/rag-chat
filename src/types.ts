@@ -54,7 +54,27 @@ export type ChatOptions = {
    */
   metadata: UpstashDict;
 
-  onRatelimit?: (response: Awaited<ReturnType<Ratelimit["limit"]>>) => void;
+  /**
+   *  Details of applied rate limit.
+   */
+  ratelimitDetails?: (response: Awaited<ReturnType<Ratelimit["limit"]>>) => void;
+
+  /**
+   * Hook to modify or get data and details of each chunk. Can be used to alter streamed content.
+   */
+  onChunk?: ({
+    content,
+    inputTokens,
+    outputTokens,
+    totalTokens,
+    rawContent,
+  }: {
+    inputTokens: number;
+    outputTokens: number;
+    totalTokens: number;
+    content: string;
+    rawContent: string;
+  }) => void;
 };
 
 export type PrepareChatResult = {
@@ -128,5 +148,10 @@ export type UpstashMessage<TMetadata extends UpstashDict = UpstashDict> = {
   role: "assistant" | "user";
   content: string;
   metadata?: TMetadata | undefined;
+  usage_metadata?: {
+    input_tokens: number;
+    output_tokens: number;
+    total_tokens: number;
+  };
   id: string;
 };

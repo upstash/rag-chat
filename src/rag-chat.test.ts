@@ -123,7 +123,7 @@ describe("RAG Chat with ratelimit", () => {
       const throwable = async () => {
         await ragChat.chat("You shall not pass", {
           streaming: false,
-          onRatelimit(response) {
+          ratelimitDetails(response) {
             remainingLimit = response.remaining;
           },
         });

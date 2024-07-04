@@ -73,7 +73,7 @@ export class RAGChat extends RAGChatBase {
         options_.ratelimitSessionId
       );
 
-      options?.onRatelimit?.(ratelimitResponse);
+      options?.ratelimitDetails?.(ratelimitResponse);
       if (!ratelimitResponse.success) {
         throw new RatelimitUpstashError("Couldn't process chat due to ratelimit.", {
           error: "ERR:USER_RATELIMITED",
@@ -118,6 +118,7 @@ export class RAGChat extends RAGChatBase {
       //@ts-expect-error TS can't infer types because of .call()
       return (options_.streaming ? this.makeStreamingLLMRequest : this.makeLLMRequest).call(this, {
         prompt,
+        onChunk: options?.onChunk,
         onComplete: async (output) => {
           await this.history.addMessage({
             message: { content: output, metadata: options_.metadata, role: "assistant" },
