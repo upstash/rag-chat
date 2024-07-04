@@ -464,7 +464,7 @@ describe("RAGChat init without model", () => {
   );
 });
 
-describe("RAGChat init with custom model - todo", () => {
+describe("RAGChat init with custom model", () => {
   const namespace = "japan";
   const vector = new Index({
     token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
@@ -473,9 +473,9 @@ describe("RAGChat init with custom model - todo", () => {
 
   const ragChat = new RAGChat({
     vector,
-    model: customModel("meta-llama/Llama-3-8b-chat-hf", {
-      apiKey: "be4f7601b3fe999ccd4fced312c812f77db2121a1954646dda75097c14e3de7e",
-      baseUrl: "https://api.together.xyz",
+    model: customModel("meta-llama/Meta-Llama-3-8B-Instruct", {
+      apiKey: process.env.QSTASH_TOKEN!,
+      baseUrl: "https://qstash.upstash.io/llm/v1",
     }),
   });
 
