@@ -65,12 +65,12 @@ export type ChatOptions = {
   onChunk?: ({
     content,
     inputTokens,
-    outputTokens,
+    chunkTokens,
     totalTokens,
     rawContent,
   }: {
     inputTokens: number;
-    outputTokens: number;
+    chunkTokens: number;
     totalTokens: number;
     content: string;
     rawContent: string;

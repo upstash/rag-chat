@@ -72,7 +72,7 @@ OPENAI_API_KEY=...
 
 #### Using Upstash-hosted Open-Source Models
 
-To use an OpenAI model, first initialize RAGChat:
+To use an Upstash model, first initialize RAGChat:
 
 ```typescript
 import { RAGChat, upstashModel } from "@upstash/rag-chat";
@@ -82,11 +82,25 @@ export const ragChat = new RAGChat({
 });
 ```
 
+#### Using Custom Providers - TogetherAi, Replicate
+
+To use an Upstash model, first initialize RAGChat:
+
+````typescript
+import { RAGChat, upstashModel } from "@upstash/rag-chat";
+
+export const ragChat = new RAGChat({
+  model: customModel("codellama/CodeLlama-70b-Instruct-hf", {
+      apiKey: "TOGETHER_AI_TOKEN",
+      baseUrl: "https://api.together.xyz/v1",
+    }),
+});
+
 And set your Upstash QStash API key environment variable:
 
 ```bash
 QSTASH_TOKEN=...
-```
+````
 
 <details>
   <summary>Where do I find my Upstash API key?</summary><br>
