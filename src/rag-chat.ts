@@ -1,15 +1,15 @@
 import { UpstashModelError } from "./error/model";
-import { RatelimitUpstashError } from "./error/ratelimit";
 
 import { Config } from "./config";
 import { Database } from "./database";
+import { UpstashVectorError } from "./error/vector";
 import { HistoryService } from "./history-service";
 import type { CustomPrompt } from "./rag-chat-base";
 import { RAGChatBase } from "./rag-chat-base";
 import { RateLimitService } from "./ratelimit-service";
 import type { ChatOptions, RAGChatConfig } from "./types";
 import { appendDefaultsIfNeeded } from "./utils";
-import { UpstashVectorError } from "./error/vector";
+import { RatelimitUpstashError } from "./error";
 
 type ChatReturnType<T extends Partial<ChatOptions>> = Promise<
   T["streaming"] extends true
@@ -69,14 +69,15 @@ export class RAGChat extends RAGChatBase {
       const options_ = appendDefaultsIfNeeded(options);
 
       // Checks ratelimit of the user. If not enabled `success` will be always true.
-      const { success, resetTime } = await this.#ratelimitService.checkLimit(
+      const ratelimitResponse = await this.#ratelimitService.checkLimit(
         options_.ratelimitSessionId
       );
 
-      if (!success) {
+      options?.onRatelimit?.(ratelimitResponse);
+      if (!ratelimitResponse.success) {
         throw new RatelimitUpstashError("Couldn't process chat due to ratelimit.", {
           error: "ERR:USER_RATELIMITED",
-          resetTime: resetTime,
+          resetTime: ratelimitResponse.reset,
         });
       }
 

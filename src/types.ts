@@ -53,6 +53,8 @@ export type ChatOptions = {
    * Metadata for your chat message. This could be used to store anything in the chat history. By default RAG Chat SDK uses this to persist used model name in the history
    */
   metadata: UpstashDict;
+
+  onRatelimit?: (response: Awaited<ReturnType<Ratelimit["limit"]>>) => void;
 };
 
 export type PrepareChatResult = {
