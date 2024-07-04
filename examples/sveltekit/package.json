@@ -12,7 +12,7 @@
   "dependencies": {
     "@ai-sdk/openai": "latest",
     "@ai-sdk/svelte": "latest",
-    "@upstash/rag-chat": "0.0.4-2.alpha",
+    "@upstash/rag-chat": "1.0.1",
     "ai": "latest",
     "openai": "4.47.1"
   },

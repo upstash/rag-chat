@@ -7,7 +7,7 @@
     "@ai-sdk/google": "latest",
     "@ai-sdk/mistral": "latest",
     "@ai-sdk/openai": "latest",
-    "@upstash/rag-chat": "0.0.4-2.alpha",
+    "@upstash/rag-chat": "1.0.1",
     "ai": "latest",
     "dotenv": "16.4.5",
     "zod": "3.23.8",
