@@ -1,12 +1,11 @@
 import type { BaseLanguageModelInterface } from "@langchain/core/language_models/base";
-import { ChatOpenAI } from "@langchain/openai";
 import type { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import { Index } from "@upstash/vector";
+import { DEFAULT_PROMPT } from "./constants";
+import { openaiModel, upstashModel } from "./models";
 import type { CustomPrompt } from "./rag-chat-base";
 import type { RAGChatConfig } from "./types";
-import { UpstashLLMClient } from "./upstash-llm-client";
-import { DEFAULT_PROMPT } from "./constants";
 
 export class Config {
   public readonly vector?: Index;
@@ -49,17 +48,10 @@ const initializeModel = () => {
   const openAIToken = process.env.OPENAI_API_KEY;
 
   if (qstashToken)
-    return new UpstashLLMClient({
-      model: "meta-llama/Meta-Llama-3-8B-Instruct",
-      apiKey: qstashToken,
-    });
+    return upstashModel("meta-llama/Meta-Llama-3-8B-Instruct", { apiKey: qstashToken });
 
   if (openAIToken) {
-    return new ChatOpenAI({
-      modelName: "gpt-4o",
-      verbose: false,
-      apiKey: openAIToken,
-    });
+    return openaiModel("gpt-4o", { apiKey: openAIToken });
   }
 
   throw new Error(

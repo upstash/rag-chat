@@ -2,10 +2,8 @@ import { ChatOpenAI } from "@langchain/openai";
 import { type BaseMessage } from "@langchain/core/messages";
 import { type ChatGeneration } from "@langchain/core/outputs";
 
-export type Model = "mistralai/Mistral-7B-Instruct-v0.2" | "meta-llama/Meta-Llama-3-8B-Instruct";
-
-export type UpstashLLMClientConfig = {
-  model: Model;
+export type LLMClientConfig = {
+  model: string;
   apiKey: string;
   maxTokens?: number;
   stop?: string[];
@@ -17,10 +15,11 @@ export type UpstashLLMClientConfig = {
   logitBias?: Record<string, number>;
   logProbs?: number;
   topLogprobs?: number;
+  baseUrl: string;
 };
 
-export class UpstashLLMClient extends ChatOpenAI {
-  modelName: Model;
+export class LLMClient extends ChatOpenAI {
+  modelName: string;
   apiKey: string;
   maxTokens?: number;
   stop?: string[];
@@ -33,7 +32,7 @@ export class UpstashLLMClient extends ChatOpenAI {
   logProbs?: number;
   topLogprobs?: number;
 
-  constructor(config: UpstashLLMClientConfig) {
+  constructor(config: LLMClientConfig) {
     super(
       {
         modelName: config.model,
@@ -49,7 +48,7 @@ export class UpstashLLMClient extends ChatOpenAI {
         stop: config.stop,
       },
       {
-        baseURL: "https://qstash.upstash.io/llm/v1",
+        baseURL: config.baseUrl,
       }
     );
 

@@ -1,6 +1,6 @@
 import { ChatOpenAI } from "@langchain/openai";
-import type { UpstashLLMClientConfig } from "./upstash-llm-client";
-import { UpstashLLMClient } from "./upstash-llm-client";
+import type { LLMClientConfig } from "./custom-llm-client";
+import { LLMClient } from "./custom-llm-client";
 
 export type OpenAIChatModel =
   | "gpt-4-turbo"
@@ -10,6 +10,7 @@ export type OpenAIChatModel =
   | "gpt-4-1106-preview"
   | "gpt-4-vision-preview"
   | "gpt-4"
+  | "gpt-4o"
   | "gpt-4-0314"
   | "gpt-4-0613"
   | "gpt-4-32k"
@@ -27,21 +28,27 @@ export type UpstashChatModel =
   | "mistralai/Mistral-7B-Instruct-v0.2"
   | "meta-llama/Meta-Llama-3-8B-Instruct";
 
-export const upstashModel = (
-  model: UpstashChatModel,
-  options?: Omit<UpstashLLMClientConfig, "model">
-) => {
-  return new UpstashLLMClient({
+type ModelOptions = Omit<LLMClientConfig, "model">;
+
+export const upstashModel = (model: UpstashChatModel, options?: Omit<ModelOptions, "baseUrl">) => {
+  return new LLMClient({
     model,
-    apiKey: process.env.QSTASH_TOKEN ?? options?.apiKey ?? "",
+    baseUrl: "https://qstash.upstash.io/llm/v1",
+    apiKey: options?.apiKey ?? "",
     ...options,
   });
 };
 
-export const openaiModel = (
-  model: OpenAIChatModel,
-  options?: Omit<UpstashLLMClientConfig, "model">
-) => {
+export const customModel = (model: string, options?: ModelOptions) => {
+  if (!options?.baseUrl) throw new Error("baseUrl cannot be empty or undefined.");
+
+  return new LLMClient({
+    model,
+    ...options,
+  });
+};
+
+export const openaiModel = (model: OpenAIChatModel, options?: Omit<ModelOptions, "baseUrl">) => {
   return new ChatOpenAI({
     modelName: model,
     temperature: 0,
