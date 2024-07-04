@@ -3,7 +3,7 @@ import type { Ratelimit } from "@upstash/ratelimit";
 import type { Redis } from "@upstash/redis";
 import type { Index } from "@upstash/vector";
 import type { CustomPrompt } from "./rag-chat-base";
-import type { UpstashLLMClient } from "./upstash-llm-client";
+import type { LLMClient } from "./custom-llm-client";
 
 declare const __brand: unique symbol;
 type Brand<B> = { [__brand]: B };
@@ -70,7 +70,7 @@ type RAGChatConfigCommon = {
       apiKey,
     })
   */
-  model?: UpstashLLMClient | ChatOpenAI;
+  model?: LLMClient | ChatOpenAI;
   /**
    * If no Index name or instance is provided, falls back to the default.
    * @default

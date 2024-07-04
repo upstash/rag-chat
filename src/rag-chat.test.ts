@@ -8,6 +8,7 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { RatelimitUpstashError } from "./error/ratelimit";
 import { RAGChat } from "./rag-chat";
 import { awaitUntilIndexed } from "./test-utils";
+import { customModel } from "./models";
 
 async function checkStream(
   stream: ReadableStream<string>,
@@ -457,6 +458,46 @@ describe("RAGChat init without model", () => {
         metadataKey: "text",
         namespace,
       });
+      expect(result.output).toContain("Tokyo");
+    },
+    { timeout: 30_000 }
+  );
+});
+
+describe("RAGChat init with custom model", () => {
+  const namespace = "japan";
+  const vector = new Index({
+    token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
+    url: process.env.UPSTASH_VECTOR_REST_URL!,
+  });
+
+  const ragChat = new RAGChat({
+    vector,
+    model: customModel("meta-llama/Meta-Llama-3-8B-Instruct", {
+      apiKey: process.env.QSTASH_TOKEN!,
+      baseUrl: "https://qstash.upstash.io/llm/v1",
+    }),
+  });
+
+  afterAll(async () => {
+    await vector.reset({ namespace });
+  });
+
+  test(
+    "should be able to insert data into a namespace and query it",
+    async () => {
+      await ragChat.context.add({
+        type: "text",
+        data: "Tokyo is the Capital of Japan.",
+        options: { namespace },
+      });
+      await awaitUntilIndexed(vector);
+
+      const result = await ragChat.chat("Where is the capital of Japan?", {
+        metadataKey: "text",
+        namespace,
+      });
+
       expect(result.output).toContain("Tokyo");
     },
     { timeout: 30_000 }
