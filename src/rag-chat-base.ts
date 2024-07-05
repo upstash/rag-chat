@@ -106,9 +106,9 @@ export class RAGChatBase {
               onChunk?.({
                 content: message,
                 inputTokens: value?.usage_metadata?.input_tokens ?? 0,
-                outputTokens: value?.usage_metadata?.output_tokens ?? 0,
+                chunkTokens: value?.usage_metadata?.output_tokens ?? 0,
                 totalTokens: value?.usage_metadata?.total_tokens ?? 0,
-                // This actually streamed output from LLM, but cast it to UpstashMessage above to make everything type.But, in this case its not needed
+                // This actually streamed output from LLM, but cast it to UpstashMessage above to make everything type. But, in this case its not needed
                 rawContent: value as unknown as string,
               });
               concatenatedOutput += message;

@@ -29,6 +29,6 @@
   },
   "version": "0.0.0",
   "dependencies": {
-    "@upstash/rag-chat": "0.0.4-2.alpha"
+    "@upstash/rag-chat": "1.0.1"
   }
 }

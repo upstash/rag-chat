@@ -19,7 +19,7 @@
     "@solidjs/meta": "0.29.4",
     "@solidjs/router": "^0.13.6",
     "@solidjs/start": "^1.0.2",
-    "@upstash/rag-chat": "0.0.4-2.alpha",
+    "@upstash/rag-chat": "1.0.1",
     "ai": "latest",
     "solid-js": "^1.8.17",
     "zod": "^3.23.8"
