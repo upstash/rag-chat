@@ -30,17 +30,16 @@ export const formatChatHistory = (chatHistory: BaseMessage[]) => {
 
 export function appendDefaultsIfNeeded(options: Partial<ChatOptions> | undefined): ChatOptions {
   return {
+    streaming: false,
+    metadata: {},
+    sessionId: DEFAULT_CHAT_SESSION_ID,
+    ratelimitSessionId: DEFAULT_CHAT_RATELIMIT_SESSION_ID,
+    similarityThreshold: DEFAULT_SIMILARITY_THRESHOLD,
+    topK: DEFAULT_TOP_K,
+    historyLength: DEFAULT_HISTORY_LENGTH,
+    historyTTL: DEFAULT_HISTORY_TTL,
+    namespace: DEFAULT_NAMESPACE,
     ...options,
-    streaming: options?.streaming ?? false,
-    metadata: options?.metadata ?? {},
-    sessionId: options?.sessionId ?? DEFAULT_CHAT_SESSION_ID,
-    ratelimitSessionId: options?.ratelimitSessionId ?? DEFAULT_CHAT_RATELIMIT_SESSION_ID,
-    similarityThreshold: options?.similarityThreshold ?? DEFAULT_SIMILARITY_THRESHOLD,
-    topK: options?.topK ?? DEFAULT_TOP_K,
-    historyLength: options?.historyLength ?? DEFAULT_HISTORY_LENGTH,
-    historyTTL: options?.historyLength ?? DEFAULT_HISTORY_TTL,
-    namespace: options?.namespace ?? DEFAULT_NAMESPACE,
-    ratelimitDetails: undefined,
   };
 }
 
