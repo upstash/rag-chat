@@ -54,8 +54,8 @@ export type AddContextPayload =
 
 export type VectorPayload = {
   question: string;
-  similarityThreshold: number;
-  topK: number;
+  similarityThreshold?: number;
+  topK?: number;
   namespace?: string;
 };
 
