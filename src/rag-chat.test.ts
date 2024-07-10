@@ -8,6 +8,7 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { customModel } from "./models";
 import { RAGChat } from "./rag-chat";
 import { awaitUntilIndexed } from "./test-utils";
+import { RatelimitUpstashError } from "./error";
 
 async function checkStream(
   stream: ReadableStream<string>,
@@ -109,7 +110,8 @@ describe("RAG Chat with ratelimit", () => {
   test(
     "should throw ratelimit error - todo",
     async () => {
-      let remainingLimit = 0;
+      let remainingLimit = -9;
+
       await ragChat.context.add({
         type: "text",
         data: "Paris, the capital of France, is renowned for its iconic landmark, the Eiffel Tower, which was completed in 1889 and stands at 330 meters tall.",
@@ -123,15 +125,14 @@ describe("RAG Chat with ratelimit", () => {
       const throwable = async () => {
         await ragChat.chat("You shall not pass", {
           streaming: false,
-          ratelimitDetails(response) {
+          ratelimitDetails: (response) => {
             remainingLimit = response.remaining;
           },
         });
       };
 
-      expect(remainingLimit).toEqual(0);
-      expect(remainingLimit).not.toEqual(1);
-      expect(throwable).toThrowError(Error);
+      expect(throwable).toThrowError(RatelimitUpstashError);
+      expect(remainingLimit).toEqual(-1);
     },
     { timeout: 10_000 }
   );
