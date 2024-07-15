@@ -32,6 +32,13 @@ npm i @upstash/rag-chat
 UPSTASH_VECTOR_REST_URL="XXXXX"
 UPSTASH_VECTOR_REST_TOKEN="XXXXX"
 
+
+# if you use OpenAI compatible models
+OPENAI_API_KEY="XXXXX"
+
+# or if you use Upstash hosted models
+QSTASH_TOKEN="XXXXX"
+
 # Optional: For Redis-based chat history (default is in-memory)
 UPSTASH_REDIS_REST_URL="XXXXX"
 UPSTASH_REDIS_REST_TOKEN="XXXXX"
