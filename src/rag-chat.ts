@@ -1,4 +1,4 @@
-import { upstashError } from "./error/model";
+import { UpstashError } from "./error/model";
 
 import { Config } from "./config";
 import { Database } from "./database";
@@ -37,7 +37,7 @@ export class RAGChat extends RAGChatBase {
     });
 
     if (!model) {
-      throw new upstashError("Model can not be undefined!");
+      throw new UpstashError("Model can not be undefined!");
     }
 
     super(vectorService, historyService, {
