@@ -5,7 +5,6 @@ import { nanoid } from "nanoid";
 import { DEFAULT_SIMILARITY_THRESHOLD, DEFAULT_TOP_K } from "./constants";
 import { FileDataLoader } from "./file-loader";
 import type { AddContextOptions } from "./types";
-import { formatFacts } from "./utils";
 
 export type IndexUpsertPayload = { input: number[]; id?: string | number; metadata?: string };
 export type FilePath = string;
@@ -89,7 +88,7 @@ export class Database {
     similarityThreshold = DEFAULT_SIMILARITY_THRESHOLD,
     topK = DEFAULT_TOP_K,
     namespace,
-  }: VectorPayload): Promise<string> {
+  }: VectorPayload): Promise<{ data: string; id: string }[]> {
     const index = this.index;
     const result = await index.query<Record<string, string>>(
       {
@@ -103,13 +102,17 @@ export class Database {
 
     if (allValuesUndefined) {
       console.error("There is no answer for this question in the provided context.");
-      return formatFacts(["There is no answer for this question in the provided context."]);
+
+      return [
+        { data: " There is no answer for this question in the provided context.", id: "error" },
+      ];
     }
 
     const facts = result
       .filter((x) => x.score >= similarityThreshold)
-      .map((embedding) => `- ${embedding.data ?? ""}`);
-    return formatFacts(facts);
+      .map((embedding) => ({ data: `- ${embedding.data ?? ""}`, id: embedding.id.toString() }));
+
+    return facts;
   }
 
   /**

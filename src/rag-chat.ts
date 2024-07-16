@@ -8,7 +8,7 @@ import type { CustomPrompt } from "./rag-chat-base";
 import { RAGChatBase } from "./rag-chat-base";
 import { RateLimitService } from "./ratelimit-service";
 import type { ChatOptions, RAGChatConfig } from "./types";
-import { appendDefaultsIfNeeded } from "./utils";
+import { appendDefaultsIfNeeded, formatFacts } from "./utils";
 import { RatelimitUpstashError } from "./error";
 
 type ChatReturnType<T extends Partial<ChatOptions>> = Promise<
@@ -88,12 +88,18 @@ export class RAGChat extends RAGChatBase {
       });
 
       // Sanitizes the given input by stripping all the newline chars. Then, queries vector db with sanitized question.
-      const { question, context } = await this.prepareChat({
+      const { question, context: originalContext } = await this.prepareChat({
         question: input,
         similarityThreshold: options_.similarityThreshold,
         topK: options_.topK,
         namespace: options_.namespace,
       });
+
+      // clone context to avoid mutation issues
+      const clonedContext = JSON.parse(JSON.stringify(originalContext)) as typeof originalContext;
+      const modifiedContext = await options?.onContextFetched?.(clonedContext);
+
+      const context = formatFacts((modifiedContext ?? originalContext).map(({ data }) => data));
 
       // Gets the chat history from redis or in-memory store.
       const chatHistory = await this.history.getMessages({
