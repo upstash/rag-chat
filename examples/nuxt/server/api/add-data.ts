@@ -1,4 +1,4 @@
-import { RAGChat, upstashModel } from "@upstash/rag-chat";
+import { RAGChat, upstash } from "@upstash/rag-chat";
 import { Index } from "@upstash/vector";
 
 export default defineLazyEventHandler(async () => {
@@ -9,7 +9,7 @@ export default defineLazyEventHandler(async () => {
       token: apiKey.UPSTASH_VECTOR_REST_TOKEN,
       url: apiKey.UPSTASH_VECTOR_REST_URL,
     }),
-    model: upstashModel("meta-llama/Meta-Llama-3-8B-Instruct", { apiKey: apiKey.QSTASH_TOKEN }),
+    model: upstash("meta-llama/Meta-Llama-3-8B-Instruct", { apiKey: apiKey.QSTASH_TOKEN }),
   });
 
   return defineEventHandler(async (event: any) => {
