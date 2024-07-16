@@ -3,7 +3,7 @@ import type { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import { Index } from "@upstash/vector";
 import { DEFAULT_PROMPT } from "./constants";
-import { openaiModel, upstashModel } from "./models";
+import { upstash, openai } from "./models";
 import type { CustomPrompt } from "./rag-chat-base";
 import type { RAGChatConfig } from "./types";
 
@@ -47,11 +47,10 @@ const initializeModel = () => {
   const qstashToken = process.env.QSTASH_TOKEN;
   const openAIToken = process.env.OPENAI_API_KEY;
 
-  if (qstashToken)
-    return upstashModel("meta-llama/Meta-Llama-3-8B-Instruct", { apiKey: qstashToken });
+  if (qstashToken) return upstash("meta-llama/Meta-Llama-3-8B-Instruct", { apiKey: qstashToken });
 
   if (openAIToken) {
-    return openaiModel("gpt-4o", { apiKey: openAIToken });
+    return openai("gpt-4o", { apiKey: openAIToken });
   }
 
   throw new Error(

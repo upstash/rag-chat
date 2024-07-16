@@ -5,7 +5,7 @@ import { Redis } from "@upstash/redis";
 import { Index } from "@upstash/vector";
 import { LangChainAdapter, StreamingTextResponse } from "ai";
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { customModel } from "./models";
+import { custom } from "./models";
 import { RAGChat } from "./rag-chat";
 import { awaitUntilIndexed } from "./test-utils";
 import { RatelimitUpstashError } from "./error";
@@ -480,7 +480,7 @@ describe("RAGChat init with custom model", () => {
 
   const ragChat = new RAGChat({
     vector,
-    model: customModel("meta-llama/Meta-Llama-3-8B-Instruct", {
+    model: custom("meta-llama/Meta-Llama-3-8B-Instruct", {
       apiKey: process.env.QSTASH_TOKEN!,
       baseUrl: "https://qstash.upstash.io/llm/v1",
     }),

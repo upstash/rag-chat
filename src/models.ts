@@ -30,7 +30,7 @@ export type UpstashChatModel =
 
 type ModelOptions = Omit<LLMClientConfig, "model">;
 
-export const upstashModel = (model: UpstashChatModel, options?: Omit<ModelOptions, "baseUrl">) => {
+export const upstash = (model: UpstashChatModel, options?: Omit<ModelOptions, "baseUrl">) => {
   return new LLMClient({
     model,
     baseUrl: "https://qstash.upstash.io/llm/v1",
@@ -39,7 +39,7 @@ export const upstashModel = (model: UpstashChatModel, options?: Omit<ModelOption
   });
 };
 
-export const customModel = (model: string, options?: ModelOptions) => {
+export const custom = (model: string, options?: ModelOptions) => {
   if (!options?.baseUrl) throw new Error("baseUrl cannot be empty or undefined.");
 
   return new LLMClient({
@@ -48,7 +48,7 @@ export const customModel = (model: string, options?: ModelOptions) => {
   });
 };
 
-export const openaiModel = (model: OpenAIChatModel, options?: Omit<ModelOptions, "baseUrl">) => {
+export const openai = (model: OpenAIChatModel, options?: Omit<ModelOptions, "baseUrl">) => {
   return new ChatOpenAI({
     modelName: model,
     temperature: 0,

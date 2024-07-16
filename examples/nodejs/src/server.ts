@@ -1,4 +1,4 @@
-import { RAGChat, upstashModel } from "@upstash/rag-chat";
+import { RAGChat, upstash } from "@upstash/rag-chat";
 import { streamToResponse } from "ai";
 import dotenv from "dotenv";
 import { createServer } from "http";
@@ -8,10 +8,10 @@ dotenv.config();
 
 const server = createServer(async (req, res) => {
   const ragChat = new RAGChat({
-    model: upstashModel("meta-llama/Meta-Llama-3-8B-Instruct"),
+    model: upstash("meta-llama/Meta-Llama-3-8B-Instruct"),
 
     // 👇 ALTERNATIVE
-    // model: openaiModel("gpt-4-turbo")
+    // model: openai("gpt-4-turbo")
   });
 
   await ragChat.context.add({

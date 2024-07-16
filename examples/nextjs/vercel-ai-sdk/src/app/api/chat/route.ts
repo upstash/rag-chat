@@ -1,4 +1,4 @@
-import { RAGChat, upstashModel } from "@upstash/rag-chat";
+import { RAGChat, upstash } from "@upstash/rag-chat";
 import { aiUseChatAdapter } from "@upstash/rag-chat/nextjs";
 import type { Message } from "ai";
 
@@ -12,10 +12,10 @@ export async function POST(request: Request) {
   if (!question) throw new Error("No question in the request");
 
   const ragChat = new RAGChat({
-    model: upstashModel("meta-llama/Meta-Llama-3-8B-Instruct"),
+    model: upstash("meta-llama/Meta-Llama-3-8B-Instruct"),
 
     // 👇 ALTERNATIVE
-    // model: openaiModel("gpt-4-turbo")
+    // model: openai("gpt-4-turbo")
   });
 
   const response = await ragChat.chat(question, { streaming: true });

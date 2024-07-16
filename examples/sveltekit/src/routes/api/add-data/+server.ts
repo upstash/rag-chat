@@ -1,6 +1,6 @@
 import { env } from "$env/dynamic/private";
 import type { RequestHandler } from "@sveltejs/kit";
-import { RAGChat, upstashModel } from "@upstash/rag-chat";
+import { RAGChat, upstash } from "@upstash/rag-chat";
 import { Index } from "@upstash/vector";
 
 function sleep(ms: number) {
@@ -10,7 +10,7 @@ function sleep(ms: number) {
 export const POST = (async () => {
   const ragChat = new RAGChat({
     vector: new Index({ token: env.UPSTASH_VECTOR_REST_TOKEN, url: env.UPSTASH_VECTOR_REST_URL }),
-    model: upstashModel("meta-llama/Meta-Llama-3-8B-Instruct", { apiKey: env.QSTASH_TOKEN }),
+    model: upstash("meta-llama/Meta-Llama-3-8B-Instruct", { apiKey: env.QSTASH_TOKEN }),
   });
   await Promise.all([
     ragChat.context.add({

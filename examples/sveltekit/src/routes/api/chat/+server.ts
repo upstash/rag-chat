@@ -1,6 +1,6 @@
 import { env } from "$env/dynamic/private";
 import type { Message } from "@ai-sdk/svelte";
-import { RAGChat, upstashModel } from "@upstash/rag-chat";
+import { RAGChat, upstash } from "@upstash/rag-chat";
 import { aiUseChatAdapter } from "@upstash/rag-chat/nextjs";
 import { Index } from "@upstash/vector";
 import type { RequestHandler } from "./$types";
@@ -13,11 +13,11 @@ export const POST = (async ({ request }) => {
 
   const ragChat = new RAGChat({
     vector: new Index({ token: env.UPSTASH_VECTOR_REST_TOKEN, url: env.UPSTASH_VECTOR_REST_URL }),
-    model: upstashModel("meta-llama/Meta-Llama-3-8B-Instruct", { apiKey: env.QSTASH_TOKEN }),
+    model: upstash("meta-llama/Meta-Llama-3-8B-Instruct", { apiKey: env.QSTASH_TOKEN }),
   });
   //OR
   //   const ragChat = new RAGChat({
-  //     model: openaiModel("gpt-4"),
+  //     model: openai("gpt-4"),
   //   });
 
   const response = await ragChat.chat(question, { streaming: true });

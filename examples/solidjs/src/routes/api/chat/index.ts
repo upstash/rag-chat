@@ -1,5 +1,5 @@
 import { APIEvent } from "@solidjs/start/server";
-import { RAGChat, upstashModel } from "@upstash/rag-chat";
+import { RAGChat, upstash } from "@upstash/rag-chat";
 import { aiUseChatAdapter } from "@upstash/rag-chat/nextjs";
 import { Index } from "@upstash/vector";
 import { Message } from "ai";
@@ -15,12 +15,12 @@ export const POST = async (event: APIEvent) => {
       token: process.env.UPSTASH_VECTOR_REST_TOKEN,
       url: process.env.UPSTASH_VECTOR_REST_URL,
     }),
-    model: upstashModel("meta-llama/Meta-Llama-3-8B-Instruct", {
+    model: upstash("meta-llama/Meta-Llama-3-8B-Instruct", {
       apiKey: process.env.QSTASH_TOKEN!,
     }),
 
     // 👇 ALTERNATIVE
-    // model: openaiModel("gpt-4-turbo")
+    // model: openai("gpt-4-turbo")
   });
 
   const response = await ragChat.chat(question, { streaming: true });

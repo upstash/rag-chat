@@ -64,10 +64,10 @@ RAGChat supports both Upstash-hosted models and all OpenAI and OpenAI-compatible
 To use an OpenAI model, first initialize RAGChat:
 
 ```typescript
-import { RAGChat, openaiModel } from "@upstash/rag-chat";
+import { RAGChat, openai } from "@upstash/rag-chat";
 
 export const ragChat = new RAGChat({
-  model: openaiModel("gpt-4-turbo"),
+  model: openai("gpt-4-turbo"),
 });
 ```
 
@@ -82,10 +82,10 @@ OPENAI_API_KEY=...
 To use an Upstash model, first initialize RAGChat:
 
 ```typescript
-import { RAGChat, upstashModel } from "@upstash/rag-chat";
+import { RAGChat, upstash } from "@upstash/rag-chat";
 
 export const ragChat = new RAGChat({
-  model: upstashModel("mistralai/Mistral-7B-Instruct-v0.2"),
+  model: upstash("mistralai/Mistral-7B-Instruct-v0.2"),
 });
 ```
 
@@ -94,10 +94,10 @@ export const ragChat = new RAGChat({
 To use an Upstash model, first initialize RAGChat:
 
 ````typescript
-import { RAGChat, upstashModel } from "@upstash/rag-chat";
+import { RAGChat, custom } from "@upstash/rag-chat";
 
 export const ragChat = new RAGChat({
-  model: customModel("codellama/CodeLlama-70b-Instruct-hf", {
+  model: custom("codellama/CodeLlama-70b-Instruct-hf", {
       apiKey: "TOGETHER_AI_TOKEN",
       baseUrl: "https://api.together.xyz/v1",
     }),
@@ -123,14 +123,14 @@ QSTASH_TOKEN=...
 Customize your RAGChat instance with advanced options:
 
 ```typescript
-import { RAGChat, openaiModel } from "@upstash/rag-chat";
+import { RAGChat, openai } from "@upstash/rag-chat";
 
 // 👇 Optional: For built-in rate limiting
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 
 export const ragChat = new RAGChat({
-  model: openaiModel("gpt-4-turbo"),
+  model: openai("gpt-4-turbo"),
 
   prompt: ({ context, question, chatHistory }) =>
     `You are an AI assistant with access to an Upstash Vector Store.
