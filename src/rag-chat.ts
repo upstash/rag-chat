@@ -96,7 +96,7 @@ export class RAGChat extends RAGChatBase {
       });
 
       // clone context to avoid mutation issues
-      const clonedContext = JSON.parse(JSON.stringify(originalContext)) as typeof originalContext;
+      const clonedContext = structuredClone(originalContext);
       const modifiedContext = await options?.onContextFetched?.(clonedContext);
 
       const context = formatFacts((modifiedContext ?? originalContext).map(({ data }) => data));
