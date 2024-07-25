@@ -79,7 +79,7 @@ export class RAGChatBase {
     onChunk?: ChatOptions["onChunk"];
   }): Promise<{
     output: ReadableStream<string>;
-    isStream: boolean;
+    isStream: true;
   }> {
     const stream = (await this.#model.stream([
       new HumanMessage(prompt),

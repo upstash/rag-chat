@@ -15,7 +15,7 @@ type ChatReturnType<T extends Partial<ChatOptions>> = Promise<
   T["streaming"] extends true
     ? {
         output: ReadableStream<string>;
-        isStream: boolean;
+        isStream: true;
       }
     : { output: string; isStream: false }
 >;
