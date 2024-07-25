@@ -133,7 +133,7 @@ export class Database {
 
         return { success: true, ids: [vectorId.toString()] };
       } catch (error) {
-        return { success: false, error: JSON.stringify(error) };
+        return { success: false, error: JSON.stringify(error, Object.getOwnPropertyNames(error)) };
       }
     } else if (input.type === "embedding") {
       const items = input.data.map((context) => {
@@ -148,7 +148,7 @@ export class Database {
 
         return { success: true, ids: items.map((item) => item.id.toString()) };
       } catch (error) {
-        return { success: false, error: JSON.stringify(error) };
+        return { success: false, error: JSON.stringify(error, Object.getOwnPropertyNames(error)) };
       }
     } else {
       try {
@@ -165,7 +165,7 @@ export class Database {
         return { success: true, ids: transformDocuments.map((document) => document.id) };
       } catch (error) {
         console.error(error);
-        return { success: false, error: JSON.stringify(error) };
+        return { success: false, error: JSON.stringify(error, Object.getOwnPropertyNames(error)) };
       }
     }
   }
