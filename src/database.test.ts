@@ -32,6 +32,6 @@ describe("Database", () => {
       similarityThreshold: 0.5,
       namespace: "",
     });
-    expect(result).toContain("330");
+    expect(result.map(({ data }) => data).join(" ")).toContain("330");
   });
 });

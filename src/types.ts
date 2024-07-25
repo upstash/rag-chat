@@ -8,6 +8,7 @@ import type { LLMClient } from "./custom-llm-client";
 declare const __brand: unique symbol;
 type Brand<B> = { [__brand]: B };
 export type Branded<T, B> = T & Brand<B>;
+type OptionalAsync<T> = T | Promise<T>;
 
 export type ChatOptions = {
   /** Set to `true` if working with web apps and you want to be interactive without stalling users.
@@ -75,11 +76,18 @@ export type ChatOptions = {
     content: string;
     rawContent: string;
   }) => void;
+
+  /**
+   * Hook to access the retrieved context and modify as you wish.
+   */
+  onContextFetched?: (
+    context: PrepareChatResult["context"]
+  ) => OptionalAsync<PrepareChatResult["context"]> | OptionalAsync<undefined>;
 };
 
 export type PrepareChatResult = {
   question: string;
-  context: string;
+  context: { data: string; id: string }[];
 };
 
 type RAGChatConfigCommon = {
