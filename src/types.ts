@@ -29,28 +29,7 @@ export type ChatOptions = {
    * @default 5
    */
   topK?: number;
-  /** Set to `true` if working with web apps and you want to be interactive without stalling users.
-   */
-  streaming: true | false;
 
-  /** Chat session ID of the user interacting with the application.
-   * @default "upstash-rag-chat-session"
-   */
-  sessionId: string;
-  /**
-   * Namespace of the index you wanted to query.
-   */
-  namespace: string;
-
-  /**
-   * Metadata for your chat message. This could be used to store anything in the chat history. By default RAG Chat SDK uses this to persist used model name in the history
-   */
-  metadata: UpstashDict;
-
-  /** Rate limit session ID of the user interacting with the application.
-   * @default "upstash-rag-chat-ratelimit-session"
-   */
-  ratelimitSessionId?: string;
   /**
    *  Details of applied rate limit.
    */

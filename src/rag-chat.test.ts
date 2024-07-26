@@ -462,7 +462,6 @@ describe("RAGChat init without model", () => {
 
       const result = await ragChat.chat("Where is the capital of Japan?", {
         streaming: false,
-        metadataKey: "text",
         namespace,
       });
       expect(result.output).toContain("Tokyo");

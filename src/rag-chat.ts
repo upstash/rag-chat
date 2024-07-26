@@ -82,9 +82,9 @@ export class RAGChat extends RAGChatBase {
    *})
    * ```
    */
-  async chat<const TChatOptions extends Partial<ChatOptions>>(
+  async chat<TChatOptions extends ChatOptions>(
     input: string,
-    options?: Partial<TChatOptions>
+    options?: TChatOptions
   ): Promise<ChatReturnType<TChatOptions>> {
     try {
       // Adds all the necessary default options that users can skip in the options parameter above.
@@ -109,12 +109,6 @@ export class RAGChat extends RAGChatBase {
           resetTime: ratelimitResponse.reset,
         });
       }
-
-      // 👇 when ragChat.chat is called, we first add the user message to chat history (without real id)
-      await this.history.addMessage({
-        message: { content: input, role: "user" },
-        sessionId: optionsWithDefault.sessionId,
-      });
 
       // Sanitizes the given input by stripping all the newline chars. Then, queries vector db with sanitized question.
       const { question, context: originalContext } = await this.prepareChat({
