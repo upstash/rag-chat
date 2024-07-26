@@ -1,0 +1,16 @@
+{
+  "name": "cloudflare-workers",
+  "scripts": {
+    "dev": "wrangler dev src/index.ts",
+    "deploy": "wrangler deploy --minify src/index.ts"
+  },
+  "dependencies": {
+    "@langchain/openai": "^0.1.3",
+    "@upstash/rag-chat": "^1.0.3",
+    "hono": "^4.5.1"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240529.0",
+    "wrangler": "^3.57.2"
+  }
+}
