@@ -391,7 +391,7 @@ describe("RAG Chat addContext using HTML", () => {
   );
 });
 
-describe("RAGChat with namespaces -- OZOZ", () => {
+describe("RAGChat with namespaces", () => {
   const namespace = "japan";
   const vector = new Index({
     token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
