@@ -116,6 +116,11 @@ export class RAGChat extends RAGChatBase {
         });
       }
 
+      // 👇 when ragChat.chat is called, we first add the user message to chat history (without real id)
+      await this.history.addMessage({
+        message: { content: input, role: "user" },
+        sessionId: optionsWithDefault.sessionId,
+      });
       // Sanitizes the given input by stripping all the newline chars. Then, queries vector db with sanitized question.
       const { question, context: originalContext } = await this.prepareChat({
         question: input,
