@@ -28,7 +28,9 @@ export const formatChatHistory = (chatHistory: BaseMessage[]) => {
   return formatFacts(formattedDialogueTurns);
 };
 
-export function appendDefaultsIfNeeded(options: Partial<ChatOptions> | undefined): ChatOptions {
+export function appendDefaultsIfNeeded(
+  options: Partial<ChatOptions> | undefined
+): Required<Omit<ChatOptions, "ratelimitDetails" | "onChunk" | "onContextFetched">> {
   return {
     streaming: false,
     metadata: {},

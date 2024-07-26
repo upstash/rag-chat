@@ -108,7 +108,7 @@ describe("RAG Chat with ratelimit", () => {
   });
 
   test(
-    "should throw ratelimit error - todo",
+    "should throw ratelimit error",
     async () => {
       let remainingLimit = -9;
 
@@ -509,4 +509,78 @@ describe("RAGChat init with custom model", () => {
     },
     { timeout: 30_000 }
   );
+});
+
+describe("RAGChat pass options from constructor", () => {
+  const vector = new Index({
+    token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
+    url: process.env.UPSTASH_VECTOR_REST_URL!,
+  });
+
+  const tests = {
+    metadata: {
+      constructorInit: { hello: "world" },
+      chatOptions: { world: "hello" },
+    },
+    namespace: {
+      constructorInit: "Germany",
+      chatOptions: "Turkiye",
+    },
+    sessionId: {
+      constructorInit: "something",
+      chatOptions: "something-else",
+    },
+    streaming: {
+      constructorInit: true,
+      chatOptions: false,
+    },
+    ratelimitSessionId: {
+      constructorInit: "ratelimitSessionId",
+      chatOptions: "ratelimitSessionId-1",
+    },
+  };
+
+  const ragChat = new RAGChat({
+    vector,
+    model: custom("meta-llama/Meta-Llama-3-8B-Instruct", {
+      apiKey: process.env.QSTASH_TOKEN!,
+      baseUrl: "https://qstash.upstash.io/llm/v1",
+    }),
+    ...Object.fromEntries(
+      Object.entries(tests).map(([key, value]) => [key, value.constructorInit])
+    ),
+  });
+
+  afterAll(async () => {
+    await vector.reset({ namespace: tests.namespace.chatOptions });
+  });
+
+  test("should be able to get configs from constructor then override with chat options", async () => {
+    await ragChat.context.add({
+      type: "text",
+      data: "Tokyo is the Capital of Japan.",
+      options: { namespace: tests.namespace.chatOptions },
+    });
+
+    await awaitUntilIndexed(vector);
+
+    // Check constructor initialization values
+    for (const [key, value] of Object.entries(tests)) {
+      //@ts-expect-error expected error required for testing
+      expect(ragChat[key]).toBe(value.constructorInit);
+    }
+
+    await ragChat.chat("Where is the capital of Japan?", {
+      ...Object.fromEntries(Object.entries(tests).map(([key, value]) => [key, value.chatOptions])),
+      onContextFetched() {
+        // Check chat options values
+        for (const [key, value] of Object.entries(tests)) {
+          //@ts-expect-error typescript can't find the types because of Object.fromEntries above.
+          expect(this[key]).toBe(value.chatOptions);
+        }
+        // eslint-disable-next-line unicorn/no-null
+        return null;
+      },
+    });
+  });
 });

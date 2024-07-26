@@ -5,24 +5,38 @@ import { Index } from "@upstash/vector";
 import { DEFAULT_PROMPT } from "./constants";
 import { upstash, openai } from "./models";
 import type { CustomPrompt } from "./rag-chat-base";
-import type { RAGChatConfig } from "./types";
+import type { RAGChatConfig, UpstashDict } from "./types";
 
 export class Config {
   public readonly vector?: Index;
+
   public readonly redis?: Redis;
+
   public readonly ratelimit?: Ratelimit;
+  public readonly ratelimitSessionId?: string;
 
   public readonly model?: BaseLanguageModelInterface;
   public readonly prompt: CustomPrompt;
+  public readonly streaming?: boolean;
+  public readonly namespace?: string;
+  public readonly metadata?: UpstashDict | undefined;
+  public readonly sessionId?: string | undefined;
 
   constructor(config?: RAGChatConfig) {
-    this.vector = config?.vector ?? Index.fromEnv();
     this.redis = config?.redis ?? initializeRedis();
 
     this.ratelimit = config?.ratelimit;
+    this.ratelimitSessionId = config?.ratelimitSessionId;
+
+    this.streaming = config?.streaming;
+    this.namespace = config?.namespace;
+    this.metadata = config?.metadata;
+    this.sessionId = config?.sessionId;
 
     this.model = config?.model ?? initializeModel();
     this.prompt = config?.prompt ?? DEFAULT_PROMPT;
+
+    this.vector = config?.vector ?? Index.fromEnv();
   }
 }
 

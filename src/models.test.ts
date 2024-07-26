@@ -7,8 +7,7 @@ describe("Model", () => {
     let ran = false;
     const throws = () => {
       try {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const ragChat = new RAGChat({
+        new RAGChat({
           model: upstash("meta-llama/Meta-Llama-3-8B-Instruct", { apiKey: "" }),
         });
       } catch (error) {
