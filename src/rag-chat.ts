@@ -7,7 +7,7 @@ import { HistoryService } from "./history-service";
 import type { CustomPrompt } from "./rag-chat-base";
 import { RAGChatBase } from "./rag-chat-base";
 import { RateLimitService } from "./ratelimit-service";
-import type { ChatOptions, RAGChatConfig } from "./types";
+import type { ChatOptions, RAGChatConfig, UpstashDict } from "./types";
 import { appendDefaultsIfNeeded, formatFacts } from "./utils";
 import { RatelimitUpstashError } from "./error";
 
@@ -22,10 +22,27 @@ type ChatReturnType<T extends Partial<ChatOptions>> = Promise<
 
 export class RAGChat extends RAGChatBase {
   #ratelimitService: RateLimitService;
-  protected promptFn: CustomPrompt;
+
+  private readonly promptFn: CustomPrompt;
+  public readonly streaming?: boolean;
+  public readonly namespace?: string;
+  public readonly metadata?: UpstashDict | undefined;
+  public readonly sessionId?: string | undefined;
+  private readonly ratelimitSessionId?: string;
 
   constructor(config?: RAGChatConfig) {
-    const { vector: index, redis, model, prompt } = new Config(config);
+    const {
+      vector: index,
+      redis,
+      model,
+      prompt,
+      ratelimit,
+      ratelimitSessionId,
+      metadata,
+      namespace,
+      sessionId,
+      streaming,
+    } = new Config(config);
 
     if (!index) {
       throw new UpstashVectorError("Vector can not be undefined!");
@@ -46,8 +63,13 @@ export class RAGChat extends RAGChatBase {
     });
 
     this.promptFn = prompt;
+    this.metadata = metadata;
+    this.namespace = namespace;
+    this.sessionId = sessionId;
+    this.streaming = streaming;
+    this.ratelimitSessionId = ratelimitSessionId;
 
-    this.#ratelimitService = new RateLimitService(config?.ratelimit);
+    this.#ratelimitService = new RateLimitService(ratelimit);
   }
 
   /**
@@ -66,14 +88,21 @@ export class RAGChat extends RAGChatBase {
   ): Promise<ChatReturnType<TChatOptions>> {
     try {
       // Adds all the necessary default options that users can skip in the options parameter above.
-      const options_ = appendDefaultsIfNeeded(options);
+      const optionsWithDefault = appendDefaultsIfNeeded({
+        ...options,
+        metadata: options?.metadata ?? this.metadata,
+        namespace: options?.namespace ?? this.namespace,
+        streaming: options?.streaming ?? this.streaming,
+        sessionId: options?.sessionId ?? this.sessionId,
+        ratelimitSessionId: options?.ratelimitSessionId ?? this.ratelimitSessionId,
+      });
 
       // Checks ratelimit of the user. If not enabled `success` will be always true.
       const ratelimitResponse = await this.#ratelimitService.checkLimit(
-        options_.ratelimitSessionId
+        optionsWithDefault.ratelimitSessionId
       );
 
-      options_.ratelimitDetails?.(ratelimitResponse);
+      options?.ratelimitDetails?.(ratelimitResponse);
       if (!ratelimitResponse.success) {
         throw new RatelimitUpstashError("Couldn't process chat due to ratelimit.", {
           error: "ERR:USER_RATELIMITED",
@@ -84,15 +113,15 @@ export class RAGChat extends RAGChatBase {
       // 👇 when ragChat.chat is called, we first add the user message to chat history (without real id)
       await this.history.addMessage({
         message: { content: input, role: "user" },
-        sessionId: options_.sessionId,
+        sessionId: optionsWithDefault.sessionId,
       });
 
       // Sanitizes the given input by stripping all the newline chars. Then, queries vector db with sanitized question.
       const { question, context: originalContext } = await this.prepareChat({
         question: input,
-        similarityThreshold: options_.similarityThreshold,
-        topK: options_.topK,
-        namespace: options_.namespace,
+        similarityThreshold: optionsWithDefault.similarityThreshold,
+        topK: optionsWithDefault.topK,
+        namespace: optionsWithDefault.namespace,
       });
 
       // clone context to avoid mutation issues
@@ -103,8 +132,8 @@ export class RAGChat extends RAGChatBase {
 
       // Gets the chat history from redis or in-memory store.
       const chatHistory = await this.history.getMessages({
-        sessionId: options_.sessionId,
-        amount: options_.historyLength,
+        sessionId: optionsWithDefault.sessionId,
+        amount: optionsWithDefault.historyLength,
       });
 
       // Formats the chat history for better accuracy when querying LLM
@@ -122,13 +151,15 @@ export class RAGChat extends RAGChatBase {
 
       // Either calls streaming or non-streaming function from RAGChatBase. Streaming function returns AsyncIterator and allows callbacks like onComplete.
       //@ts-expect-error TS can't infer types because of .call()
-      return (options_.streaming ? this.makeStreamingLLMRequest : this.makeLLMRequest).call(this, {
+      return (
+        optionsWithDefault.streaming ? this.makeStreamingLLMRequest : this.makeLLMRequest
+      ).call(this, {
         prompt,
-        onChunk: options_.onChunk,
+        onChunk: options?.onChunk,
         onComplete: async (output) => {
           await this.history.addMessage({
-            message: { content: output, metadata: options_.metadata, role: "assistant" },
-            sessionId: options_.sessionId,
+            message: { content: output, metadata: optionsWithDefault.metadata, role: "assistant" },
+            sessionId: optionsWithDefault.sessionId,
           });
         },
       }) as ChatReturnType<TChatOptions>;

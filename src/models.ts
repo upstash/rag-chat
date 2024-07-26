@@ -31,13 +31,14 @@ export type UpstashChatModel =
 type ModelOptions = Omit<LLMClientConfig, "model">;
 
 export const upstash = (model: UpstashChatModel, options?: Omit<ModelOptions, "baseUrl">) => {
-  const apiKey = process.env.QSTASH_TOKEN ?? options?.apiKey ?? "";
+  const apiKey = options?.apiKey ?? process.env.QSTASH_TOKEN ?? "";
   if (!apiKey) {
     throw new Error(
       "Failed to create upstash LLM client: QSTASH_TOKEN not found." +
         " Pass apiKey parameter or set QSTASH_TOKEN env variable."
     );
   }
+
   return new LLMClient({
     model,
     baseUrl: "https://qstash.upstash.io/llm/v1",
