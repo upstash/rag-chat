@@ -391,7 +391,7 @@ describe("RAG Chat addContext using HTML", () => {
   );
 });
 
-describe("RAGChat with namespaces", () => {
+describe("RAGChat with namespaces -- OZOZ", () => {
   const namespace = "japan";
   const vector = new Index({
     token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
@@ -400,6 +400,7 @@ describe("RAGChat with namespaces", () => {
 
   const ragChat = new RAGChat({
     vector,
+    namespace,
     model: new ChatOpenAI({
       modelName: "gpt-3.5-turbo",
       streaming: false,
@@ -414,22 +415,17 @@ describe("RAGChat with namespaces", () => {
   });
 
   test(
-    "should be able to insert data into a namespace and query it",
+    "should be able to add context with plain text",
     async () => {
-      await ragChat.context.add({
-        type: "text",
-        data: "Tokyo is the capital of Japan.",
-        options: { namespace },
-      });
+      await ragChat.context.add("Adana is the capital of Japan.");
       await awaitUntilIndexed(vector);
 
       const result = await ragChat.chat("What is the capital of Japan?", {
         streaming: false,
         metadataKey: "text",
-        namespace,
       });
 
-      expect(result.output).toContain("Tokyo");
+      expect(result.output).toContain("Adana");
     },
     { timeout: 30_000 }
   );

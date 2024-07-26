@@ -10,6 +10,7 @@ import { RateLimitService } from "./ratelimit-service";
 import type { ChatOptions, RAGChatConfig, UpstashDict } from "./types";
 import { appendDefaultsIfNeeded, formatFacts } from "./utils";
 import { RatelimitUpstashError } from "./error";
+import { DEFAULT_NAMESPACE } from "./constants";
 
 type ChatReturnType<T extends Partial<ChatOptions>> = Promise<
   T["streaming"] extends true
@@ -57,10 +58,15 @@ export class RAGChat extends RAGChatBase {
       throw new UpstashError("Model can not be undefined!");
     }
 
-    super(vectorService, historyService, {
-      model,
-      prompt,
-    });
+    super(
+      vectorService,
+      historyService,
+      {
+        model,
+        prompt,
+      },
+      namespace ?? DEFAULT_NAMESPACE
+    );
 
     this.promptFn = prompt;
     this.metadata = metadata;

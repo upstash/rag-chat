@@ -34,13 +34,13 @@ export class RAGChatBase {
   constructor(
     vectorService: Database,
     historyService: HistoryService,
-    config: { model: BaseLanguageModelInterface; prompt: CustomPrompt }
+    config: { model: BaseLanguageModelInterface; prompt: CustomPrompt },
+    namespace: string
   ) {
     this.vectorService = vectorService;
 
     this.history = historyService.service;
-    this.context = new ContextService(vectorService);
-
+    this.context = new ContextService(vectorService, namespace);
     this.#model = config.model;
   }
 
