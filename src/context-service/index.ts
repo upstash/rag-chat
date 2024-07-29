@@ -1,10 +1,13 @@
+import { nanoid } from "nanoid";
 import type { AddContextPayload, Database, ResetOptions } from "../database";
 
 export class ContextService {
   #vectorService: Database;
+  private readonly namespace: string;
 
-  constructor(vectorService: Database) {
+  constructor(vectorService: Database, namespace: string) {
     this.#vectorService = vectorService;
+    this.namespace = namespace;
   }
 
   /**
@@ -25,9 +28,17 @@ export class ContextService {
    * });
    * ```
    */
-  async add(args: AddContextPayload) {
-    const { options, ...rest } = args;
-    return await this.#vectorService.save(rest, options);
+  async add(args: AddContextPayload | string) {
+    if (typeof args === "string") {
+      const result = await this.#vectorService.save({
+        type: "text",
+        data: args,
+        id: nanoid(),
+        options: { namespace: this.namespace },
+      });
+      return result;
+    }
+    return await this.#vectorService.save(args);
   }
 
   async deleteEntireContext(options?: ResetOptions | undefined) {

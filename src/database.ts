@@ -119,9 +119,8 @@ export class Database {
    * A method that allows you to add various data types into a vector database.
    * It supports plain text, embeddings, PDF, HTML, Text file and CSV. Additionally, it handles text-splitting for CSV, PDF and Text file.
    */
-  async save(input: AddContextPayload, options?: AddContextOptions): Promise<SaveOperationResult> {
-    const { namespace } = options ?? {};
-
+  async save(input: AddContextPayload): Promise<SaveOperationResult> {
+    const { namespace } = input.options ?? {};
     if (input.type === "text") {
       try {
         const vectorId = input.id ?? nanoid();
