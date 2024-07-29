@@ -88,26 +88,27 @@ export const ragChat = new RAGChat({
   model: upstash("mistralai/Mistral-7B-Instruct-v0.2"),
 });
 ```
+And set your Upstash QStash API key environment variable:
+
+
+```bash
+QSTASH_TOKEN=...
+````
 
 #### Using Custom Providers - TogetherAi, Replicate
 
-To use an Upstash model, first initialize RAGChat:
+Initialize RAGChat with custom provider's API key and url:
 
 ````typescript
 import { RAGChat, custom } from "@upstash/rag-chat";
 
 export const ragChat = new RAGChat({
   model: custom("codellama/CodeLlama-70b-Instruct-hf", {
-      apiKey: "TOGETHER_AI_TOKEN",
+      apiKey: "TOGETHER_AI_API_KEY",
       baseUrl: "https://api.together.xyz/v1",
     }),
 });
 
-And set your Upstash QStash API key environment variable:
-
-```bash
-QSTASH_TOKEN=...
-````
 
 <details>
   <summary>Where do I find my Upstash API key?</summary><br>
