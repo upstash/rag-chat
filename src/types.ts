@@ -108,6 +108,13 @@ export type RAGChatConfig = {
           })
      */
   ratelimit?: Ratelimit;
+
+  /**
+   * Logs every step of the chat, including sending prompts, listing history entries,
+   * retrieving context from the vector database, and capturing the full response
+   * from the LLM, including latency.
+   */
+  debug?: boolean;
 } & CommonChatAndRAGOptions;
 
 export type AddContextOptions = {

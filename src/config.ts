@@ -21,6 +21,7 @@ export class Config {
   public readonly namespace?: string;
   public readonly metadata?: UpstashDict | undefined;
   public readonly sessionId?: string | undefined;
+  public readonly debug?: boolean;
 
   constructor(config?: RAGChatConfig) {
     this.redis = config?.redis ?? initializeRedis();
@@ -37,6 +38,7 @@ export class Config {
     this.prompt = config?.prompt ?? DEFAULT_PROMPT;
 
     this.vector = config?.vector ?? Index.fromEnv();
+    this.debug = config?.debug;
   }
 }
 

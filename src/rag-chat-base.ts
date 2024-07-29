@@ -10,6 +10,7 @@ import type { ChatOptions, PrepareChatResult, UpstashMessage } from "./types";
 import { sanitizeQuestion } from "./utils";
 import type { InMemoryHistory } from "./history-service/in-memory-history";
 import type { UpstashRedisHistory } from "./history-service/redis-custom-history";
+import { ChatLogger } from "./logger";
 
 export type PromptParameters = { chatHistory?: string; question: string; context: string };
 
@@ -31,17 +32,26 @@ export class RAGChatBase {
   // Private field holding the language model instance.
   #model: BaseLanguageModelInterface;
 
+  protected readonly debug?: ChatLogger;
+
   constructor(
     vectorService: Database,
     historyService: HistoryService,
     config: { model: BaseLanguageModelInterface; prompt: CustomPrompt },
-    namespace: string
+    namespace: string,
+    debug: boolean
   ) {
     this.vectorService = vectorService;
 
     this.history = historyService.service;
     this.context = new ContextService(vectorService, namespace);
     this.#model = config.model;
+    this.debug = debug
+      ? new ChatLogger({
+          logLevel: "INFO",
+          logOutput: "console",
+        })
+      : undefined;
   }
 
   /**
@@ -55,8 +65,10 @@ export class RAGChatBase {
     namespace,
   }: VectorPayload): Promise<PrepareChatResult> {
     // Sanitize the input question to ensure consistency.
+    await this.debug?.logSendPrompt(input);
     const question = sanitizeQuestion(input);
 
+    this.debug?.startRetrieveContext();
     // Retrieve context relevant to the sanitized question using vector operations.
     const context = await this.vectorService.retrieve({
       question,
@@ -65,6 +77,7 @@ export class RAGChatBase {
       namespace,
     });
 
+    await this.debug?.logRetrieveContext(context);
     // Return the sanitized question and the retrieved context for further processing.
     return { question, context };
   }
