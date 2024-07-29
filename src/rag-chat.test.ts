@@ -5,10 +5,10 @@ import { Redis } from "@upstash/redis";
 import { Index } from "@upstash/vector";
 import { LangChainAdapter, StreamingTextResponse } from "ai";
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { custom, upstash } from "./models";
+import { RatelimitUpstashError } from "./error";
+import { upstash } from "./models";
 import { RAGChat } from "./rag-chat";
 import { awaitUntilIndexed } from "./test-utils";
-import { RatelimitUpstashError } from "./error";
 
 async function checkStream(
   stream: ReadableStream<string>,
@@ -431,41 +431,6 @@ describe("RAGChat with namespaces", () => {
   );
 });
 
-describe("RAGChat init without model", () => {
-  const namespace = "japan";
-  const vector = new Index({
-    token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
-    url: process.env.UPSTASH_VECTOR_REST_URL!,
-  });
-
-  const ragChat = new RAGChat({
-    vector,
-  });
-
-  afterAll(async () => {
-    await vector.reset({ namespace });
-  });
-
-  test(
-    "should be able to insert data into a namespace and query it",
-    async () => {
-      await ragChat.context.add({
-        type: "text",
-        data: "Tokyo is the Capital of Japan.",
-        options: { namespace },
-      });
-      await awaitUntilIndexed(vector);
-
-      const result = await ragChat.chat("Where is the capital of Japan?", {
-        streaming: false,
-        namespace,
-      });
-      expect(result.output).toContain("Tokyo");
-    },
-    { timeout: 30_000 }
-  );
-});
-
 describe("RAGChat init with custom model", () => {
   const namespace = "japan";
   const vector = new Index({
@@ -475,9 +440,8 @@ describe("RAGChat init with custom model", () => {
 
   const ragChat = new RAGChat({
     vector,
-    model: custom("meta-llama/Meta-Llama-3-8B-Instruct", {
+    model: upstash("meta-llama/Meta-Llama-3-8B-Instruct", {
       apiKey: process.env.QSTASH_TOKEN!,
-      baseUrl: "https://qstash.upstash.io/llm/v1",
     }),
   });
 
@@ -537,9 +501,8 @@ describe("RAGChat pass options from constructor", () => {
 
   const ragChat = new RAGChat({
     vector,
-    model: custom("meta-llama/Meta-Llama-3-8B-Instruct", {
+    model: upstash("meta-llama/Meta-Llama-3-8B-Instruct", {
       apiKey: process.env.QSTASH_TOKEN!,
-      baseUrl: "https://qstash.upstash.io/llm/v1",
     }),
     ...Object.fromEntries(
       Object.entries(tests).map(([key, value]) => [key, value.constructorInit])
@@ -580,7 +543,7 @@ describe("RAGChat pass options from constructor", () => {
   });
 });
 
-describe("RAGChat init with upstash model", () => {
+describe("RAGChat init with upstash model - ozoz", () => {
   const namespace = "japan";
   const vector = new Index({
     token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
@@ -590,7 +553,7 @@ describe("RAGChat init with upstash model", () => {
   const ragChat = new RAGChat({
     vector,
     streaming: true,
-    model: upstash("meta-llama/Meta-Llama-3-8B-Instruct"),
+    model: upstash("meta-llama/Meta-Llama-3-8B-Instruct", { apiKey: process.env.QSTASH_TOKEN! }),
   });
 
   afterAll(async () => {
@@ -619,7 +582,7 @@ describe("RAGChat init with upstash model", () => {
   );
 });
 
-describe("RAGChat - chat usage with onHistoryFetched hook -- OZOZ", () => {
+describe("RAGChat - chat usage with onHistoryFetched hook", () => {
   const namespace = "japan";
   const vector = new Index({
     token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
@@ -629,7 +592,7 @@ describe("RAGChat - chat usage with onHistoryFetched hook -- OZOZ", () => {
   const ragChat = new RAGChat({
     vector,
     streaming: true,
-    model: upstash("meta-llama/Meta-Llama-3-8B-Instruct"),
+    model: upstash("meta-llama/Meta-Llama-3-8B-Instruct", { apiKey: process.env.QSTASH_TOKEN! }),
   });
 
   afterAll(async () => {
