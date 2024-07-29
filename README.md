@@ -99,7 +99,7 @@ QSTASH_TOKEN=...
 
 Initialize RAGChat with custom provider's API key and url:
 
-````typescript
+```typescript
 import { RAGChat, custom } from "@upstash/rag-chat";
 
 export const ragChat = new RAGChat({
@@ -108,7 +108,7 @@ export const ragChat = new RAGChat({
       baseUrl: "https://api.together.xyz/v1",
     }),
 });
-
+```
 
 <details>
   <summary>Where do I find my Upstash API key?</summary><br>
