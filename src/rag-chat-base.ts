@@ -77,7 +77,7 @@ export class RAGChatBase {
       namespace,
     });
 
-    await this.debug?.logRetrieveContext(context);
+    await this.debug?.endRetrieveContext(context);
     // Return the sanitized question and the retrieved context for further processing.
     return { question, context };
   }

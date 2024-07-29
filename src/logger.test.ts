@@ -12,10 +12,10 @@ describe("LOGGER", () => {
     });
 
     await logger.logSendPrompt("What is the weather today?");
-    await logger.logRetrieveHistory(["Hello, how are you?", "I'm good, thank you!"]);
-    await logger.logRetrieveContext({ relevantData: "Sample context from vector DB" });
+    await logger.endRetrieveHistory(["Hello, how are you?", "I'm good, thank you!"]);
+    await logger.endRetrieveContext({ relevantData: "Sample context from vector DB" });
     // eslint-disable-next-line @typescript-eslint/no-magic-numbers
-    await logger.logLLMResponse({ response: "The weather today is sunny." });
+    await logger.endLLMResponse({ response: "The weather today is sunny." });
 
     expect(logger.getLogs()).toEqual([
       {

@@ -30,7 +30,9 @@ export const formatChatHistory = (chatHistory: BaseMessage[]) => {
 
 export function appendDefaultsIfNeeded(
   options: Partial<ChatOptions> | undefined
-): Required<Omit<ChatOptions, "ratelimitDetails" | "onChunk" | "onContextFetched">> {
+): Required<
+  Omit<ChatOptions, "ratelimitDetails" | "onChunk" | "onContextFetched" | "onChatHistoryFetched">
+> {
   return {
     streaming: false,
     metadata: {},

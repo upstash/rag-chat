@@ -5,7 +5,7 @@ import { Redis } from "@upstash/redis";
 import { Index } from "@upstash/vector";
 import { LangChainAdapter, StreamingTextResponse } from "ai";
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { custom } from "./models";
+import { custom, upstash } from "./models";
 import { RAGChat } from "./rag-chat";
 import { awaitUntilIndexed } from "./test-utils";
 import { RatelimitUpstashError } from "./error";
@@ -578,4 +578,85 @@ describe("RAGChat pass options from constructor", () => {
       },
     });
   });
+});
+
+describe("RAGChat init with upstash model", () => {
+  const namespace = "japan";
+  const vector = new Index({
+    token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
+    url: process.env.UPSTASH_VECTOR_REST_URL!,
+  });
+
+  const ragChat = new RAGChat({
+    vector,
+    streaming: true,
+    model: upstash("meta-llama/Meta-Llama-3-8B-Instruct"),
+  });
+
+  afterAll(async () => {
+    await vector.reset({ namespace });
+  });
+
+  test(
+    "should be able to insert data into a namespace and query it",
+    async () => {
+      await ragChat.context.add({
+        type: "text",
+        data: "Tokyo is the Capital of Japan.",
+        options: { namespace },
+      });
+      await awaitUntilIndexed(vector);
+
+      const result = await ragChat.chat("Where is the capital of Japan?", {
+        metadataKey: "text",
+        namespace,
+        streaming: true,
+      });
+
+      await checkStream(result.output, ["Tokyo"]);
+    },
+    { timeout: 30_000 }
+  );
+});
+
+describe("RAGChat - chat usage with onHistoryFetched hook -- OZOZ", () => {
+  const namespace = "japan";
+  const vector = new Index({
+    token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
+    url: process.env.UPSTASH_VECTOR_REST_URL!,
+  });
+
+  const ragChat = new RAGChat({
+    vector,
+    streaming: true,
+    model: upstash("meta-llama/Meta-Llama-3-8B-Instruct"),
+  });
+
+  afterAll(async () => {
+    await vector.reset({ namespace });
+  });
+
+  test(
+    "should be able to insert data into a namespace and query it",
+    async () => {
+      await ragChat.context.add({
+        type: "text",
+        data: "Tokyo is the Capital of Japan.",
+        options: { namespace },
+      });
+      await awaitUntilIndexed(vector);
+
+      let firstHistoryContent = "";
+      await ragChat.chat("Where is the capital of Japan?", {
+        metadataKey: "text",
+        namespace,
+        onChatHistoryFetched(messages) {
+          firstHistoryContent = messages[0].content;
+          return messages;
+        },
+      });
+      expect(firstHistoryContent).toBe("Where is the capital of Japan?");
+    },
+    { timeout: 30_000 }
+  );
 });

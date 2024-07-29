@@ -138,15 +138,19 @@ export class RAGChat extends RAGChatBase {
       const context = formatFacts((modifiedContext ?? originalContext).map(({ data }) => data));
 
       this.debug?.startRetrieveHistory();
+
       // Gets the chat history from redis or in-memory store.
-      const chatHistory = await this.history.getMessages({
+      const originalChatHistory = await this.history.getMessages({
         sessionId: optionsWithDefault.sessionId,
         amount: optionsWithDefault.historyLength,
       });
-      await this.debug?.logRetrieveHistory(chatHistory);
+      const clonedChatHistory = structuredClone(originalChatHistory);
+      const modifiedChatHistory =
+        (await options?.onChatHistoryFetched?.(clonedChatHistory)) ?? originalChatHistory;
+      await this.debug?.endRetrieveHistory(clonedChatHistory);
 
       // Formats the chat history for better accuracy when querying LLM
-      const formattedHistory = chatHistory
+      const formattedHistory = modifiedChatHistory
         .reverse()
         .map((message) => {
           return message.role === "user"
@@ -169,7 +173,7 @@ export class RAGChat extends RAGChatBase {
         prompt,
         onChunk: options?.onChunk,
         onComplete: async (output) => {
-          await this.debug?.logLLMResponse(output);
+          await this.debug?.endLLMResponse(output);
           await this.history.addMessage({
             message: { content: output, metadata: optionsWithDefault.metadata, role: "assistant" },
             sessionId: optionsWithDefault.sessionId,

@@ -58,6 +58,13 @@ export type ChatOptions = {
   onContextFetched?: (
     context: PrepareChatResult["context"]
   ) => OptionalAsync<PrepareChatResult["context"]> | OptionalAsync<undefined | null>;
+
+  /**
+   * Hook to access the retrieved history and modify as you wish.
+   */
+  onChatHistoryFetched?: (
+    messages: UpstashMessage[]
+  ) => OptionalAsync<UpstashMessage[]> | OptionalAsync<undefined | null>;
 } & CommonChatAndRAGOptions;
 
 export type PrepareChatResult = {

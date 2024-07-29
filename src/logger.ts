@@ -87,7 +87,7 @@ export class ChatLogger {
     this.startTimer("RETRIEVE_HISTORY");
   }
 
-  async logRetrieveHistory(history: unknown[]): Promise<void> {
+  async endRetrieveHistory(history: unknown[]): Promise<void> {
     const latency = this.endTimer("RETRIEVE_HISTORY");
     await this.log("INFO", "RETRIEVE_HISTORY", { history }, latency);
   }
@@ -96,7 +96,7 @@ export class ChatLogger {
     this.startTimer("RETRIEVE_CONTEXT");
   }
 
-  async logRetrieveContext(context: unknown): Promise<void> {
+  async endRetrieveContext(context: unknown): Promise<void> {
     const latency = this.endTimer("RETRIEVE_CONTEXT");
     await this.log("INFO", "RETRIEVE_CONTEXT", { context }, latency);
   }
@@ -113,7 +113,7 @@ export class ChatLogger {
     this.startTimer("LLM_RESPONSE");
   }
 
-  async logLLMResponse(response: unknown): Promise<void> {
+  async endLLMResponse(response: unknown): Promise<void> {
     const latency = this.endTimer("LLM_RESPONSE");
     await this.log("INFO", "LLM_RESPONSE", { response }, latency);
   }
