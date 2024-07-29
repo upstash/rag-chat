@@ -1,6 +1,6 @@
 {
   "name": "@upstash/rag-chat",
-  "version": "1.0.4-canary-1",
+  "version": "1.0.4",
   "main": "./dist/base/index.mjs",
   "types": "./dist/base/index.d.ts",
   "scripts": {
