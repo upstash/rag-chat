@@ -634,7 +634,6 @@ describe("RAGChat - chat usage with disabled RAG ", () => {
     vector,
     streaming: false,
     redis,
-    debug: true,
     model: upstash("meta-llama/Meta-Llama-3-8B-Instruct", { apiKey: process.env.QSTASH_TOKEN! }),
   });
 
@@ -658,8 +657,8 @@ describe("RAGChat - chat usage with disabled RAG ", () => {
         disableRAG: true,
         prompt: ({ question }) => {
           return `Is the following a question? Answer "YES" if it is a question and "NO" if it is not.
-            Input: ${question}
-            Answer:`;
+              Input: ${question}
+              Answer:`;
         },
       });
 
@@ -678,7 +677,7 @@ describe("RAGChat - chat usage with disabled RAG ", () => {
   );
 
   test(
-    "should be able to chat without rag and ask question -OZOZ",
+    "should be able to chat without rag and ask question",
     async () => {
       await ragChat.context.add({
         type: "text",
@@ -692,8 +691,8 @@ describe("RAGChat - chat usage with disabled RAG ", () => {
         disableRAG: true,
         prompt: ({ question }) => {
           return `Is the following a question? Answer "YES" if it is a question and "NO" if it is not. Maku sure its either capitalized "YES" or "NO"
-          Input: ${question}
-          Answer:`;
+            Input: ${question}
+            Answer:`;
         },
       });
 
@@ -703,9 +702,9 @@ describe("RAGChat - chat usage with disabled RAG ", () => {
           namespace,
           prompt: ({ question, context }) => {
             return `Answer the question using following context. Give answer in all lowercase"
-            Context: ${context}
-            Input: ${question}
-            Answer:`;
+              Context: ${context}
+              Input: ${question}
+              Answer:`;
           },
         });
         actualResult = actualQuestion.output;
@@ -713,6 +712,22 @@ describe("RAGChat - chat usage with disabled RAG ", () => {
       } else {
         expect(actualResult.toLowerCase()).not.toContain("tokyo");
       }
+    },
+    { timeout: 30_000 }
+  );
+
+  test(
+    "should be able to chat without rag and ask question with default disabled rag chat prompt",
+    async () => {
+      await ragChat.chat("Tokyo is the capital of Japan.", { disableRAG: true });
+      await awaitUntilIndexed(vector);
+
+      const result = await ragChat.chat("Where is the capital of Japan?", {
+        namespace,
+        disableRAG: true,
+      });
+
+      expect(result.output.toLowerCase()).toContain("tokyo");
     },
     { timeout: 30_000 }
   );

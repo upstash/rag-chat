@@ -10,7 +10,7 @@ import { RateLimitService } from "./ratelimit-service";
 import type { ChatOptions, RAGChatConfig, UpstashDict } from "./types";
 import { appendDefaultsIfNeeded, formatFacts, sanitizeQuestion } from "./utils";
 import { RatelimitUpstashError } from "./error";
-import { DEFAULT_NAMESPACE } from "./constants";
+import { DEFAULT_NAMESPACE, DEFAULT_PROMPT_WITHOUT_RAG } from "./constants";
 
 type ChatReturnType<T extends Partial<ChatOptions>> = Promise<
   T["streaming"] extends true
@@ -127,7 +127,6 @@ export class RAGChat extends RAGChatBase {
       // Sanitizes the given input by stripping all the newline chars.
       const question = sanitizeQuestion(input);
       let context = "";
-
       if (!optionsWithDefault.disableRAG) {
         // Queries vector db with sanitized question.
         const originalContext = await this.prepareChat({
@@ -165,6 +164,10 @@ export class RAGChat extends RAGChatBase {
         .join("\n");
       await this.debug?.logRetrieveFormatHistory(formattedHistory);
 
+      // If rag is disabled and prompt is missing use DEFAULT_PROMPT_WITHOUT_RAG this as LLM. Only includes chat history.
+      if (optionsWithDefault.disableRAG && options && !options.prompt) {
+        options.prompt = DEFAULT_PROMPT_WITHOUT_RAG;
+      }
       // Allows users to pass type-safe prompts
       const prompt =
         options?.prompt?.({ context, question, chatHistory: formattedHistory }) ??

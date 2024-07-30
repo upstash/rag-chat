@@ -37,3 +37,14 @@ export const DEFAULT_PROMPT: CustomPrompt = ({ context, question, chatHistory })
 
   Question: ${question}
   Helpful answer:`;
+
+export const DEFAULT_PROMPT_WITHOUT_RAG: CustomPrompt = ({ question, chatHistory }) =>
+  `You are a friendly AI assistant.
+    To help you answer the questions, a chat history will be provided.
+    Answer the question at the end.
+    -------------
+    Chat history:
+    ${chatHistory}
+    -------------
+    Question: ${question}
+    Helpful answer:`;
