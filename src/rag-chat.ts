@@ -43,6 +43,7 @@ export class RAGChat extends RAGChatBase {
       namespace,
       sessionId,
       streaming,
+      debug,
     } = new Config(config);
 
     if (!index) {
@@ -65,7 +66,8 @@ export class RAGChat extends RAGChatBase {
         model,
         prompt,
       },
-      namespace ?? DEFAULT_NAMESPACE
+      namespace ?? DEFAULT_NAMESPACE,
+      Boolean(debug)
     );
 
     this.promptFn = prompt;
@@ -135,14 +137,20 @@ export class RAGChat extends RAGChatBase {
 
       const context = formatFacts((modifiedContext ?? originalContext).map(({ data }) => data));
 
+      this.debug?.startRetrieveHistory();
+
       // Gets the chat history from redis or in-memory store.
-      const chatHistory = await this.history.getMessages({
+      const originalChatHistory = await this.history.getMessages({
         sessionId: optionsWithDefault.sessionId,
         amount: optionsWithDefault.historyLength,
       });
+      const clonedChatHistory = structuredClone(originalChatHistory);
+      const modifiedChatHistory =
+        (await options?.onChatHistoryFetched?.(clonedChatHistory)) ?? originalChatHistory;
+      await this.debug?.endRetrieveHistory(clonedChatHistory);
 
       // Formats the chat history for better accuracy when querying LLM
-      const formattedHistory = chatHistory
+      const formattedHistory = modifiedChatHistory
         .reverse()
         .map((message) => {
           return message.role === "user"
@@ -150,26 +158,31 @@ export class RAGChat extends RAGChatBase {
             : `YOUR MESSAGE: ${message.content}`;
         })
         .join("\n");
+      await this.debug?.logRetrieveFormatHistory(formattedHistory);
 
       // Allows users to pass type-safe prompts
       const prompt = this.promptFn({ context, question, chatHistory: formattedHistory });
+      await this.debug?.logFinalPrompt(prompt);
 
       // Either calls streaming or non-streaming function from RAGChatBase. Streaming function returns AsyncIterator and allows callbacks like onComplete.
+      this.debug?.startLLMResponse();
       //@ts-expect-error TS can't infer types because of .call()
-      return (
+      const result = (
         optionsWithDefault.streaming ? this.makeStreamingLLMRequest : this.makeLLMRequest
       ).call(this, {
         prompt,
         onChunk: options?.onChunk,
         onComplete: async (output) => {
+          await this.debug?.endLLMResponse(output);
           await this.history.addMessage({
             message: { content: output, metadata: optionsWithDefault.metadata, role: "assistant" },
             sessionId: optionsWithDefault.sessionId,
           });
         },
       }) as ChatReturnType<TChatOptions>;
+      return result;
     } catch (error) {
-      console.error(error);
+      await this.debug?.logError(error as Error);
       throw error;
     }
   }

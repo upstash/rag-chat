@@ -58,6 +58,13 @@ export type ChatOptions = {
   onContextFetched?: (
     context: PrepareChatResult["context"]
   ) => OptionalAsync<PrepareChatResult["context"]> | OptionalAsync<undefined | null>;
+
+  /**
+   * Hook to access the retrieved history and modify as you wish.
+   */
+  onChatHistoryFetched?: (
+    messages: UpstashMessage[]
+  ) => OptionalAsync<UpstashMessage[]> | OptionalAsync<undefined | null>;
 } & CommonChatAndRAGOptions;
 
 export type PrepareChatResult = {
@@ -108,6 +115,13 @@ export type RAGChatConfig = {
           })
      */
   ratelimit?: Ratelimit;
+
+  /**
+   * Logs every step of the chat, including sending prompts, listing history entries,
+   * retrieving context from the vector database, and capturing the full response
+   * from the LLM, including latency.
+   */
+  debug?: boolean;
 } & CommonChatAndRAGOptions;
 
 export type AddContextOptions = {
