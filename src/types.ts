@@ -2,7 +2,6 @@ import type { ChatOpenAI } from "@langchain/openai";
 import type { Ratelimit } from "@upstash/ratelimit";
 import type { Redis } from "@upstash/redis";
 import type { Index } from "@upstash/vector";
-import type { LLMClient } from "./custom-llm-client";
 import type { CustomPrompt } from "./rag-chat";
 
 declare const __brand: unique symbol;
@@ -87,7 +86,7 @@ export type RAGChatConfig = {
       apiKey,
     })
   */
-  model?: LLMClient | ChatOpenAI;
+  model?: ChatOpenAI;
 
   /**
      * Ratelimit instance
