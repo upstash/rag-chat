@@ -43,6 +43,11 @@ export class ContextService {
     return await this.#vectorService.save(args);
   }
 
+  // eslint-disable-next-line @typescript-eslint/require-await
+  async addMany(args: AddContextPayload[] | string[]) {
+    return args.map((data) => this.add(data));
+  }
+
   async deleteEntireContext(options?: ResetOptions | undefined) {
     await this.#vectorService.reset(
       options?.namespace ? { namespace: options.namespace } : undefined
@@ -53,7 +58,8 @@ export class ContextService {
     await this.#vectorService.delete({ ids: typeof id === "string" ? [id] : id, namespace });
   }
 
-  async getContext(
+  /** This is internal usage only. */
+  async _getContext(
     optionsWithDefault: ModifiedChatOptions,
     input: string,
     debug?: ChatLogger
