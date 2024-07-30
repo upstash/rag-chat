@@ -159,7 +159,7 @@ export type CommonChatAndRAGOptions = {
           Question: {question}
           Helpful answer:`)
      */
-  prompt?: CustomPrompt;
+  promptFn?: CustomPrompt;
 };
 
 export type HistoryOptions = Pick<ChatOptions, "historyLength" | "sessionId">;

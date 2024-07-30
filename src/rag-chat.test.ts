@@ -149,7 +149,7 @@ describe("RAG Chat with custom template", () => {
       token: process.env.UPSTASH_REDIS_REST_TOKEN!,
       url: process.env.UPSTASH_REDIS_REST_URL!,
     }),
-    prompt: () => "Just say `I'm a cookie monster`. Nothing else.",
+    promptFn: () => "Just say `I'm a cookie monster`. Nothing else.",
     model: new ChatOpenAI({
       modelName: "gpt-3.5-turbo",
       streaming: false,
@@ -655,7 +655,7 @@ describe("RAGChat - chat usage with disabled RAG ", () => {
       const result = await ragChat.chat("Ankara is the capital of Turkey", {
         namespace,
         disableRAG: true,
-        prompt: ({ question }) => {
+        promptFn: ({ question }) => {
           return `Is the following a question? Answer "YES" if it is a question and "NO" if it is not.
               Input: ${question}
               Answer:`;
@@ -689,7 +689,7 @@ describe("RAGChat - chat usage with disabled RAG ", () => {
       const result = await ragChat.chat("Where is the capital of Japan?", {
         namespace,
         disableRAG: true,
-        prompt: ({ question }) => {
+        promptFn: ({ question }) => {
           return `Is the following a question? Answer "YES" if it is a question and "NO" if it is not. Maku sure its either capitalized "YES" or "NO"
             Input: ${question}
             Answer:`;
@@ -700,7 +700,7 @@ describe("RAGChat - chat usage with disabled RAG ", () => {
       if (result.output.includes("YES")) {
         const actualQuestion = await ragChat.chat("Where is the capital of Japan?", {
           namespace,
-          prompt: ({ question, context }) => {
+          promptFn: ({ question, context }) => {
             return `Answer the question using following context. Give answer in all lowercase"
               Context: ${context}
               Input: ${question}

@@ -9,6 +9,7 @@ import {
   DEFAULT_HISTORY_TTL,
   DEFAULT_NAMESPACE,
 } from "./constants";
+import type { CustomPrompt } from "./rag-chat-base";
 
 export const sanitizeQuestion = (question: string) => {
   return question.trim().replaceAll("\n", " ");
@@ -28,17 +29,25 @@ export const formatChatHistory = (chatHistory: BaseMessage[]) => {
   return formatFacts(formattedDialogueTurns);
 };
 
-export function appendDefaultsIfNeeded(
-  options: Partial<ChatOptions> | undefined
-): Required<
-  Omit<
-    ChatOptions,
-    "ratelimitDetails" | "onChunk" | "onContextFetched" | "onChatHistoryFetched" | "prompt"
-  >
-> {
-  return {
+type DefaultChatOptions = {
+  streaming: boolean;
+  disableRAG: boolean;
+  sessionId: string;
+  ratelimitSessionId: string;
+  similarityThreshold: number;
+  topK: number;
+  historyLength: number;
+  historyTTL: number;
+  namespace: string;
+  promptFn: CustomPrompt;
+};
+type Modify<T, R> = Omit<T, keyof R> & R;
+
+export type ModifiedChatOptions = Modify<ChatOptions, DefaultChatOptions>;
+
+export function appendDefaultsIfNeeded(options: ChatOptions): ModifiedChatOptions {
+  const defaultValues = {
     streaming: false,
-    metadata: {},
     disableRAG: false,
     sessionId: DEFAULT_CHAT_SESSION_ID,
     ratelimitSessionId: DEFAULT_CHAT_RATELIMIT_SESSION_ID,
@@ -47,6 +56,10 @@ export function appendDefaultsIfNeeded(
     historyLength: DEFAULT_HISTORY_LENGTH,
     historyTTL: DEFAULT_HISTORY_TTL,
     namespace: DEFAULT_NAMESPACE,
+    promptFn: () => "",
+  };
+  return {
+    ...defaultValues,
     ...options,
   };
 }
