@@ -88,13 +88,14 @@ export class Database {
     similarityThreshold = DEFAULT_SIMILARITY_THRESHOLD,
     topK = DEFAULT_TOP_K,
     namespace,
-  }: VectorPayload): Promise<{ data: string; id: string }[]> {
+  }: VectorPayload): Promise<{ data: string; id: string; metadata: unknown }[]> {
     const index = this.index;
     const result = await index.query<Record<string, string>>(
       {
         data: question,
         topK,
         includeData: true,
+        includeMetadata: true,
       },
       { namespace }
     );
@@ -104,13 +105,21 @@ export class Database {
       console.error("There is no answer for this question in the provided context.");
 
       return [
-        { data: " There is no answer for this question in the provided context.", id: "error" },
+        {
+          data: " There is no answer for this question in the provided context.",
+          id: "error",
+          metadata: {},
+        },
       ];
     }
 
     const facts = result
       .filter((x) => x.score >= similarityThreshold)
-      .map((embedding) => ({ data: `- ${embedding.data ?? ""}`, id: embedding.id.toString() }));
+      .map((embedding) => ({
+        data: `- ${embedding.data ?? ""}`,
+        id: embedding.id.toString(),
+        metadata: embedding.metadata,
+      }));
 
     return facts;
   }

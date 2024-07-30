@@ -71,7 +71,7 @@ export type ChatOptions = {
   disableRAG?: boolean;
 } & CommonChatAndRAGOptions;
 
-export type PrepareChatResult = { data: string; id: string }[];
+export type PrepareChatResult = { data: string; id: string; metadata: unknown }[];
 
 /**Config needed to initialize RAG Chat SDK */
 export type RAGChatConfig = {
