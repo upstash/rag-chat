@@ -4,8 +4,8 @@ import { Redis } from "@upstash/redis";
 import { Index } from "@upstash/vector";
 import { DEFAULT_PROMPT } from "./constants";
 import { upstash, openai } from "./models";
-import type { CustomPrompt } from "./rag-chat-base";
 import type { RAGChatConfig, UpstashDict } from "./types";
+import type { CustomPrompt } from "./rag-chat";
 
 export class Config {
   public readonly vector?: Index;

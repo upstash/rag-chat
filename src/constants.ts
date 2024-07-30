@@ -1,4 +1,4 @@
-import type { CustomPrompt } from "./rag-chat-base";
+import type { CustomPrompt } from "./rag-chat";
 
 export const DEFAULT_CHAT_SESSION_ID = "upstash-rag-chat-session";
 export const DEFAULT_CHAT_RATELIMIT_SESSION_ID = "upstash-rag-chat-ratelimit-session";

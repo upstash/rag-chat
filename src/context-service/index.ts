@@ -1,5 +1,7 @@
 import { nanoid } from "nanoid";
 import type { AddContextPayload, Database, ResetOptions } from "../database";
+import { formatFacts, type ModifiedChatOptions } from "../utils";
+import type { ChatLogger } from "../logger";
 
 export class ContextService {
   #vectorService: Database;
@@ -41,6 +43,11 @@ export class ContextService {
     return await this.#vectorService.save(args);
   }
 
+  // eslint-disable-next-line @typescript-eslint/require-await
+  async addMany(args: AddContextPayload[] | string[]) {
+    return args.map((data) => this.add(data));
+  }
+
   async deleteEntireContext(options?: ResetOptions | undefined) {
     await this.#vectorService.reset(
       options?.namespace ? { namespace: options.namespace } : undefined
@@ -49,5 +56,31 @@ export class ContextService {
 
   async delete({ id, namespace }: { id: string | string[]; namespace?: string }) {
     await this.#vectorService.delete({ ids: typeof id === "string" ? [id] : id, namespace });
+  }
+
+  /** This is internal usage only. */
+  async _getContext(
+    optionsWithDefault: ModifiedChatOptions,
+    input: string,
+    debug?: ChatLogger
+  ): Promise<string> {
+    await debug?.logSendPrompt(input);
+
+    debug?.startRetrieveContext();
+
+    if (optionsWithDefault.disableRAG) return "";
+
+    const originalContext = await this.#vectorService.retrieve({
+      question: input,
+      similarityThreshold: optionsWithDefault.similarityThreshold,
+      topK: optionsWithDefault.topK,
+      namespace: optionsWithDefault.namespace,
+    });
+
+    const clonedContext = structuredClone(originalContext);
+    const modifiedContext = await optionsWithDefault.onContextFetched?.(clonedContext);
+    await debug?.endRetrieveContext(modifiedContext);
+
+    return formatFacts((modifiedContext ?? originalContext).map(({ data }) => data));
   }
 }
