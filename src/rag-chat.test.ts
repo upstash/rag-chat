@@ -4,7 +4,7 @@ import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import { Index } from "@upstash/vector";
 import { LangChainAdapter, StreamingTextResponse } from "ai";
-import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import { afterAll, afterEach, beforeAll, describe, expect, test } from "bun:test";
 import { RatelimitUpstashError } from "./error";
 import { upstash } from "./models";
 import { RAGChat } from "./rag-chat";
@@ -543,7 +543,7 @@ describe("RAGChat pass options from constructor", () => {
   });
 });
 
-describe("RAGChat init with upstash model - ozoz", () => {
+describe("RAGChat init with upstash model", () => {
   const namespace = "japan";
   const vector = new Index({
     token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
@@ -571,7 +571,6 @@ describe("RAGChat init with upstash model - ozoz", () => {
       await awaitUntilIndexed(vector);
 
       const result = await ragChat.chat("Where is the capital of Japan?", {
-        metadataKey: "text",
         namespace,
         streaming: true,
       });
@@ -611,7 +610,6 @@ describe("RAGChat - chat usage with onHistoryFetched hook", () => {
 
       let firstHistoryContent = "";
       await ragChat.chat("Where is the capital of Japan?", {
-        metadataKey: "text",
         namespace,
         onChatHistoryFetched(messages) {
           firstHistoryContent = messages[0].content;
@@ -619,6 +617,102 @@ describe("RAGChat - chat usage with onHistoryFetched hook", () => {
         },
       });
       expect(firstHistoryContent).toBe("Where is the capital of Japan?");
+    },
+    { timeout: 30_000 }
+  );
+});
+
+describe("RAGChat - chat usage with disabled RAG ", () => {
+  const namespace = "japan";
+  const vector = new Index({
+    token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
+    url: process.env.UPSTASH_VECTOR_REST_URL!,
+  });
+  const redis = Redis.fromEnv();
+
+  const ragChat = new RAGChat({
+    vector,
+    streaming: false,
+    redis,
+    debug: true,
+    model: upstash("meta-llama/Meta-Llama-3-8B-Instruct", { apiKey: process.env.QSTASH_TOKEN! }),
+  });
+
+  afterEach(async () => {
+    await vector.reset({ namespace });
+    await redis.flushdb();
+  });
+
+  test(
+    "should be able to chat without rag not ask question",
+    async () => {
+      await ragChat.context.add({
+        type: "text",
+        data: "Tokyo is the Capital of Japan.",
+        options: { namespace },
+      });
+      await awaitUntilIndexed(vector);
+
+      const result = await ragChat.chat("Ankara is the capital of Turkey", {
+        namespace,
+        disableRAG: true,
+        prompt: ({ question }) => {
+          return `Is the following a question? Answer "YES" if it is a question and "NO" if it is not.
+            Input: ${question}
+            Answer:`;
+        },
+      });
+
+      let actualResult = "";
+      if (result.output.includes("YES")) {
+        const actualQuestion = await ragChat.chat("Where is the capital of Japan?", {
+          namespace,
+        });
+        actualResult = actualQuestion.output;
+        expect(actualQuestion.output).toContain("Tokyo");
+      } else {
+        expect(actualResult).not.toContain("Tokyo");
+      }
+    },
+    { timeout: 30_000 }
+  );
+
+  test(
+    "should be able to chat without rag and ask question -OZOZ",
+    async () => {
+      await ragChat.context.add({
+        type: "text",
+        data: "Tokyo is the Capital of Japan.",
+        options: { namespace },
+      });
+      await awaitUntilIndexed(vector);
+
+      const result = await ragChat.chat("Where is the capital of Japan?", {
+        namespace,
+        disableRAG: true,
+        prompt: ({ question }) => {
+          return `Is the following a question? Answer "YES" if it is a question and "NO" if it is not. Maku sure its either capitalized "YES" or "NO"
+          Input: ${question}
+          Answer:`;
+        },
+      });
+
+      let actualResult = "";
+      if (result.output.includes("YES")) {
+        const actualQuestion = await ragChat.chat("Where is the capital of Japan?", {
+          namespace,
+          prompt: ({ question, context }) => {
+            return `Answer the question using following context. Give answer in all lowercase"
+            Context: ${context}
+            Input: ${question}
+            Answer:`;
+          },
+        });
+        actualResult = actualQuestion.output;
+        expect(actualQuestion.output.toLowerCase()).toContain("tokyo");
+      } else {
+        expect(actualResult.toLowerCase()).not.toContain("tokyo");
+      }
     },
     { timeout: 30_000 }
   );

@@ -8,7 +8,7 @@ import type { CustomPrompt } from "./rag-chat-base";
 import { RAGChatBase } from "./rag-chat-base";
 import { RateLimitService } from "./ratelimit-service";
 import type { ChatOptions, RAGChatConfig, UpstashDict } from "./types";
-import { appendDefaultsIfNeeded, formatFacts } from "./utils";
+import { appendDefaultsIfNeeded, formatFacts, sanitizeQuestion } from "./utils";
 import { RatelimitUpstashError } from "./error";
 import { DEFAULT_NAMESPACE } from "./constants";
 
@@ -123,22 +123,27 @@ export class RAGChat extends RAGChatBase {
         message: { content: input, role: "user" },
         sessionId: optionsWithDefault.sessionId,
       });
-      // Sanitizes the given input by stripping all the newline chars. Then, queries vector db with sanitized question.
-      const { question, context: originalContext } = await this.prepareChat({
-        question: input,
-        similarityThreshold: optionsWithDefault.similarityThreshold,
-        topK: optionsWithDefault.topK,
-        namespace: optionsWithDefault.namespace,
-      });
 
-      // clone context to avoid mutation issues
-      const clonedContext = structuredClone(originalContext);
-      const modifiedContext = await options?.onContextFetched?.(clonedContext);
+      // Sanitizes the given input by stripping all the newline chars.
+      const question = sanitizeQuestion(input);
+      let context = "";
 
-      const context = formatFacts((modifiedContext ?? originalContext).map(({ data }) => data));
+      if (!optionsWithDefault.disableRAG) {
+        // Queries vector db with sanitized question.
+        const originalContext = await this.prepareChat({
+          question: input,
+          similarityThreshold: optionsWithDefault.similarityThreshold,
+          topK: optionsWithDefault.topK,
+          namespace: optionsWithDefault.namespace,
+        });
+        // clone context to avoid mutation issues
+        const clonedContext = structuredClone(originalContext);
+        const modifiedContext = await options?.onContextFetched?.(clonedContext);
+
+        context = formatFacts((modifiedContext ?? originalContext).map(({ data }) => data));
+      }
 
       this.debug?.startRetrieveHistory();
-
       // Gets the chat history from redis or in-memory store.
       const originalChatHistory = await this.history.getMessages({
         sessionId: optionsWithDefault.sessionId,
@@ -161,7 +166,9 @@ export class RAGChat extends RAGChatBase {
       await this.debug?.logRetrieveFormatHistory(formattedHistory);
 
       // Allows users to pass type-safe prompts
-      const prompt = this.promptFn({ context, question, chatHistory: formattedHistory });
+      const prompt =
+        options?.prompt?.({ context, question, chatHistory: formattedHistory }) ??
+        this.promptFn({ context, question, chatHistory: formattedHistory });
       await this.debug?.logFinalPrompt(prompt);
 
       // Either calls streaming or non-streaming function from RAGChatBase. Streaming function returns AsyncIterator and allows callbacks like onComplete.

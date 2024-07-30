@@ -7,7 +7,6 @@ import { ContextService } from "./context-service";
 import type { Database, VectorPayload } from "./database";
 import type { HistoryService } from "./history-service";
 import type { ChatOptions, PrepareChatResult, UpstashMessage } from "./types";
-import { sanitizeQuestion } from "./utils";
 import type { InMemoryHistory } from "./history-service/in-memory-history";
 import type { UpstashRedisHistory } from "./history-service/redis-custom-history";
 import { ChatLogger } from "./logger";
@@ -59,14 +58,13 @@ export class RAGChatBase {
    * @returns Promise that resolves to PrepareChatResult, containing the sanitized question and retrieved context.
    */
   protected async prepareChat({
-    question: input,
+    question,
     similarityThreshold,
     topK,
     namespace,
   }: VectorPayload): Promise<PrepareChatResult> {
     // Sanitize the input question to ensure consistency.
-    await this.debug?.logSendPrompt(input);
-    const question = sanitizeQuestion(input);
+    await this.debug?.logSendPrompt(question);
 
     this.debug?.startRetrieveContext();
     // Retrieve context relevant to the sanitized question using vector operations.
@@ -79,7 +77,7 @@ export class RAGChatBase {
 
     await this.debug?.endRetrieveContext(context);
     // Return the sanitized question and the retrieved context for further processing.
-    return { question, context };
+    return context;
   }
 
   protected async makeStreamingLLMRequest({
