@@ -9,7 +9,7 @@ import {
   DEFAULT_HISTORY_TTL,
   DEFAULT_NAMESPACE,
 } from "./constants";
-import type { CustomPrompt } from "./rag-chat-base";
+import type { CustomPrompt } from "./rag-chat";
 
 export const sanitizeQuestion = (question: string) => {
   return question.trim().replaceAll("\n", " ");
