@@ -6,7 +6,7 @@ import { Index } from "@upstash/vector";
 import { LangChainAdapter, StreamingTextResponse } from "ai";
 import { afterAll, afterEach, beforeAll, describe, expect, test } from "bun:test";
 import { RatelimitUpstashError } from "./error";
-import { upstash } from "./models";
+import { custom, upstash } from "./models";
 import { RAGChat } from "./rag-chat";
 import { awaitUntilIndexed } from "./test-utils";
 
@@ -591,7 +591,7 @@ describe("RAGChat - chat usage with onHistoryFetched hook", () => {
   const ragChat = new RAGChat({
     vector,
     streaming: true,
-    model: upstash("meta-llama/Meta-Llama-3-8B-Instruct", { apiKey: process.env.QSTASH_TOKEN! }),
+    model: upstash("meta-llama/Meta-Llama-3-8B-Instruct"),
   });
 
   afterAll(async () => {
@@ -634,7 +634,10 @@ describe("RAGChat - chat usage with disabled RAG ", () => {
     vector,
     streaming: false,
     redis,
-    model: upstash("meta-llama/Meta-Llama-3-8B-Instruct", { apiKey: process.env.QSTASH_TOKEN! }),
+    model: custom("meta-llama/Meta-Llama-3-8B-Instruct", {
+      apiKey: process.env.QSTASH_TOKEN!,
+      baseUrl: "https://qstash.upstash.io/llm/v1",
+    }),
   });
 
   afterEach(async () => {

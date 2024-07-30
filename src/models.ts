@@ -1,6 +1,4 @@
 import { ChatOpenAI } from "@langchain/openai";
-import type { LLMClientConfig } from "./custom-llm-client";
-import { LLMClient } from "./custom-llm-client";
 
 export type OpenAIChatModel =
   | "gpt-4-turbo"
@@ -28,6 +26,22 @@ export type UpstashChatModel =
   | "mistralai/Mistral-7B-Instruct-v0.2"
   | "meta-llama/Meta-Llama-3-8B-Instruct";
 
+export type LLMClientConfig = {
+  model: string;
+  apiKey: string;
+  maxTokens?: number;
+  stop?: string[];
+  topP?: number;
+  temperature?: number;
+  frequencyPenalty?: number;
+  presencePenalty?: number;
+  n?: number;
+  logitBias?: Record<string, number>;
+  logProbs?: number;
+  topLogprobs?: number;
+  baseUrl: string;
+};
+
 type ModelOptions = Omit<LLMClientConfig, "model">;
 
 export const upstash = (model: UpstashChatModel, options?: Omit<ModelOptions, "baseUrl">) => {
@@ -53,9 +67,13 @@ export const upstash = (model: UpstashChatModel, options?: Omit<ModelOptions, "b
 export const custom = (model: string, options?: ModelOptions) => {
   if (!options?.baseUrl) throw new Error("baseUrl cannot be empty or undefined.");
 
-  return new LLMClient({
-    model,
+  return new ChatOpenAI({
+    modelName: model,
     ...options,
+    configuration: {
+      apiKey: options.apiKey,
+      baseURL: options.baseUrl,
+    },
   });
 };
 
