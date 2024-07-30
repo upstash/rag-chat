@@ -525,7 +525,7 @@ describe("RAGChat pass options from constructor", () => {
     // Check constructor initialization values
     for (const [key, value] of Object.entries(tests)) {
       //@ts-expect-error expected error required for testing
-      expect(ragChat[key]).toBe(value.constructorInit);
+      expect(ragChat.config[key]).toBe(value.constructorInit);
     }
 
     await ragChat.chat("Where is the capital of Japan?", {

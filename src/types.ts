@@ -2,8 +2,8 @@ import type { ChatOpenAI } from "@langchain/openai";
 import type { Ratelimit } from "@upstash/ratelimit";
 import type { Redis } from "@upstash/redis";
 import type { Index } from "@upstash/vector";
-import type { CustomPrompt } from "./rag-chat-base";
 import type { LLMClient } from "./custom-llm-client";
+import type { CustomPrompt } from "./rag-chat";
 
 declare const __brand: unique symbol;
 type Brand<B> = { [__brand]: B };

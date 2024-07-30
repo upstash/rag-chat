@@ -1,18 +1,24 @@
 import { UpstashError } from "./error/model";
 
 import { Config } from "./config";
+import { DEFAULT_NAMESPACE, DEFAULT_PROMPT_WITHOUT_RAG } from "./constants";
+import { ContextService } from "./context-service";
 import { Database } from "./database";
+import { RatelimitUpstashError } from "./error";
 import { UpstashVectorError } from "./error/vector";
 import { HistoryService } from "./history-service";
-import type { CustomPrompt } from "./rag-chat-base";
-import { RAGChatBase } from "./rag-chat-base";
+import { LLMService } from "./llm-service";
+import { ChatLogger } from "./logger";
 import { RateLimitService } from "./ratelimit-service";
-import type { ChatOptions, RAGChatConfig, UpstashDict } from "./types";
+import type { ChatOptions, RAGChatConfig } from "./types";
 import type { ModifiedChatOptions } from "./utils";
-import { appendDefaultsIfNeeded, formatFacts, sanitizeQuestion } from "./utils";
-import { RatelimitUpstashError } from "./error";
-import { DEFAULT_NAMESPACE, DEFAULT_PROMPT_WITHOUT_RAG } from "./constants";
+import { appendDefaultsIfNeeded, sanitizeQuestion } from "./utils";
 
+export type PromptParameters = { chatHistory?: string; question: string; context: string };
+
+export type CustomPrompt = ({ question, chatHistory, context }: PromptParameters) => string;
+
+export type Message = { id: string; content: string; role: "ai" | "user" };
 type ChatReturnType<T extends Partial<ChatOptions>> = Promise<
   T["streaming"] extends true
     ? {
@@ -22,63 +28,38 @@ type ChatReturnType<T extends Partial<ChatOptions>> = Promise<
     : { output: string; isStream: false }
 >;
 
-export class RAGChat extends RAGChatBase {
-  #ratelimitService: RateLimitService;
-
-  private readonly promptFn: CustomPrompt;
-  private readonly streaming?: boolean;
-  private readonly namespace?: string;
-  private readonly metadata?: UpstashDict | undefined;
-  private readonly sessionId?: string | undefined;
-  private readonly ratelimitSessionId?: string;
+export class RAGChat {
+  private ratelimit: RateLimitService;
+  private llm: LLMService;
+  context: ContextService;
+  history: HistoryService;
+  private config: Config;
+  private debug?: ChatLogger;
 
   constructor(config?: RAGChatConfig) {
-    const {
-      vector: index,
-      redis,
-      model,
-      prompt,
-      ratelimit,
-      ratelimitSessionId,
-      metadata,
-      namespace,
-      sessionId,
-      streaming,
-      debug,
-    } = new Config(config);
+    this.config = new Config(config);
 
-    if (!index) {
+    if (!this.config.vector) {
       throw new UpstashVectorError("Vector can not be undefined!");
     }
 
-    const vectorService = new Database(index);
-    const historyService = new HistoryService({
-      redis,
-    });
-
-    if (!model) {
+    if (!this.config.model) {
       throw new UpstashError("Model can not be undefined!");
     }
 
-    super(
-      vectorService,
-      historyService,
-      {
-        model,
-        prompt,
-      },
-      namespace ?? DEFAULT_NAMESPACE,
-      Boolean(debug)
-    );
-
-    this.promptFn = prompt;
-    this.metadata = metadata;
-    this.namespace = namespace;
-    this.sessionId = sessionId;
-    this.streaming = streaming;
-    this.ratelimitSessionId = ratelimitSessionId;
-
-    this.#ratelimitService = new RateLimitService(ratelimit);
+    const vectorService = new Database(this.config.vector);
+    this.history = new HistoryService({
+      redis: this.config.redis,
+    });
+    this.llm = new LLMService(this.config.model);
+    this.context = new ContextService(vectorService, this.config.namespace ?? DEFAULT_NAMESPACE);
+    this.debug = this.config.debug
+      ? new ChatLogger({
+          logLevel: "INFO",
+          logOutput: "console",
+        })
+      : undefined;
+    this.ratelimit = new RateLimitService(this.config.ratelimit);
   }
 
   /**
@@ -105,7 +86,7 @@ export class RAGChat extends RAGChatBase {
 
       // Sanitizes the given input by stripping all the newline chars.
       const question = sanitizeQuestion(input);
-      const context = await this.getContext(optionsWithDefault, input);
+      const context = await this.context.getContext(optionsWithDefault, input);
       const formattedHistory = await this.getChatHistory(optionsWithDefault);
 
       const prompt = await this.generatePrompt(
@@ -115,35 +96,31 @@ export class RAGChat extends RAGChatBase {
         formattedHistory
       );
 
-      // Either calls streaming or non-streaming function from RAGChatBase. Streaming function returns AsyncIterator and allows callbacks like onComplete.
-      return this.callLLM<TChatOptions>(optionsWithDefault, prompt, options);
+      //   Either calls streaming or non-streaming function from RAGChatBase. Streaming function returns AsyncIterator and allows callbacks like onComplete.
+      return this.llm.callLLM<TChatOptions>(
+        optionsWithDefault,
+        prompt,
+        options,
+        {
+          onChunk: optionsWithDefault.onChunk,
+          onComplete: async (output) => {
+            await this.debug?.endLLMResponse(output);
+            await this.history.service.addMessage({
+              message: {
+                content: output,
+                metadata: optionsWithDefault.metadata,
+                role: "assistant",
+              },
+              sessionId: optionsWithDefault.sessionId,
+            });
+          },
+        },
+        this.debug
+      );
     } catch (error) {
       await this.debug?.logError(error as Error);
       throw error;
     }
-  }
-
-  private callLLM<TChatOptions extends ChatOptions>(
-    optionsWithDefault: ModifiedChatOptions,
-    prompt: string,
-    _options: TChatOptions | undefined
-  ) {
-    this.debug?.startLLMResponse();
-    //@ts-expect-error TS can't infer types because of .call()
-    const result = (
-      optionsWithDefault.streaming ? this.makeStreamingLLMRequest : this.makeLLMRequest
-    ).call(this, {
-      prompt,
-      onChunk: optionsWithDefault.onChunk,
-      onComplete: async (output) => {
-        await this.debug?.endLLMResponse(output);
-        await this.history.addMessage({
-          message: { content: output, metadata: optionsWithDefault.metadata, role: "assistant" },
-          sessionId: optionsWithDefault.sessionId,
-        });
-      },
-    }) as ChatReturnType<TChatOptions>;
-    return result;
   }
 
   private async generatePrompt(
@@ -164,7 +141,7 @@ export class RAGChat extends RAGChatBase {
   private async getChatHistory(optionsWithDefault: ModifiedChatOptions) {
     this.debug?.startRetrieveHistory();
     // Gets the chat history from redis or in-memory store.
-    const originalChatHistory = await this.history.getMessages({
+    const originalChatHistory = await this.history.service.getMessages({
       sessionId: optionsWithDefault.sessionId,
       amount: optionsWithDefault.historyLength,
     });
@@ -186,30 +163,15 @@ export class RAGChat extends RAGChatBase {
     return formattedHistory;
   }
 
-  private async getContext(optionsWithDefault: ModifiedChatOptions, input: string) {
-    if (optionsWithDefault.disableRAG) return "";
-    // Queries vector db with sanitized question.
-    const originalContext = await this.prepareChat({
-      question: input,
-      similarityThreshold: optionsWithDefault.similarityThreshold,
-      topK: optionsWithDefault.topK,
-      namespace: optionsWithDefault.namespace,
-    });
-    // clone context to avoid mutation issues
-    const clonedContext = structuredClone(originalContext);
-    const modifiedContext = await optionsWithDefault.onContextFetched?.(clonedContext);
-    return formatFacts((modifiedContext ?? originalContext).map(({ data }) => data));
-  }
-
   private async addUserMessageToHistory(input: string, optionsWithDefault: ModifiedChatOptions) {
-    await this.history.addMessage({
+    await this.history.service.addMessage({
       message: { content: input, role: "user" },
       sessionId: optionsWithDefault.sessionId,
     });
   }
 
   private async checkRatelimit(optionsWithDefault: ModifiedChatOptions) {
-    const ratelimitResponse = await this.#ratelimitService.checkLimit(
+    const ratelimitResponse = await this.ratelimit.checkLimit(
       optionsWithDefault.ratelimitSessionId
     );
 
@@ -224,17 +186,16 @@ export class RAGChat extends RAGChatBase {
 
   private getOptionsWithDefaults(options?: ChatOptions): ModifiedChatOptions {
     const isRagDisabledAndPromptFunctionMissing = options?.disableRAG && !options.promptFn;
-    // Adds all the necessary default options that users can skip in the options parameter above.
     return appendDefaultsIfNeeded({
       ...options,
-      metadata: options?.metadata ?? this.metadata,
-      namespace: options?.namespace ?? this.namespace,
-      streaming: options?.streaming ?? this.streaming,
-      sessionId: options?.sessionId ?? this.sessionId,
-      ratelimitSessionId: options?.ratelimitSessionId ?? this.ratelimitSessionId,
+      metadata: options?.metadata ?? this.config.metadata,
+      namespace: options?.namespace ?? this.config.namespace,
+      streaming: options?.streaming ?? this.config.streaming,
+      sessionId: options?.sessionId ?? this.config.sessionId,
+      ratelimitSessionId: options?.ratelimitSessionId ?? this.config.ratelimitSessionId,
       promptFn: isRagDisabledAndPromptFunctionMissing
         ? DEFAULT_PROMPT_WITHOUT_RAG
-        : (options?.promptFn ?? this.promptFn),
+        : (options?.promptFn ?? this.config.prompt),
     });
   }
 }
