@@ -86,7 +86,7 @@ export class RAGChat {
 
       // Sanitizes the given input by stripping all the newline chars.
       const question = sanitizeQuestion(input);
-      const context = await this.context.getContext(optionsWithDefault, input);
+      const context = await this.context._getContext(optionsWithDefault, input);
       const formattedHistory = await this.getChatHistory(optionsWithDefault);
 
       const prompt = await this.generatePrompt(
