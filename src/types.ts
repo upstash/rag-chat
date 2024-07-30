@@ -69,7 +69,7 @@ export type ChatOptions = {
 
 export type PrepareChatResult = {
   question: string;
-  context: { data: string; id: string }[];
+  context: { data: string; id: string; metadata: unknown }[];
 };
 
 /**Config needed to initialize RAG Chat SDK */
