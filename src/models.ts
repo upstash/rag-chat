@@ -41,6 +41,7 @@ export const upstash = (model: UpstashChatModel, options?: Omit<ModelOptions, "b
 
   return new ChatOpenAI({
     modelName: model,
+    apiKey: apiKey,
     ...options,
     streamUsage: false,
     configuration: {
