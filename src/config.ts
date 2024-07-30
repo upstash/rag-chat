@@ -35,7 +35,7 @@ export class Config {
     this.sessionId = config?.sessionId;
 
     this.model = config?.model ?? initializeModel();
-    this.prompt = config?.prompt ?? DEFAULT_PROMPT;
+    this.prompt = config?.promptFn ?? DEFAULT_PROMPT;
 
     this.vector = config?.vector ?? Index.fromEnv();
     this.debug = config?.debug;
