@@ -31,11 +31,15 @@ export const formatChatHistory = (chatHistory: BaseMessage[]) => {
 export function appendDefaultsIfNeeded(
   options: Partial<ChatOptions> | undefined
 ): Required<
-  Omit<ChatOptions, "ratelimitDetails" | "onChunk" | "onContextFetched" | "onChatHistoryFetched">
+  Omit<
+    ChatOptions,
+    "ratelimitDetails" | "onChunk" | "onContextFetched" | "onChatHistoryFetched" | "prompt"
+  >
 > {
   return {
     streaming: false,
     metadata: {},
+    disableRAG: false,
     sessionId: DEFAULT_CHAT_SESSION_ID,
     ratelimitSessionId: DEFAULT_CHAT_RATELIMIT_SESSION_ID,
     similarityThreshold: DEFAULT_SIMILARITY_THRESHOLD,
