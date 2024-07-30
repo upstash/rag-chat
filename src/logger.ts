@@ -1,4 +1,6 @@
-type LogLevel = "DEBUG" | "INFO" | "WARN" | "ERROR";
+const LOG_LEVELS = ["DEBUG", "INFO", "WARN", "ERROR"] as const;
+type LogLevel = (typeof LOG_LEVELS)[number];
+
 type ChatLogEntry = {
   timestamp: number;
   logLevel: LogLevel;
@@ -62,7 +64,7 @@ export class ChatLogger {
   }
 
   private shouldLog(level: LogLevel): boolean {
-    const levels: LogLevel[] = ["DEBUG", "INFO", "WARN", "ERROR"];
+    const levels = ["DEBUG", "INFO", "WARN", "ERROR"];
     return levels.indexOf(level) >= levels.indexOf(this.options.logLevel);
   }
 
