@@ -6,7 +6,6 @@ import { DEFAULT_SIMILARITY_THRESHOLD, DEFAULT_TOP_K } from "./constants";
 import { FileDataLoader } from "./file-loader";
 import type { AddContextOptions } from "./types";
 
-export type IndexUpsertPayload = { input: number[]; id?: string | number; metadata?: string };
 export type FilePath = string;
 export type URL = string;
 
@@ -48,7 +47,7 @@ export type DatasWithFileSource =
 
 export type AddContextPayload =
   | { type: "text"; data: string; options?: AddContextOptions; id?: string | number }
-  | { type: "embedding"; options?: AddContextOptions; data: IndexUpsertPayload[] }
+  | { type: "embedding"; data: number[]; options?: AddContextOptions; id?: string | number }
   | DatasWithFileSource;
 
 export type VectorPayload = {
@@ -83,12 +82,12 @@ export class Database {
    * It takes care of the text-to-embedding conversion by itself.
    * Additionally, it lets consumers pass various options to tweak the output.
    */
-  async retrieve({
+  async retrieve<TMetadata>({
     question,
     similarityThreshold = DEFAULT_SIMILARITY_THRESHOLD,
     topK = DEFAULT_TOP_K,
     namespace,
-  }: VectorPayload): Promise<{ data: string; id: string; metadata: unknown }[]> {
+  }: VectorPayload): Promise<{ data: string; id: string; metadata: TMetadata }[]> {
     const index = this.index;
     const result = await index.query<Record<string, string>>(
       {
@@ -106,9 +105,9 @@ export class Database {
 
       return [
         {
-          data: " There is no answer for this question in the provided context.",
+          data: "There is no answer for this question in the provided context.",
           id: "error",
-          metadata: {},
+          metadata: {} as TMetadata,
         },
       ];
     }
@@ -118,7 +117,7 @@ export class Database {
       .map((embedding) => ({
         data: `- ${embedding.data ?? ""}`,
         id: embedding.id.toString(),
-        metadata: embedding.metadata,
+        metadata: embedding.metadata as TMetadata,
       }));
 
     return facts;
@@ -132,12 +131,11 @@ export class Database {
     const { namespace } = input.options ?? {};
     if (input.type === "text") {
       try {
-        const vectorId = input.id ?? nanoid();
-
-        await this.index.upsert(
+        const vectorId = await this.index.upsert(
           {
             data: input.data,
-            id: vectorId.toString(),
+            id: input.id ?? nanoid(),
+            metadata: input.options?.metadata,
           },
           { namespace }
         );
@@ -147,17 +145,17 @@ export class Database {
         return { success: false, error: JSON.stringify(error, Object.getOwnPropertyNames(error)) };
       }
     } else if (input.type === "embedding") {
-      const items = input.data.map((context) => {
-        return {
-          vector: context.input,
-          id: context.id ?? nanoid(),
-        };
-      });
-
       try {
-        await this.index.upsert(items, { namespace });
+        const vectorId = await this.index.upsert(
+          {
+            vector: input.data,
+            id: input.id ?? nanoid(),
+            metadata: input.options?.metadata,
+          },
+          { namespace }
+        );
 
-        return { success: true, ids: items.map((item) => item.id.toString()) };
+        return { success: true, ids: [vectorId.toString()] };
       } catch (error) {
         return { success: false, error: JSON.stringify(error, Object.getOwnPropertyNames(error)) };
       }
