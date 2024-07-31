@@ -19,13 +19,14 @@ export type PromptParameters = { chatHistory?: string; question: string; context
 export type CustomPrompt = ({ question, chatHistory, context }: PromptParameters) => string;
 
 export type Message = { id: string; content: string; role: "ai" | "user" };
-type ChatReturnType<T extends Partial<ChatOptions>> = Promise<
-  T["streaming"] extends true
+
+type ChatReturnType<TMetadata extends unknown[], T extends Partial<ChatOptions>> = Promise<
+  (T["streaming"] extends true
     ? {
         output: ReadableStream<string>;
         isStream: true;
       }
-    : { output: string; isStream: false }
+    : { output: string; isStream: false }) & { metadata: TMetadata }
 >;
 
 export class RAGChat {
@@ -72,12 +73,13 @@ export class RAGChat {
    *})
    * ```
    */
-  async chat<TChatOptions extends ChatOptions>(
+  async chat<TMetadata extends object, TChatOptions extends ChatOptions = ChatOptions>(
     input: string,
     options?: TChatOptions
-  ): Promise<ChatReturnType<TChatOptions>> {
+  ): Promise<ChatReturnType<TMetadata[], TChatOptions>> {
     try {
       const optionsWithDefault = this.getOptionsWithDefaults(options);
+
       // Checks ratelimit of the user. If not enabled `success` will be always true.
       await this.checkRatelimit(optionsWithDefault);
 
@@ -86,7 +88,10 @@ export class RAGChat {
 
       // Sanitizes the given input by stripping all the newline chars.
       const question = sanitizeQuestion(input);
-      const context = await this.context._getContext(optionsWithDefault, input);
+      const { formattedContext: context, metadata } = await this.context._getContext<TMetadata>(
+        optionsWithDefault,
+        input
+      );
       const formattedHistory = await this.getChatHistory(optionsWithDefault);
 
       const prompt = await this.generatePrompt(
@@ -97,26 +102,25 @@ export class RAGChat {
       );
 
       //   Either calls streaming or non-streaming function from RAGChatBase. Streaming function returns AsyncIterator and allows callbacks like onComplete.
-      return this.llm.callLLM<TChatOptions>(
-        optionsWithDefault,
-        prompt,
-        options,
-        {
-          onChunk: optionsWithDefault.onChunk,
-          onComplete: async (output) => {
-            await this.debug?.endLLMResponse(output);
-            await this.history.service.addMessage({
-              message: {
-                content: output,
-                metadata: optionsWithDefault.metadata,
-                role: "assistant",
-              },
-              sessionId: optionsWithDefault.sessionId,
-            });
-          },
+      const llmResult = await this.llm.callLLM<TChatOptions>(optionsWithDefault, prompt, options, {
+        onChunk: optionsWithDefault.onChunk,
+        onComplete: async (output) => {
+          await this.debug?.endLLMResponse(output);
+          await this.history.service.addMessage({
+            message: {
+              content: output,
+              metadata: optionsWithDefault.metadata,
+              role: "assistant",
+            },
+            sessionId: optionsWithDefault.sessionId,
+          });
         },
-        this.debug
-      );
+      });
+
+      return {
+        ...llmResult,
+        metadata,
+      };
     } catch (error) {
       await this.debug?.logError(error as Error);
       throw error;

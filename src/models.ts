@@ -55,10 +55,10 @@ export const upstash = (model: UpstashChatModel, options?: Omit<ModelOptions, "b
 
   return new ChatOpenAI({
     modelName: model,
+    apiKey,
     ...options,
     streamUsage: false,
     configuration: {
-      apiKey,
       baseURL: "https://qstash.upstash.io/llm/v1",
     },
   });

@@ -1,4 +1,5 @@
-import { LangChainAdapter, StreamingTextResponse } from "ai";
+import type { JSONValue } from "ai";
+import { LangChainAdapter, StreamData, StreamingTextResponse } from "ai";
 
 /**
  * Converts a ReadableStream response from the chat() function into a StreamingTextResponse
@@ -9,7 +10,21 @@ import { LangChainAdapter, StreamingTextResponse } from "ai";
  *   - isStream: A boolean indicating if the response is a stream.
  * @returns StreamingTextResponse - The adapted response for use with the useChat hook.
  */
-export const aiUseChatAdapter = (response: { output: ReadableStream<string>; isStream: true }) => {
-  const wrappedStream = LangChainAdapter.toAIStream(response.output);
-  return new StreamingTextResponse(wrappedStream, {});
+export const aiUseChatAdapter = (
+  response: { output: ReadableStream<string>; isStream: true },
+  metadata?: JSONValue
+) => {
+  const streamData = new StreamData();
+
+  const wrappedStream = LangChainAdapter.toAIStream(response.output, {
+    onStart() {
+      if (metadata) {
+        streamData.append(metadata);
+      }
+    },
+    onFinal() {
+      void streamData.close();
+    },
+  });
+  return new StreamingTextResponse(wrappedStream, {}, streamData);
 };

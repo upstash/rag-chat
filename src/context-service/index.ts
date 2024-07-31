@@ -1,7 +1,7 @@
 import { nanoid } from "nanoid";
 import type { AddContextPayload, Database, ResetOptions } from "../database";
-import { formatFacts, type ModifiedChatOptions } from "../utils";
 import type { ChatLogger } from "../logger";
+import { formatFacts, type ModifiedChatOptions } from "../utils";
 
 export class ContextService {
   #vectorService: Database;
@@ -59,18 +59,21 @@ export class ContextService {
   }
 
   /** This is internal usage only. */
-  async _getContext(
+  async _getContext<TMetadata extends object>(
     optionsWithDefault: ModifiedChatOptions,
     input: string,
     debug?: ChatLogger
-  ): Promise<string> {
+  ): Promise<{
+    formattedContext: string;
+    metadata: TMetadata[];
+  }> {
     await debug?.logSendPrompt(input);
 
     debug?.startRetrieveContext();
 
-    if (optionsWithDefault.disableRAG) return "";
+    if (optionsWithDefault.disableRAG) return { formattedContext: "", metadata: [] };
 
-    const originalContext = await this.#vectorService.retrieve({
+    const originalContext = await this.#vectorService.retrieve<TMetadata>({
       question: input,
       similarityThreshold: optionsWithDefault.similarityThreshold,
       topK: optionsWithDefault.topK,
@@ -81,6 +84,9 @@ export class ContextService {
     const modifiedContext = await optionsWithDefault.onContextFetched?.(clonedContext);
     await debug?.endRetrieveContext(modifiedContext);
 
-    return formatFacts((modifiedContext ?? originalContext).map(({ data }) => data));
+    return {
+      formattedContext: formatFacts((modifiedContext ?? originalContext).map(({ data }) => data)),
+      metadata: (modifiedContext ?? originalContext).map(({ metadata }) => metadata) as TMetadata[],
+    };
   }
 }

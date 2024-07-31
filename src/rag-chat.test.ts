@@ -440,9 +440,7 @@ describe("RAGChat init with custom model", () => {
 
   const ragChat = new RAGChat({
     vector,
-    model: upstash("meta-llama/Meta-Llama-3-8B-Instruct", {
-      apiKey: process.env.QSTASH_TOKEN!,
-    }),
+    model: upstash("meta-llama/Meta-Llama-3-8B-Instruct"),
   });
 
   afterAll(async () => {
@@ -720,7 +718,7 @@ describe("RAGChat - chat usage with disabled RAG ", () => {
   );
 
   test(
-    "should be able to chat without rag and ask question with default disabled rag chat prompt",
+    "should be able to chat without rag and ask question with default disabled rag chat prompt -ozoz",
     async () => {
       await ragChat.chat("Tokyo is the capital of Japan.", { disableRAG: true });
       await awaitUntilIndexed(vector);
@@ -731,6 +729,56 @@ describe("RAGChat - chat usage with disabled RAG ", () => {
       });
 
       expect(result.output.toLowerCase()).toContain("tokyo");
+    },
+    { timeout: 30_000 }
+  );
+});
+
+describe("RAGChat - result metadata", () => {
+  const namespace = "japan-v2";
+  const vector = new Index({
+    token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
+    url: process.env.UPSTASH_VECTOR_REST_URL!,
+  });
+
+  const ragChat = new RAGChat({
+    vector,
+    streaming: true,
+    model: upstash("meta-llama/Meta-Llama-3-8B-Instruct"),
+  });
+
+  afterAll(async () => {
+    await vector.reset({ namespace });
+    await vector.deleteNamespace(namespace);
+  });
+
+  test(
+    "should return metadata",
+    async () => {
+      await ragChat.context.add({
+        type: "text",
+        data: "Tokyo is the Capital of Japan.",
+        options: { namespace, metadata: { unit: "Samurai" } },
+      });
+      await ragChat.context.add({
+        type: "text",
+        data: "Shakuhachi is a traditional wind instrument",
+        options: { namespace, metadata: { unit: "Shakuhachi" } },
+      });
+      await awaitUntilIndexed(vector);
+
+      const result = await ragChat.chat<{ unit: string }>("Where is the capital of Japan?", {
+        namespace,
+      });
+
+      expect(result.metadata).toEqual([
+        {
+          unit: "Samurai",
+        },
+        {
+          unit: "Shakuhachi",
+        },
+      ]);
     },
     { timeout: 30_000 }
   );
