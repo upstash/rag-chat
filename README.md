@@ -165,6 +165,10 @@ await ragChat.context.add({
   type: "text",
   data: "The speed of light is approximately 299,792,458 meters per second.",
 });
+
+//OR
+
+await ragChat.context.add("The speed of light is approximately 299,792,458 meters per second.");
 ```
 
 #### Adding PDF Content
