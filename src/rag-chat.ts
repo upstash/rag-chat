@@ -13,6 +13,8 @@ import { RateLimitService } from "./ratelimit-service";
 import type { ChatOptions, RAGChatConfig } from "./types";
 import type { ModifiedChatOptions } from "./utils";
 import { appendDefaultsIfNeeded, sanitizeQuestion } from "./utils";
+import type { InMemoryHistory } from "./history-service/in-memory-history";
+import type { UpstashRedisHistory } from "./history-service/redis-custom-history";
 
 export type PromptParameters = { chatHistory?: string; question: string; context: string };
 
@@ -33,7 +35,7 @@ export class RAGChat {
   private ratelimit: RateLimitService;
   private llm: LLMService;
   context: ContextService;
-  history: HistoryService;
+  history: UpstashRedisHistory | InMemoryHistory;
   private config: Config;
   private debug?: ChatLogger;
 
@@ -51,7 +53,7 @@ export class RAGChat {
     const vectorService = new Database(this.config.vector);
     this.history = new HistoryService({
       redis: this.config.redis,
-    });
+    }).service;
     this.llm = new LLMService(this.config.model);
     this.context = new ContextService(vectorService, this.config.namespace ?? DEFAULT_NAMESPACE);
     this.debug = this.config.debug
@@ -106,7 +108,7 @@ export class RAGChat {
         onChunk: optionsWithDefault.onChunk,
         onComplete: async (output) => {
           await this.debug?.endLLMResponse(output);
-          await this.history.service.addMessage({
+          await this.history.addMessage({
             message: {
               content: output,
               metadata: optionsWithDefault.metadata,
@@ -145,7 +147,7 @@ export class RAGChat {
   private async getChatHistory(optionsWithDefault: ModifiedChatOptions) {
     this.debug?.startRetrieveHistory();
     // Gets the chat history from redis or in-memory store.
-    const originalChatHistory = await this.history.service.getMessages({
+    const originalChatHistory = await this.history.getMessages({
       sessionId: optionsWithDefault.sessionId,
       amount: optionsWithDefault.historyLength,
     });
@@ -168,7 +170,7 @@ export class RAGChat {
   }
 
   private async addUserMessageToHistory(input: string, optionsWithDefault: ModifiedChatOptions) {
-    await this.history.service.addMessage({
+    await this.history.addMessage({
       message: { content: input, role: "user" },
       sessionId: optionsWithDefault.sessionId,
     });
