@@ -60,7 +60,18 @@ export class ChatLogger {
   private async writeToConsole(logEntry: ChatLogEntry): Promise<void> {
     const JSON_SPACING = 2;
     // eslint-disable-next-line no-console
-    console.log(JSON.stringify(logEntry, undefined, JSON_SPACING));
+    console.log(
+      JSON.stringify(
+        {
+          ...logEntry,
+          ...(logEntry.latency && logEntry.latency > 0
+            ? { latency: `${logEntry.latency}ms` }
+            : undefined),
+        },
+        undefined,
+        JSON_SPACING
+      )
+    );
   }
 
   private shouldLog(level: LogLevel): boolean {
