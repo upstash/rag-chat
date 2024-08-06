@@ -82,7 +82,7 @@ export class ContextService {
 
     const clonedContext = structuredClone(originalContext);
     const modifiedContext = await optionsWithDefault.onContextFetched?.(clonedContext);
-    await debug?.endRetrieveContext(modifiedContext);
+    await debug?.endRetrieveContext(modifiedContext ?? originalContext);
 
     return {
       formattedContext: formatFacts((modifiedContext ?? originalContext).map(({ data }) => data)),

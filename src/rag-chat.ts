@@ -92,7 +92,8 @@ export class RAGChat {
       const question = sanitizeQuestion(input);
       const { formattedContext: context, metadata } = await this.context._getContext<TMetadata>(
         optionsWithDefault,
-        input
+        input,
+        this.debug
       );
       const formattedHistory = await this.getChatHistory(optionsWithDefault);
 
@@ -104,20 +105,26 @@ export class RAGChat {
       );
 
       //   Either calls streaming or non-streaming function from RAGChatBase. Streaming function returns AsyncIterator and allows callbacks like onComplete.
-      const llmResult = await this.llm.callLLM<TChatOptions>(optionsWithDefault, prompt, options, {
-        onChunk: optionsWithDefault.onChunk,
-        onComplete: async (output) => {
-          await this.debug?.endLLMResponse(output);
-          await this.history.addMessage({
-            message: {
-              content: output,
-              metadata: optionsWithDefault.metadata,
-              role: "assistant",
-            },
-            sessionId: optionsWithDefault.sessionId,
-          });
+      const llmResult = await this.llm.callLLM<TChatOptions>(
+        optionsWithDefault,
+        prompt,
+        options,
+        {
+          onChunk: optionsWithDefault.onChunk,
+          onComplete: async (output) => {
+            await this.debug?.endLLMResponse(output);
+            await this.history.addMessage({
+              message: {
+                content: output,
+                metadata: optionsWithDefault.metadata,
+                role: "assistant",
+              },
+              sessionId: optionsWithDefault.sessionId,
+            });
+          },
         },
-      });
+        this.debug
+      );
 
       return {
         ...llmResult,
