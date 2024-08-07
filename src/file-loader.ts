@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 import { CSVLoader } from "@langchain/community/document_loaders/fs/csv";
@@ -67,7 +69,16 @@ export class FileDataLoader {
         const splitter = new RecursiveCharacterTextSplitter(args);
         const splittedDocuments = await splitter.splitDocuments(documents);
 
-        return mapDocumentsIntoInsertPayload(splittedDocuments);
+        return mapDocumentsIntoInsertPayload(splittedDocuments, (metadata: any, index: number) => ({
+          source: metadata.source,
+          timestamp: new Date().toISOString(),
+          paragraphNumber: index + 1,
+          pageNumber: metadata.loc?.pageNumber || undefined,
+          author: metadata.pdf?.info?.Author || undefined,
+          title: metadata.pdf?.info?.Title || undefined,
+          totalPages: metadata.pdf?.totalPages || undefined,
+          language: metadata.pdf?.metadata?._metadata?.["dc:language"] || undefined,
+        }));
       }
 
       case "csv": {
@@ -98,10 +109,14 @@ export class FileDataLoader {
       }
     }
 
-    function mapDocumentsIntoInsertPayload(splittedDocuments: Document[]) {
-      return splittedDocuments.map((document) => ({
+    function mapDocumentsIntoInsertPayload(
+      splittedDocuments: Document[],
+      metadataMapper?: (metadata: any, index: number) => Record<string, any>
+    ) {
+      return splittedDocuments.map((document, index) => ({
         data: document.pageContent,
         id: nanoid(),
+        ...(metadataMapper ? { metadata: metadataMapper(document.metadata, index) } : {}),
       }));
     }
   }
