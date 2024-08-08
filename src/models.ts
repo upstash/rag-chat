@@ -64,24 +64,51 @@ export const upstash = (model: UpstashChatModel, options?: Omit<ModelOptions, "b
   });
 };
 
-export const custom = (model: string, options?: ModelOptions) => {
+export const custom = (model: string, options?: ModelOptions, helicone?: { token: string }) => {
   if (!options?.baseUrl) throw new Error("baseUrl cannot be empty or undefined.");
 
   return new ChatOpenAI({
     modelName: model,
     ...options,
-    configuration: {
-      apiKey: options.apiKey,
-      baseURL: options.baseUrl,
-    },
+    ...(helicone
+      ? {
+          configuration: {
+            baseURL: "https://gateway.helicone.ai",
+            defaultHeaders: {
+              "Helicone-Auth": `Bearer ${helicone.token}`,
+              "Helicone-Target-Url": options.baseUrl,
+              Authorization: `Bearer ${options.apiKey}`,
+            },
+          },
+        }
+      : {
+          configuration: {
+            apiKey: options.apiKey,
+            baseURL: options.baseUrl,
+          },
+        }),
   });
 };
 
-export const openai = (model: OpenAIChatModel, options?: Omit<ModelOptions, "baseUrl">) => {
+export const openai = (
+  model: OpenAIChatModel,
+  options?: Omit<ModelOptions, "baseUrl">,
+  helicone?: { token: string }
+) => {
   return new ChatOpenAI({
     modelName: model,
     temperature: 0,
     apiKey: process.env.OPENAI_API_KEY ?? options?.apiKey ?? "",
+    ...(helicone
+      ? {
+          configuration: {
+            basePath: "https://oai.helicone.ai/v1",
+            defaultHeaders: {
+              "Helicone-Auth": `Bearer ${helicone.token}`,
+            },
+          },
+        }
+      : {}),
     ...options,
   });
 };
