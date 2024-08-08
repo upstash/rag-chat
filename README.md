@@ -265,14 +265,11 @@ To enable Helicone observability in RAGChat, you simply need to pass your Helico
 import { RAGChat, custom } from "ragchat";
 
 const ragChat = new RAGChat({
-  model: custom(
-    "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
-    {
-      apiKey: "YOUR_TOGETHER_AI_SECRET_KEY",
-      baseUrl: "https://api.together.xyz",
-    },
-    { token: "YOUR_HELICONE_SECRET_KEY" }
-  ),
+  model: custom("meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo", {
+    apiKey: "xxx",
+    baseUrl: "https://api.together.xyz",
+    analytics: { name: "helicone", token: process.env.HELICONE_API_KEY! },
+  }),
 });
 ```
 
@@ -282,14 +279,10 @@ const ragChat = new RAGChat({
 import { RAGChat, openai } from "ragchat";
 
 const ragChat = new RAGChat({
-  model: openai(
-    "gpt-3.5-turbo",
-    {
-      temperature: 0,
-      apiKey: "YOUR_OPEN_AI_KEY",
-    },
-    { token: "YOUR_HELICONE_SECRET_KEY" }
-  ),
+  model: openai("gpt-3.5-turbo", {
+    apiKey: process.env.OPENAI_API_KEY!,
+    analytics: { name: "helicone", token: process.env.HELICONE_API_KEY! },
+  }),
 });
 ```
 
