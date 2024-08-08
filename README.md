@@ -120,6 +120,113 @@ export const ragChat = new RAGChat({
 
 </details>
 
+## Debugging Your RAG Apps
+
+RAGChat provides a powerful debugging feature that allows you to see the inner workings of your RAG applications. By enabling debug mode, you can trace the entire process from user input to final response.
+
+### How to Enable Debugging
+
+To activate the debugging feature, simply initialize RAGChat with the `debug` option set to `true`:
+
+```typescript
+new RAGChat({ debug: true });
+```
+
+### Understanding the Debug Output
+
+When debug mode is enabled, RAGChat will log detailed information about each step of the RAG process. Here's a breakdown of the debug output:
+
+1. **SEND_PROMPT**: Logs the initial user query.
+
+   ```json
+   {
+     "timestamp": 1722950191207,
+     "logLevel": "INFO",
+     "eventType": "SEND_PROMPT",
+     "details": {
+       "prompt": "Where is the capital of Japan?"
+     }
+   }
+   ```
+
+2. **RETRIEVE_CONTEXT**: Shows the relevant context retrieved from the vector store.
+
+   ```json
+   {
+     "timestamp": 1722950191480,
+     "logLevel": "INFO",
+     "eventType": "RETRIEVE_CONTEXT",
+     "details": {
+       "context": [
+         {
+           "data": "Tokyo is the Capital of Japan.",
+           "id": "F5BWpryYkkcKLrp-GznwK"
+         }
+       ]
+     },
+     "latency": "171ms"
+   }
+   ```
+
+3. **RETRIEVE_HISTORY**: Displays the chat history retrieved for context.
+
+   ```json
+   {
+     "timestamp": 1722950191727,
+     "logLevel": "INFO",
+     "eventType": "RETRIEVE_HISTORY",
+     "details": {
+       "history": [
+         {
+           "content": "Where is the capital of Japan?",
+           "role": "user",
+           "id": "0"
+         }
+       ]
+     },
+     "latency": "145ms"
+   }
+   ```
+
+4. **FORMAT_HISTORY**: Shows how the chat history is formatted for the prompt.
+
+   ```json
+   {
+     "timestamp": 1722950191828,
+     "logLevel": "INFO",
+     "eventType": "FORMAT_HISTORY",
+     "details": {
+       "formattedHistory": "USER MESSAGE: Where is the capital of Japan?"
+     }
+   }
+   ```
+
+5. **FINAL_PROMPT**: Displays the complete prompt sent to the language model.
+
+   ```json
+   {
+     "timestamp": 1722950191931,
+     "logLevel": "INFO",
+     "eventType": "FINAL_PROMPT",
+     "details": {
+       "prompt": "You are a friendly AI assistant augmented with an Upstash Vector Store.\n  To help you answer the questions, a context and/or chat history will be provided.\n  Answer the question at the end using only the information available in the context or chat history, either one is ok.\n\n  -------------\n  Chat history:\n  USER MESSAGE: Where is the capital of Japan?\n  -------------\n  Context:\n  - Tokyo is the Capital of Japan.\n  -------------\n\n  Question: Where is the capital of Japan?\n  Helpful answer:"
+     }
+   }
+   ```
+
+6. **LLM_RESPONSE**: Shows the final response from the language model.
+   ```json
+   {
+     "timestamp": 1722950192593,
+     "logLevel": "INFO",
+     "eventType": "LLM_RESPONSE",
+     "details": {
+       "response": "According to the context, Tokyo is the capital of Japan!"
+     },
+     "latency": "558ms"
+   }
+   ```
+
 ### Advanced Configuration
 
 Customize your RAGChat instance with advanced options:
@@ -134,7 +241,7 @@ import { Redis } from "@upstash/redis";
 export const ragChat = new RAGChat({
   model: openai("gpt-4-turbo"),
 
-  prompt: ({ context, question, chatHistory }) =>
+  promptFn: ({ context, question, chatHistory }) =>
     `You are an AI assistant with access to an Upstash Vector Store.
   Use the provided context and chat history to answer the question.
   If the answer isn't available, politely inform the user.
