@@ -253,6 +253,46 @@ await ragChat.history.addMessage({
 });
 ```
 
+### Add Observability via Helicone
+
+Helicone is a powerful observability platform that provides valuable insights into your LLM usage. Integrating Helicone with RAGChat is straightforward.
+
+To enable Helicone observability in RAGChat, you simply need to pass your Helicone API key when initializing your model. Here's how to do it for both custom models and OpenAI:
+
+#### For Custom Models (e.g., Meta-Llama)
+
+```ts
+import { RAGChat, custom } from "ragchat";
+
+const ragChat = new RAGChat({
+  model: custom(
+    "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
+    {
+      apiKey: "YOUR_TOGETHER_AI_SECRET_KEY",
+      baseUrl: "https://api.together.xyz",
+    },
+    { token: "YOUR_HELICONE_SECRET_KEY" }
+  ),
+});
+```
+
+#### For OpenAI Models
+
+```ts
+import { RAGChat, openai } from "ragchat";
+
+const ragChat = new RAGChat({
+  model: openai(
+    "gpt-3.5-turbo",
+    {
+      temperature: 0,
+      apiKey: "YOUR_OPEN_AI_KEY",
+    },
+    { token: "YOUR_HELICONE_SECRET_KEY" }
+  ),
+});
+```
+
 ## Example usage
 
 ### Nextjs route handlers
