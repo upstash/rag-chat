@@ -42,7 +42,36 @@ export type LLMClientConfig = {
   baseUrl: string;
 };
 
-type ModelOptions = Omit<LLMClientConfig, "model">;
+type ModelOptions = Omit<LLMClientConfig, "model"> & {
+  analytics?: { name: "helicone"; token: string };
+};
+
+const analyticsBaseUrlMap = (
+  analyticsName: "helicone",
+  analyticsToken: string,
+  providerApiKey: string,
+  providerBaseUrl?: string
+) => {
+  return {
+    helicone: {
+      custom: {
+        baseURL: "https://gateway.helicone.ai",
+        defaultHeaders: {
+          "Helicone-Auth": `Bearer ${analyticsToken}`,
+          "Helicone-Target-Url": providerBaseUrl,
+          Authorization: `Bearer ${providerApiKey}`,
+        },
+      },
+      openai: {
+        basePath: "https://oai.helicone.ai/v1",
+        defaultHeaders: {
+          "Helicone-Auth": `Bearer ${analyticsToken}`,
+          Authorization: `Bearer ${providerApiKey}`,
+        },
+      },
+    },
+  }[analyticsName];
+};
 
 export const upstash = (model: UpstashChatModel, options?: Omit<ModelOptions, "baseUrl">) => {
   const apiKey = options?.apiKey ?? process.env.QSTASH_TOKEN ?? "";
@@ -70,18 +99,35 @@ export const custom = (model: string, options?: ModelOptions) => {
   return new ChatOpenAI({
     modelName: model,
     ...options,
-    configuration: {
-      apiKey: options.apiKey,
-      baseURL: options.baseUrl,
-    },
+    ...(options.analytics
+      ? {
+          configuration: analyticsBaseUrlMap(
+            options.analytics.name,
+            options.analytics.token,
+            options.apiKey,
+            options.baseUrl
+          ).custom,
+        }
+      : {
+          configuration: {
+            apiKey: options.apiKey,
+            baseURL: options.baseUrl,
+          },
+        }),
   });
 };
 
 export const openai = (model: OpenAIChatModel, options?: Omit<ModelOptions, "baseUrl">) => {
+  const apiKey = process.env.OPENAI_API_KEY ?? options?.apiKey ?? "";
+  const { analytics, ...optionsWithout } = options ?? {};
+
   return new ChatOpenAI({
     modelName: model,
     temperature: 0,
-    apiKey: process.env.OPENAI_API_KEY ?? options?.apiKey ?? "",
-    ...options,
+    ...optionsWithout,
+    apiKey,
+    ...(analytics
+      ? { configuration: analyticsBaseUrlMap(analytics.name, analytics.token, apiKey).openai }
+      : {}),
   });
 };
