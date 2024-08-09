@@ -366,6 +366,19 @@ Helicone is a powerful observability platform that provides valuable insights in
 
 To enable Helicone observability in RAGChat, you simply need to pass your Helicone API key when initializing your model. Here's how to do it for both custom models and OpenAI:
 
+#### For Upstash Models
+
+```ts
+import { RAGChat, upstash } from "ragchat";
+
+const ragChat = new RAGChat({
+  model: upstash("meta-llama/Meta-Llama-3-8B-Instruct", {
+    apiKey: process.env.QSTASH_TOKEN,
+    analytics: { name: "helicone", token: process.env.HELICONE_API_KEY },
+  }),
+});
+```
+
 #### For Custom Models (e.g., Meta-Llama)
 
 ```ts
@@ -388,7 +401,7 @@ import { RAGChat, openai } from "ragchat";
 const ragChat = new RAGChat({
   model: openai("gpt-3.5-turbo", {
     apiKey: process.env.OPENAI_API_KEY!,
-    analytics: { name: "helicone", token: process.env.HELICONE_API_KEY! },
+    analytics: { name: "helicone", token: process.env.HELICONE_API_KEY },
   }),
 });
 ```

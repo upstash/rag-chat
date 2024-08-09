@@ -69,6 +69,13 @@ const analyticsBaseUrlMap = (
           Authorization: `Bearer ${providerApiKey}`,
         },
       },
+      upstash: {
+        basePath: "https://qstash.helicone.ai/llm/v1",
+        defaultHeaders: {
+          "Helicone-Auth": `Bearer ${analyticsToken}`,
+          Authorization: `Bearer ${providerApiKey}`,
+        },
+      },
     },
   }[analyticsName];
 };
@@ -81,15 +88,20 @@ export const upstash = (model: UpstashChatModel, options?: Omit<ModelOptions, "b
         " Pass apiKey parameter or set QSTASH_TOKEN env variable."
     );
   }
+  const { analytics, ...optionsWithoutAnalytics } = options ?? {};
 
   return new ChatOpenAI({
     modelName: model,
     apiKey,
-    ...options,
+    ...optionsWithoutAnalytics,
     streamUsage: false,
-    configuration: {
-      baseURL: "https://qstash.upstash.io/llm/v1",
-    },
+    ...(analytics
+      ? { configuration: analyticsBaseUrlMap(analytics.name, analytics.token, apiKey).upstash }
+      : {
+          configuration: {
+            baseURL: "https://qstash.upstash.io/llm/v1",
+          },
+        }),
   });
 };
 
