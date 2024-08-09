@@ -388,10 +388,23 @@ import { RAGChat, openai } from "ragchat";
 const ragChat = new RAGChat({
   model: openai("gpt-3.5-turbo", {
     apiKey: process.env.OPENAI_API_KEY!,
-    analytics: { name: "helicone", token: process.env.HELICONE_API_KEY! },
+    analytics: { name: "helicone", token: process.env.HELICONE_API_KEY },
   }),
 });
 ```
+
+#### For OpenAI Models
+
+````ts
+import { RAGChat, upstash } from "ragchat";
+
+const ragChat = new RAGChat({
+   model: upstash("meta-llama/Meta-Llama-3-8B-Instruct", {
+      apiKey: process.env.QSTASH_TOKEN,
+      analytics: { name: "helicone", token: process.env.HELICONE_API_KEY },
+    }),
+});
+
 
 ## Example usage
 
@@ -411,7 +424,7 @@ export const POST = async (req: Request) => {
   const { output } = await ragChat.chat(message);
   return NextResponse.json({ output });
 };
-```
+````
 
 #### Streaming responses
 
