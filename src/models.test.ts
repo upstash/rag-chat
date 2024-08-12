@@ -1,7 +1,9 @@
-import { describe, expect, test } from "bun:test";
+import { afterAll, describe, expect, test } from "bun:test";
 import { Client } from "langsmith";
 import { custom, openai, upstash } from "./models";
 import { RAGChat } from "./rag-chat";
+
+const originalEnvironment = { ...process.env };
 
 describe("Model", () => {
   test("should raise error when api key is not found", () => {
@@ -28,6 +30,10 @@ describe("Model inits", () => {
   // Mock environment variables
   process.env.OPENAI_API_KEY = "mock-openai-api-key";
   process.env.QSTASH_TOKEN = "mock-qstash-token";
+
+  afterAll(() => {
+    process.env = originalEnvironment;
+  });
 
   test("OpenAI client configuration with Helicone", () => {
     const client = openai("gpt-3.5-turbo", {
