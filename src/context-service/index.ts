@@ -1,8 +1,9 @@
+import { traceable } from "langsmith/traceable";
 import { nanoid } from "nanoid";
-import type { AddContextPayload, Database, ResetOptions } from "../database";
+import type { AddContextPayload, Database, ResetOptions, VectorPayload } from "../database";
 import type { ChatLogger } from "../logger";
+import type { PrepareChatResult } from "../types";
 import { formatFacts, type ModifiedChatOptions } from "../utils";
-
 export class ContextService {
   #vectorService: Database;
   private readonly namespace: string;
@@ -59,34 +60,58 @@ export class ContextService {
   }
 
   /** This is internal usage only. */
-  async _getContext<TMetadata extends object>(
+  _getContext<TMetadata extends object>(
     optionsWithDefault: ModifiedChatOptions,
     input: string,
     debug?: ChatLogger
-  ): Promise<{
-    formattedContext: string;
-    metadata: TMetadata[];
-  }> {
-    await debug?.logSendPrompt(input);
+  ) {
+    return traceable(
+      async (sessionId: string) => {
+        // Log the input, which will be captured by the outer traceable
+        await debug?.logSendPrompt(input);
+        debug?.startRetrieveContext();
 
-    debug?.startRetrieveContext();
+        if (optionsWithDefault.disableRAG) return { formattedContext: "", metadata: [] };
 
-    if (optionsWithDefault.disableRAG) return { formattedContext: "", metadata: [] };
+        const retrieveContext = traceable(
+          async (payload: VectorPayload) => {
+            const originalContext = await this.#vectorService.retrieve<TMetadata>(payload);
 
-    const originalContext = await this.#vectorService.retrieve<TMetadata>({
-      question: input,
-      similarityThreshold: optionsWithDefault.similarityThreshold,
-      topK: optionsWithDefault.topK,
-      namespace: optionsWithDefault.namespace,
-    });
+            const clonedContext = structuredClone(originalContext);
+            return (await optionsWithDefault.onContextFetched?.(clonedContext)) ?? originalContext;
+          },
+          { name: "Step: Fetch", metadata: { sessionId }, run_type: "retriever" }
+        );
 
-    const clonedContext = structuredClone(originalContext);
-    const modifiedContext = await optionsWithDefault.onContextFetched?.(clonedContext);
-    await debug?.endRetrieveContext(modifiedContext ?? originalContext);
+        const context = await retrieveContext({
+          question: input,
+          similarityThreshold: optionsWithDefault.similarityThreshold,
+          topK: optionsWithDefault.topK,
+          namespace: optionsWithDefault.namespace,
+        });
 
-    return {
-      formattedContext: formatFacts((modifiedContext ?? originalContext).map(({ data }) => data)),
-      metadata: (modifiedContext ?? originalContext).map(({ metadata }) => metadata) as TMetadata[],
-    };
+        // Log the result, which will be captured by the outer traceable
+        await debug?.endRetrieveContext(context);
+
+        return {
+          formattedContext: await traceable(
+            (_context: PrepareChatResult) => formatFacts(_context.map(({ data }) => data)),
+            {
+              name: "Step: Format",
+              metadata: { sessionId },
+              run_type: "tool",
+            }
+          )(context),
+          metadata: context.map(({ metadata }) => metadata) as TMetadata[],
+        };
+      },
+      {
+        name: "Retrieve Context",
+        metadata: {
+          sessionId: optionsWithDefault.sessionId,
+          namespace: optionsWithDefault.namespace,
+        },
+      }
+    );
   }
 }
