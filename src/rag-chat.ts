@@ -107,6 +107,7 @@ export class RAGChat {
             input,
             this.debug
           )(optionsWithDefault.sessionId);
+
           const formattedHistory = await this.getChatHistory(optionsWithDefault);
 
           const prompt = await this.generatePrompt(
@@ -148,6 +149,9 @@ export class RAGChat {
       },
       {
         name: "Rag Chat",
+        ...(global.globalTracer
+          ? { client: global.globalTracer, tracingEnabled: true }
+          : { tracingEnabled: false }),
         project_name: "Upstash Rag Chat",
         tags: [options?.streaming ? "streaming" : "non-streaming"],
         metadata: this.getOptionsWithDefaults(options),
@@ -241,6 +245,10 @@ export class RAGChat {
     const isRagDisabledAndPromptFunctionMissing = options?.disableRAG && !options.promptFn;
 
     return {
+      onChatHistoryFetched: options?.onChatHistoryFetched,
+      onContextFetched: options?.onContextFetched,
+      onChunk: options?.onChunk,
+      ratelimitDetails: options?.ratelimitDetails,
       metadata: options?.metadata ?? this.config.metadata,
       namespace: options?.namespace ?? this.config.namespace ?? DEFAULT_NAMESPACE,
       streaming: options?.streaming ?? this.config.streaming ?? false,

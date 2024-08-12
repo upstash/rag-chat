@@ -448,7 +448,7 @@ describe("RAGChat init with custom model", () => {
   });
 
   test(
-    "should be able to insert data into a namespace and query it",
+    "should be able to insert data into a namespace and query it with custom model",
     async () => {
       await ragChat.context.add({
         type: "text",
@@ -559,7 +559,7 @@ describe("RAGChat init with upstash model", () => {
   });
 
   test(
-    "should be able to insert data into a namespace and query it",
+    "should be able to insert data into a namespace and query it with upstash model",
     async () => {
       await ragChat.context.add({
         type: "text",
@@ -597,7 +597,7 @@ describe("RAGChat - chat usage with onHistoryFetched hook", () => {
   });
 
   test(
-    "should be able to insert data into a namespace and query it",
+    "should be able to insert data into a namespace and query it with onHistoryFetched",
     async () => {
       await ragChat.context.add({
         type: "text",
