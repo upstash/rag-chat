@@ -149,9 +149,9 @@ export class RAGChat {
       },
       {
         name: "Rag Chat",
-        ...(global.globalTracer
-          ? { client: global.globalTracer, tracingEnabled: true }
-          : { tracingEnabled: false }),
+        ...(global.globalTracer === undefined
+          ? { tracingEnabled: false, client: undefined }
+          : { client: global.globalTracer, tracingEnabled: true }),
         project_name: "Upstash Rag Chat",
         tags: [options?.streaming ? "streaming" : "non-streaming"],
         metadata: this.getOptionsWithDefaults(options),

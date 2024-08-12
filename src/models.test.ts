@@ -109,8 +109,15 @@ describe("Model inits", () => {
     openai("gpt-3.5-turbo", {
       analytics: { name: "langsmith", token: "mock-langsmith-token" },
     });
-
     expect(global.globalTracer).toBeDefined();
     expect(global.globalTracer).toBeInstanceOf(Client);
+    global.globalTracer = undefined;
+  });
+  test("Langsmith analytics configuration should fail when token is undefined", () => {
+    openai("gpt-3.5-turbo", {
+      //@ts-expect-error required for testing
+      analytics: { name: "langsmith", token: undefined },
+    });
+    expect(global.globalTracer).not.toBeInstanceOf(Client);
   });
 });

@@ -116,12 +116,16 @@ const setupAnalytics = (
       }
     }
     case "langsmith": {
-      const client = new LangsmithClient({
-        apiKey: analytics.token,
-        apiUrl: analytics.apiUrl ?? "https://api.smith.langchain.com",
-      });
-      global.globalTracer = client;
-      return { client };
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      if (analytics.token !== undefined && analytics.token != "") {
+        const client = new LangsmithClient({
+          apiKey: analytics.token,
+          apiUrl: analytics.apiUrl ?? "https://api.smith.langchain.com",
+        });
+        global.globalTracer = client;
+        return { client };
+      }
+      return { client: undefined };
     }
     default: {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
