@@ -97,8 +97,10 @@ export class RAGChat {
           // Checks ratelimit of the user. If not enabled `success` will be always true.
           await this.checkRatelimit(optionsWithDefault);
 
-          // 👇 when ragChat.chat is called, we first add the user message to chat history (without real id)
-          await this.addUserMessageToHistory(input, optionsWithDefault);
+          // Only add user message to history if disableHistory is false
+          if (!optionsWithDefault.disableHistory) {
+            await this.addUserMessageToHistory(input, optionsWithDefault);
+          }
 
           // Sanitizes the given input by stripping all the newline chars.
           const question = sanitizeQuestion(input);
@@ -125,14 +127,9 @@ export class RAGChat {
               onChunk: optionsWithDefault.onChunk,
               onComplete: async (output) => {
                 await this.debug?.endLLMResponse(output);
-                await this.history.addMessage({
-                  message: {
-                    content: output,
-                    metadata: optionsWithDefault.metadata,
-                    role: "assistant",
-                  },
-                  sessionId: optionsWithDefault.sessionId,
-                });
+                if (!optionsWithDefault.disableHistory) {
+                  await this.addAssistantMessageToHistory(output, optionsWithDefault);
+                }
               },
             },
             this.debug
@@ -227,6 +224,20 @@ export class RAGChat {
     });
   }
 
+  private async addAssistantMessageToHistory(
+    output: string,
+    optionsWithDefault: ModifiedChatOptions
+  ) {
+    await this.history.addMessage({
+      message: {
+        content: output,
+        metadata: optionsWithDefault.metadata,
+        role: "assistant",
+      },
+      sessionId: optionsWithDefault.sessionId,
+    });
+  }
+
   private async checkRatelimit(optionsWithDefault: ModifiedChatOptions) {
     const ratelimitResponse = await this.ratelimit.checkLimit(
       optionsWithDefault.ratelimitSessionId
@@ -254,6 +265,7 @@ export class RAGChat {
       streaming: options?.streaming ?? this.config.streaming ?? false,
       sessionId: options?.sessionId ?? this.config.sessionId ?? DEFAULT_CHAT_SESSION_ID,
       disableRAG: options?.disableRAG ?? false,
+      disableHistory: options?.disableHistory ?? false,
       similarityThreshold: options?.similarityThreshold ?? DEFAULT_SIMILARITY_THRESHOLD,
       topK: options?.topK ?? DEFAULT_TOP_K,
       historyLength: options?.historyLength ?? DEFAULT_HISTORY_LENGTH,
