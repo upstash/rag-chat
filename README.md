@@ -120,7 +120,6 @@ export const ragChat = new RAGChat({
 
 </details>
 
-
 ### Advanced Configuration
 
 Customize your RAGChat instance with advanced options:
@@ -360,7 +359,6 @@ When debug mode is enabled, RAGChat will log detailed information about each ste
      "latency": "558ms"
    }
    ```
-
 
 ### Add Observability via Helicone
 

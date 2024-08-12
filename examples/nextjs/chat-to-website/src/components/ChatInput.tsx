@@ -1,18 +1,18 @@
-"use client"
+"use client";
 
-import { Button, Textarea } from "@nextui-org/react"
-import { Send } from "lucide-react"
-import { type useChat } from "ai/react"
+import { Button, Textarea } from "@nextui-org/react";
+import { Send } from "lucide-react";
+import { type useChat } from "ai/react";
 
-type HandleInputChange = ReturnType<typeof useChat>["handleInputChange"]
-type HandleSubmit = ReturnType<typeof useChat>["handleSubmit"]
-type SetInput = ReturnType<typeof useChat>["setInput"]
+type HandleInputChange = ReturnType<typeof useChat>["handleInputChange"];
+type HandleSubmit = ReturnType<typeof useChat>["handleSubmit"];
+type SetInput = ReturnType<typeof useChat>["setInput"];
 
 interface ChatInputProps {
-  input: string
-  handleInputChange: HandleInputChange
-  handleSubmit: HandleSubmit
-  setInput: SetInput
+  input: string;
+  handleInputChange: HandleInputChange;
+  handleSubmit: HandleSubmit;
+  setInput: SetInput;
 }
 
 export const ChatInput = ({ handleInputChange, handleSubmit, input, setInput }: ChatInputProps) => {
@@ -29,9 +29,9 @@ export const ChatInput = ({ handleInputChange, handleSubmit, input, setInput }: 
                 value={input}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault()
-                    handleSubmit()
-                    setInput("")
+                    e.preventDefault();
+                    handleSubmit();
+                    setInput("");
                   }
                 }}
                 placeholder="Enter your question..."
@@ -50,5 +50,5 @@ export const ChatInput = ({ handleInputChange, handleSubmit, input, setInput }: 
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
