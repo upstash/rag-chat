@@ -360,13 +360,15 @@ When debug mode is enabled, RAGChat will log detailed information about each ste
    }
    ```
 
-### Add Observability via Helicone
+### Observability
+
+#### Helicone
 
 Helicone is a powerful observability platform that provides valuable insights into your LLM usage. Integrating Helicone with RAGChat is straightforward.
 
 To enable Helicone observability in RAGChat, you simply need to pass your Helicone API key when initializing your model. Here's how to do it for both custom models and OpenAI:
 
-#### For Upstash Models
+##### For Upstash Models
 
 ```ts
 import { RAGChat, upstash } from "ragchat";
@@ -379,7 +381,7 @@ const ragChat = new RAGChat({
 });
 ```
 
-#### For Custom Models (e.g., Meta-Llama)
+##### For Custom Models (e.g., Meta-Llama)
 
 ```ts
 import { RAGChat, custom } from "ragchat";
@@ -393,7 +395,7 @@ const ragChat = new RAGChat({
 });
 ```
 
-#### For OpenAI Models
+##### For OpenAI Models
 
 ```ts
 import { RAGChat, openai } from "ragchat";
@@ -402,6 +404,50 @@ const ragChat = new RAGChat({
   model: openai("gpt-3.5-turbo", {
     apiKey: process.env.OPENAI_API_KEY!,
     analytics: { name: "helicone", token: process.env.HELICONE_API_KEY },
+  }),
+});
+```
+
+#### Langsmith
+
+LangSmith is a powerful development platform for LLM applications that provides valuable insights, debugging tools, and performance monitoring. Integrating LangSmith with RAGChat can significantly enhance your development workflow and application quality.
+
+##### For Upstash Models
+
+```ts
+import { RAGChat, upstash } from "ragchat";
+
+const ragChat = new RAGChat({
+  model: upstash("meta-llama/Meta-Llama-3-8B-Instruct", {
+    apiKey: process.env.QSTASH_TOKEN,
+    analytics: { name: "langsmith", token: process.env.LANGCHAIN_API_KEY },
+  }),
+});
+```
+
+##### For Custom Models (e.g., Meta-Llama)
+
+```ts
+import { RAGChat, custom } from "ragchat";
+
+const ragChat = new RAGChat({
+  model: custom("meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo", {
+    apiKey: "xxx",
+    baseUrl: "https://api.together.xyz",
+    analytics: { name: "langsmith", token: process.env.LANGCHAIN_API_KEY! },
+  }),
+});
+```
+
+##### For OpenAI Models
+
+```ts
+import { RAGChat, openai } from "ragchat";
+
+const ragChat = new RAGChat({
+  model: openai("gpt-3.5-turbo", {
+    apiKey: process.env.OPENAI_API_KEY!,
+    analytics: { name: "langsmith", token: process.env.LANGCHAIN_API_KEY },
   }),
 });
 ```
