@@ -1,9 +1,9 @@
-import { cn } from "@/lib/utils"
-import { Bot, User } from "lucide-react"
+import { cn } from "@/lib/utils";
+import { Bot, User } from "lucide-react";
 
 interface MessageProps {
-  content: string
-  isUserMessage: boolean
+  content: string;
+  isUserMessage: boolean;
 }
 
 export const Message = ({ content, isUserMessage }: MessageProps) => {
@@ -39,5 +39,5 @@ export const Message = ({ content, isUserMessage }: MessageProps) => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};

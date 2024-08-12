@@ -1,9 +1,9 @@
-import { type Message as TMessage } from "ai/react"
-import { Message } from "./Message"
-import { MessageSquare } from "lucide-react"
+import { type Message as TMessage } from "ai/react";
+import { Message } from "./Message";
+import { MessageSquare } from "lucide-react";
 
 interface MessagesProps {
-  messages: TMessage[]
+  messages: TMessage[];
 }
 
 export const Messages = ({ messages }: MessagesProps) => {
@@ -21,5 +21,5 @@ export const Messages = ({ messages }: MessagesProps) => {
         </div>
       )}
     </div>
-  )
-}
+  );
+};
