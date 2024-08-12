@@ -85,8 +85,10 @@ export class RAGChat {
       // Checks ratelimit of the user. If not enabled `success` will be always true.
       await this.checkRatelimit(optionsWithDefault);
 
-      // 👇 when ragChat.chat is called, we first add the user message to chat history (without real id)
-      await this.addUserMessageToHistory(input, optionsWithDefault);
+      // Only add user message to history if disableHistory is false
+      if (!optionsWithDefault.disableHistory) {
+        await this.addUserMessageToHistory(input, optionsWithDefault);
+      }
 
       // Sanitizes the given input by stripping all the newline chars.
       const question = sanitizeQuestion(input);
@@ -113,14 +115,10 @@ export class RAGChat {
           onChunk: optionsWithDefault.onChunk,
           onComplete: async (output) => {
             await this.debug?.endLLMResponse(output);
-            await this.history.addMessage({
-              message: {
-                content: output,
-                metadata: optionsWithDefault.metadata,
-                role: "assistant",
-              },
-              sessionId: optionsWithDefault.sessionId,
-            });
+            // Only add assistant message to history if disableHistory is false
+            if (!optionsWithDefault.disableHistory) {
+              await this.addAssistantMessageToHistory(output, optionsWithDefault);
+            }
           },
         },
         this.debug
@@ -179,6 +177,20 @@ export class RAGChat {
   private async addUserMessageToHistory(input: string, optionsWithDefault: ModifiedChatOptions) {
     await this.history.addMessage({
       message: { content: input, role: "user" },
+      sessionId: optionsWithDefault.sessionId,
+    });
+  }
+
+  private async addAssistantMessageToHistory(
+    output: string,
+    optionsWithDefault: ModifiedChatOptions
+  ) {
+    await this.history.addMessage({
+      message: {
+        content: output,
+        metadata: optionsWithDefault.metadata,
+        role: "assistant",
+      },
       sessionId: optionsWithDefault.sessionId,
     });
   }

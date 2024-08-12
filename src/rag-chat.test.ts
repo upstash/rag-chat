@@ -783,3 +783,106 @@ describe("RAGChat - result metadata", () => {
     { timeout: 30_000 }
   );
 });
+
+describe("RAG Chat with disableHistory option", () => {
+  const vector = new Index({
+    token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
+    url: process.env.UPSTASH_VECTOR_REST_URL!,
+  });
+
+  const redis = new Redis({
+    token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+    url: process.env.UPSTASH_REDIS_REST_URL!,
+  });
+
+  const ragChat = new RAGChat({
+    model: new ChatOpenAI({
+      modelName: "gpt-3.5-turbo",
+      streaming: false,
+      verbose: false,
+      temperature: 0,
+      apiKey: process.env.OPENAI_API_KEY,
+    }),
+    vector,
+    redis,
+  });
+
+  const testSessionId = "test-disable-history-session";
+
+  beforeAll(async () => {
+    await ragChat.context.add({
+      type: "text",
+      data: "The capital of France is Paris.",
+    });
+    await awaitUntilIndexed(vector);
+  });
+
+  afterAll(async () => {
+    await vector.reset();
+    await redis.flushdb();
+  });
+
+  test("should not store chat history when disableHistory is true", async () => {
+    const question = "What is the capital of France?";
+    await ragChat.chat(question, {
+      streaming: false,
+      sessionId: testSessionId,
+      disableHistory: true,
+    });
+
+    const history = await ragChat.history.getMessages({ sessionId: testSessionId });
+    expect(history.length).toBe(0);
+  });
+
+  test("should store chat history when disableHistory is false", async () => {
+    const question = "What is the capital of France?";
+    await ragChat.chat(question, {
+      streaming: false,
+      sessionId: testSessionId,
+      disableHistory: false,
+    });
+
+    const history = await ragChat.history.getMessages({ sessionId: testSessionId });
+    expect(history.length).toBeGreaterThan(0);
+    expect(history[0].content).toBe(question);
+  });
+
+  test("should not affect context retrieval when disableHistory is true", async () => {
+    const question = "What is the capital of France?";
+    const result = await ragChat.chat(question, {
+      streaming: false,
+      disableHistory: true,
+    });
+
+    expect(result.output.toLowerCase()).toContain("paris");
+  });
+
+  test("should work correctly with multiple sequential chats and varying disableHistory", async () => {
+    const sessionId = "multi-chat-session";
+
+    // First chat with disableHistory true
+    await ragChat.chat("What is the capital of France?", {
+      streaming: false,
+      sessionId,
+      disableHistory: true,
+    });
+
+    // Second chat with disableHistory false
+    await ragChat.chat("What is the capital of Italy?", {
+      streaming: false,
+      sessionId,
+      disableHistory: false,
+    });
+
+    // Third chat with disableHistory true
+    await ragChat.chat("What is the capital of Germany?", {
+      streaming: false,
+      sessionId,
+      disableHistory: true,
+    });
+
+    const history = await ragChat.history.getMessages({ sessionId });
+    expect(history.length).toBe(1);
+    expect(history[0].content).toBe("What is the capital of Italy?");
+  });
+});

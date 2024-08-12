@@ -32,6 +32,7 @@ export const formatChatHistory = (chatHistory: BaseMessage[]) => {
 type DefaultChatOptions = {
   streaming: boolean;
   disableRAG: boolean;
+  disableHistory: boolean;
   sessionId: string;
   ratelimitSessionId: string;
   similarityThreshold: number;
@@ -41,6 +42,7 @@ type DefaultChatOptions = {
   namespace: string;
   promptFn: CustomPrompt;
 };
+
 type Modify<T, R> = Omit<T, keyof R> & R;
 
 export type ModifiedChatOptions = Modify<ChatOptions, DefaultChatOptions>;
@@ -49,6 +51,7 @@ export function appendDefaultsIfNeeded(options: ChatOptions): ModifiedChatOption
   const defaultValues = {
     streaming: false,
     disableRAG: false,
+    disableHistory: false,
     sessionId: DEFAULT_CHAT_SESSION_ID,
     ratelimitSessionId: DEFAULT_CHAT_RATELIMIT_SESSION_ID,
     similarityThreshold: DEFAULT_SIMILARITY_THRESHOLD,

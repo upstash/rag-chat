@@ -69,6 +69,12 @@ export type ChatOptions = {
    * Allows disabling RAG and use chat as LLM in combination with prompt. This will give you ability to build your own pipelines.
    */
   disableRAG?: boolean;
+
+  /**
+   * Disables recording of the conversation in the chat history.
+   * @default false
+   */
+  disableHistory?: boolean;
 } & CommonChatAndRAGOptions;
 
 export type PrepareChatResult = { data: string; id: string; metadata: unknown }[];
