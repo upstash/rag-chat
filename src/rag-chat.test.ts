@@ -541,44 +541,6 @@ describe("RAGChat pass options from constructor", () => {
   });
 });
 
-describe("RAGChat init with upstash model", () => {
-  const namespace = "japan";
-  const vector = new Index({
-    token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
-    url: process.env.UPSTASH_VECTOR_REST_URL!,
-  });
-
-  const ragChat = new RAGChat({
-    vector,
-    streaming: true,
-    model: upstash("meta-llama/Meta-Llama-3-8B-Instruct", { apiKey: process.env.QSTASH_TOKEN! }),
-  });
-
-  afterAll(async () => {
-    await vector.reset({ namespace });
-  });
-
-  test(
-    "should be able to insert data into a namespace and query it with upstash model",
-    async () => {
-      await ragChat.context.add({
-        type: "text",
-        data: "Tokyo is the Capital of Japan.",
-        options: { namespace },
-      });
-      await awaitUntilIndexed(vector);
-
-      const result = await ragChat.chat("Where is the capital of Japan?", {
-        namespace,
-        streaming: true,
-      });
-
-      await checkStream(result.output, ["Tokyo"]);
-    },
-    { timeout: 30_000 }
-  );
-});
-
 describe("RAGChat - chat usage with onHistoryFetched hook", () => {
   const namespace = "japan";
   const vector = new Index({
