@@ -1,4 +1,4 @@
-# Upstash RAG Chat SDK
+# Upstash RAG Chat SDK &middot; ![license](https://img.shields.io/npm/l/%40upstash%2Frag-chat) ![npm (scoped)](https://img.shields.io/npm/v/@upstash/rag-chat) ![npm weekly download](https://img.shields.io/npm/dw/%40upstash%2Frag-chat)
 
 The `@upstash/rag-chat` package makes it easy to develop powerful retrieval-augmented generation (RAG) chat applications with minimal setup and configuration.
 
