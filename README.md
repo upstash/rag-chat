@@ -56,13 +56,7 @@ const response = await ragChat.chat("Tell me about machine learning");
 console.log(response);
 ```
 
-### Configuring Your Chat Model
-
-RAGChat supports both Upstash-hosted models and all OpenAI and OpenAI-compatible models out of the box:
-
-#### Using OpenAI Models
-
-To use an OpenAI model, first initialize RAGChat:
+### Basic Usage
 
 ```typescript
 import { RAGChat, openai } from "@upstash/rag-chat";
@@ -70,121 +64,24 @@ import { RAGChat, openai } from "@upstash/rag-chat";
 export const ragChat = new RAGChat({
   model: openai("gpt-4-turbo"),
 });
-```
 
-And set your OpenAI API key as an environment variable:
-
-```bash
-OPENAI_API_KEY=...
-```
-
-#### Using Upstash-hosted Open-Source Models
-
-To use an Upstash model, first initialize RAGChat:
-
-```typescript
-import { RAGChat, upstash } from "@upstash/rag-chat";
-
-export const ragChat = new RAGChat({
-  model: upstash("mistralai/Mistral-7B-Instruct-v0.2"),
-});
-```
-
-And set your Upstash QStash API key environment variable:
-
-```bash
-QSTASH_TOKEN=...
-```
-
-#### Using Custom Providers - TogetherAi, Replicate
-
-Initialize RAGChat with custom provider's API key and url:
-
-```typescript
-import { RAGChat, custom } from "@upstash/rag-chat";
-
-export const ragChat = new RAGChat({
-  model: custom("codellama/CodeLlama-70b-Instruct-hf", {
-    apiKey: "TOGETHER_AI_API_KEY",
-    baseUrl: "https://api.together.xyz/v1",
-  }),
-});
-```
-
-<details>
-  <summary>Where do I find my Upstash API key?</summary><br>
-
-- Navigate to your [Upstash QStash Console](https://console.upstash.com/qstash).
-- Scroll down to the **Environment Keys** section and copy the `QSTASH_TOKEN` to your `.env` file.
-- ![QStash Credentials](./img/qstash.png)
-
-</details>
-
-### Advanced Configuration
-
-Customize your RAGChat instance with advanced options:
-
-```typescript
-import { RAGChat, openai } from "@upstash/rag-chat";
-
-// 👇 Optional: For built-in rate limiting
-import { Ratelimit } from "@upstash/ratelimit";
-import { Redis } from "@upstash/redis";
-
-export const ragChat = new RAGChat({
-  model: openai("gpt-4-turbo"),
-
-  promptFn: ({ context, question, chatHistory }) =>
-    `You are an AI assistant with access to an Upstash Vector Store.
-  Use the provided context and chat history to answer the question.
-  If the answer isn't available, politely inform the user.
-  ------
-  Chat history:
-  ${chatHistory}
-  ------
-  Context:
-  ${context}
-  ------
-  Question: ${question}
-  Answer:`,
-
-  ratelimit: new Ratelimit({
-    redis: Redis.fromEnv(),
-    limiter: Ratelimit.slidingWindow(10, "10 s"),
-  }),
-});
-```
-
-### Managing Your Knowledge Base
-
-Add various types of data to your RAG application:
-
-#### Adding Text
-
-```typescript
 await ragChat.context.add({
   type: "text",
   data: "The speed of light is approximately 299,792,458 meters per second.",
 });
 
-//OR
-
-await ragChat.context.add("The speed of light is approximately 299,792,458 meters per second.");
-```
-
-#### Adding PDF Content
-
-```typescript
 await ragChat.context.add({
   type: "pdf",
-  fileSource: "./data/quantum_computing_basics.pdf",
-
-  // optional 👇: only add this knowledge to a specific namespace
-  options: { namespace: "user-123-documents" },
+  fileSource: "./data/physics_basics.pdf",
 });
+const response = await ragChat.chat("What is the speed of light?");
+
+console.log(response.output);
 ```
 
-#### Adding Web Content
+### Docs
+
+Checkout [the documentation](https://upstash.com/docs/vector/sdks/rag-chat/overview) for integrations and advanced options.
 
 ```typescript
 await ragChat.context.add({
