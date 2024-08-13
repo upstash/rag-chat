@@ -56,13 +56,15 @@ const response = await ragChat.chat("Tell me about machine learning");
 console.log(response);
 ```
 
-### Basic Usage 
+### Basic Usage
+
 ```typescript
 import { RAGChat, openai } from "@upstash/rag-chat";
 
 export const ragChat = new RAGChat({
   model: openai("gpt-4-turbo"),
 });
+
 
 await ragChat.context.add({
   type: "text",
@@ -79,5 +81,49 @@ console.log(response.output);
 ```
 
 ### Docs
-Checkout [the documentation](https://upstash.com/docs/vector/sdks/rag-chat/gettingstarted) for integrations and advanced options. 
 
+Checkout [the documentation](https://upstash.com/docs/vector/sdks/rag-chat/gettingstarted) for integrations and advanced options.
+
+#### Langsmith
+
+LangSmith is a powerful development platform for LLM applications that provides valuable insights, debugging tools, and performance monitoring. Integrating LangSmith with RAGChat can significantly enhance your development workflow and application quality.
+
+##### For Upstash Models
+
+```ts
+import { RAGChat, upstash } from "ragchat";
+
+const ragChat = new RAGChat({
+  model: upstash("meta-llama/Meta-Llama-3-8B-Instruct", {
+    apiKey: process.env.QSTASH_TOKEN,
+    analytics: { name: "langsmith", token: process.env.LANGCHAIN_API_KEY },
+  }),
+});
+```
+
+##### For Custom Models (e.g., Meta-Llama)
+
+```ts
+import { RAGChat, custom } from "ragchat";
+
+const ragChat = new RAGChat({
+  model: custom("meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo", {
+    apiKey: "xxx",
+    baseUrl: "https://api.together.xyz",
+    analytics: { name: "langsmith", token: process.env.LANGCHAIN_API_KEY! },
+  }),
+});
+```
+
+##### For OpenAI Models
+
+```ts
+import { RAGChat, openai } from "ragchat";
+
+const ragChat = new RAGChat({
+  model: openai("gpt-3.5-turbo", {
+    apiKey: process.env.OPENAI_API_KEY!,
+    analytics: { name: "langsmith", token: process.env.LANGCHAIN_API_KEY },
+  }),
+});
+```

@@ -4,6 +4,7 @@ import type { IterableReadableStreamInterface } from "@langchain/core/utils/stre
 import type { ChatOptions, UpstashMessage } from "./types";
 import type { ModifiedChatOptions } from "./utils";
 import type { ChatLogger } from "./logger";
+import { traceable } from "langsmith/traceable";
 
 type ChatReturnType<T extends Partial<ChatOptions>> = Promise<
   T["streaming"] extends true
@@ -16,9 +17,8 @@ type ChatReturnType<T extends Partial<ChatOptions>> = Promise<
 export class LLMService {
   constructor(private model: BaseLanguageModelInterface) {}
 
-  async callLLM<TChatOptions extends ChatOptions>(
+  callLLM<TChatOptions extends ChatOptions>(
     optionsWithDefault: ModifiedChatOptions,
-    prompt: string,
     _options: TChatOptions | undefined,
     callbacks: {
       onChunk?: ChatOptions["onChunk"];
@@ -26,12 +26,17 @@ export class LLMService {
     },
     debug?: ChatLogger
   ) {
-    debug?.startLLMResponse();
-    return (
-      optionsWithDefault.streaming
-        ? this.makeStreamingLLMRequest(prompt, callbacks)
-        : this.makeLLMRequest(prompt, callbacks.onComplete)
-    ) as ChatReturnType<TChatOptions>;
+    return traceable(
+      (prompt: string) => {
+        debug?.startLLMResponse();
+        return (
+          optionsWithDefault.streaming
+            ? this.makeStreamingLLMRequest(prompt, callbacks)
+            : this.makeLLMRequest(prompt, callbacks.onComplete)
+        ) as ChatReturnType<TChatOptions>;
+      },
+      { name: "LLM Response", metadata: { sessionId: optionsWithDefault.sessionId } }
+    );
   }
 
   private async makeStreamingLLMRequest(

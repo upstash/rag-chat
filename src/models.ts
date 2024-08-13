@@ -1,4 +1,16 @@
+import type { OpenAIChatInput } from "@langchain/openai";
 import { ChatOpenAI } from "@langchain/openai";
+import { Client as LangsmithClient } from "langsmith";
+
+// Initialize global Langsmith tracer
+// We use a global variable because:
+// The tracer operates globally, so there's no need to pass it around.
+// Initialized similar to other analytics tools (e.g., Helicone).
+declare global {
+  /** Langsmith tracer to trace actions in RAG Chat, its initialized in `model.ts`. */
+  // eslint-disable-next-line no-var
+  var globalTracer: LangsmithClient | undefined;
+}
 
 export type OpenAIChatModel =
   | "gpt-4-turbo"
@@ -27,57 +39,129 @@ export type UpstashChatModel =
   | "meta-llama/Meta-Llama-3-8B-Instruct";
 
 export type LLMClientConfig = {
-  model: string;
-  apiKey: string;
-  maxTokens?: number;
-  stop?: string[];
-  topP?: number;
   temperature?: number;
+  topP?: number;
   frequencyPenalty?: number;
   presencePenalty?: number;
   n?: number;
   logitBias?: Record<string, number>;
-  logProbs?: number;
+  model: string;
+  modelKwargs?: OpenAIChatInput["modelKwargs"];
+  stop?: string[];
+  stopSequences?: string[];
+  user?: string;
+  timeout?: number;
+  streamUsage?: boolean;
+  maxTokens?: number;
+  logprobs?: boolean;
   topLogprobs?: number;
+  openAIApiKey?: string;
+  apiKey?: string;
   baseUrl: string;
 };
 
+type AnalyticsConfig =
+  | { name: "helicone"; token: string }
+  | { name: "langsmith"; token: string; apiUrl?: string };
+
 type ModelOptions = Omit<LLMClientConfig, "model"> & {
-  analytics?: { name: "helicone"; token: string };
+  analytics?: AnalyticsConfig;
 };
 
-const analyticsBaseUrlMap = (
-  analyticsName: "helicone",
-  analyticsToken: string,
+type AnalyticsSetup = {
+  baseURL?: string;
+  defaultHeaders?: Record<string, string | undefined>;
+  client?: LangsmithClient;
+};
+
+const setupAnalytics = (
+  analytics: AnalyticsConfig | undefined,
   providerApiKey: string,
-  providerBaseUrl?: string
+  providerBaseUrl?: string,
+  provider?: "openai" | "upstash" | "custom"
+): AnalyticsSetup => {
+  if (!analytics) return {};
+
+  switch (analytics.name) {
+    case "helicone": {
+      switch (provider) {
+        case "openai": {
+          return {
+            baseURL: "https://oai.helicone.ai/v1",
+            defaultHeaders: {
+              "Helicone-Auth": `Bearer ${analytics.token}`,
+              Authorization: `Bearer ${providerApiKey}`,
+            },
+          };
+        }
+        case "upstash": {
+          return {
+            baseURL: "https://qstash.helicone.ai/llm/v1",
+            defaultHeaders: {
+              "Helicone-Auth": `Bearer ${analytics.token}`,
+              Authorization: `Bearer ${providerApiKey}`,
+            },
+          };
+        }
+        default: {
+          return {
+            baseURL: "https://gateway.helicone.ai",
+            defaultHeaders: {
+              "Helicone-Auth": `Bearer ${analytics.token}`,
+              "Helicone-Target-Url": providerBaseUrl,
+              Authorization: `Bearer ${providerApiKey}`,
+            },
+          };
+        }
+      }
+    }
+    case "langsmith": {
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      if (analytics.token !== undefined && analytics.token != "") {
+        const client = new LangsmithClient({
+          apiKey: analytics.token,
+          apiUrl: analytics.apiUrl ?? "https://api.smith.langchain.com",
+        });
+        global.globalTracer = client;
+        return { client };
+      }
+      return { client: undefined };
+    }
+    default: {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      throw new Error(`Unsupported analytics provider: ${JSON.stringify(analytics)}`);
+    }
+  }
+};
+
+const createLLMClient = (
+  model: string,
+  options: ModelOptions,
+  provider?: "openai" | "upstash" | "custom"
 ) => {
-  return {
-    helicone: {
-      custom: {
-        baseURL: "https://gateway.helicone.ai",
-        defaultHeaders: {
-          "Helicone-Auth": `Bearer ${analyticsToken}`,
-          "Helicone-Target-Url": providerBaseUrl,
-          Authorization: `Bearer ${providerApiKey}`,
-        },
-      },
-      openai: {
-        basePath: "https://oai.helicone.ai/v1",
-        defaultHeaders: {
-          "Helicone-Auth": `Bearer ${analyticsToken}`,
-          Authorization: `Bearer ${providerApiKey}`,
-        },
-      },
-      upstash: {
-        basePath: "https://qstash.helicone.ai/llm/v1",
-        defaultHeaders: {
-          "Helicone-Auth": `Bearer ${analyticsToken}`,
-          Authorization: `Bearer ${providerApiKey}`,
-        },
-      },
+  const apiKey = options.apiKey ?? process.env.OPENAI_API_KEY ?? "";
+  const providerBaseUrl = options.baseUrl;
+  if (!apiKey) {
+    throw new Error(
+      "API key is required. Provide it in options or set OPENAI_API_KEY environment variable."
+    );
+  }
+
+  const { analytics, ...restOptions } = options;
+  const analyticsSetup = setupAnalytics(analytics, apiKey, providerBaseUrl, provider);
+
+  return new ChatOpenAI({
+    modelName: model,
+    streamUsage: provider !== "upstash",
+    temperature: 0,
+    ...restOptions,
+
+    apiKey,
+    configuration: {
+      baseURL: analyticsSetup.baseURL ?? providerBaseUrl,
+      ...(analyticsSetup.defaultHeaders && { defaultHeaders: analyticsSetup.defaultHeaders }),
     },
-  }[analyticsName];
+  });
 };
 
 export const upstash = (model: UpstashChatModel, options?: Omit<ModelOptions, "baseUrl">) => {
@@ -88,58 +172,18 @@ export const upstash = (model: UpstashChatModel, options?: Omit<ModelOptions, "b
         " Pass apiKey parameter or set QSTASH_TOKEN env variable."
     );
   }
-  const { analytics, ...optionsWithoutAnalytics } = options ?? {};
-
-  return new ChatOpenAI({
-    modelName: model,
-    apiKey,
-    ...optionsWithoutAnalytics,
-    streamUsage: false,
-    ...(analytics
-      ? { configuration: analyticsBaseUrlMap(analytics.name, analytics.token, apiKey).upstash }
-      : {
-          configuration: {
-            baseURL: "https://qstash.upstash.io/llm/v1",
-          },
-        }),
-  });
+  return createLLMClient(
+    model,
+    { ...options, apiKey, baseUrl: "https://qstash.upstash.io/llm/v1" },
+    "upstash"
+  );
 };
 
-export const custom = (model: string, options?: ModelOptions) => {
-  if (!options?.baseUrl) throw new Error("baseUrl cannot be empty or undefined.");
-
-  return new ChatOpenAI({
-    modelName: model,
-    ...options,
-    ...(options.analytics
-      ? {
-          configuration: analyticsBaseUrlMap(
-            options.analytics.name,
-            options.analytics.token,
-            options.apiKey,
-            options.baseUrl
-          ).custom,
-        }
-      : {
-          configuration: {
-            apiKey: options.apiKey,
-            baseURL: options.baseUrl,
-          },
-        }),
-  });
+export const custom = (model: string, options: ModelOptions) => {
+  if (!options.baseUrl) throw new Error("baseUrl cannot be empty or undefined.");
+  return createLLMClient(model, options, "custom");
 };
 
 export const openai = (model: OpenAIChatModel, options?: Omit<ModelOptions, "baseUrl">) => {
-  const apiKey = process.env.OPENAI_API_KEY ?? options?.apiKey ?? "";
-  const { analytics, ...optionsWithout } = options ?? {};
-
-  return new ChatOpenAI({
-    modelName: model,
-    temperature: 0,
-    ...optionsWithout,
-    apiKey,
-    ...(analytics
-      ? { configuration: analyticsBaseUrlMap(analytics.name, analytics.token, apiKey).openai }
-      : {}),
-  });
+  return createLLMClient(model, { ...options, baseUrl: "https://api.openai.com/v1" }, "openai");
 };

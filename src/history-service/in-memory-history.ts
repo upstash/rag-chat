@@ -5,7 +5,6 @@ import { DEFAULT_CHAT_SESSION_ID, DEFAULT_HISTORY_LENGTH } from "../constants";
 import type { UpstashDict, UpstashMessage } from "../types";
 import type { BaseMessageHistory, HistoryAddMessage } from "./base-message-history";
 
-//TODO: Josh lets document this type with comments.
 declare global {
   var store: Record<
     string,
