@@ -147,7 +147,7 @@ export class RAGChat {
 
   private async getChatHistory(optionsWithDefault: ModifiedChatOptions): Promise<string> {
     if (optionsWithDefault.disableHistory) {
-      this.debug?.logRetrieveFormatHistory("History disabled, returning empty history");
+      await this.debug?.logRetrieveFormatHistory("History disabled, returning empty history");
       return "";
     }
 
