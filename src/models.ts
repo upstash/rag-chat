@@ -194,8 +194,12 @@ type OllamaModelResult = {
   }[];
 };
 
-export const ollama = (model: OllamaModels, options?: Omit<ModelOptions, "baseUrl">) => {
-  const baseUrl = "http://localhost:11434";
+const DEFAULT_OLLAMA_PORT = 11_434;
+export const ollama = (
+  model: OllamaModels,
+  options?: Omit<ModelOptions, "baseUrl"> & { port?: number }
+) => {
+  const baseUrl = `http://localhost:${options?.port ?? DEFAULT_OLLAMA_PORT}`;
 
   fetch(`${baseUrl}/api/tags`)
     .then((response) => response.json())
