@@ -1,4 +1,5 @@
 import type { ChatOpenAI } from "@langchain/openai";
+import type { openai } from "@ai-sdk/openai";
 import type { Ratelimit } from "@upstash/ratelimit";
 import type { Redis } from "@upstash/redis";
 import type { Index } from "@upstash/vector";
@@ -87,8 +88,9 @@ export type RAGChatConfig = {
       apiKey,
     })
   */
-  model?: ChatOpenAI | ChatMistralAI;
 
+  // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+  model?: ChatOpenAI | ChatMistralAI | OpenAIChatLanguageModel;
   /**
      * Ratelimit instance
      * @example new Ratelimit({
@@ -177,3 +179,5 @@ export type UpstashMessage<TMetadata extends UpstashDict = UpstashDict> = {
   };
   id: string;
 };
+
+export type OpenAIChatLanguageModel = ReturnType<typeof openai>;

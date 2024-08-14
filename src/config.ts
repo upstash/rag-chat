@@ -4,7 +4,7 @@ import { Redis } from "@upstash/redis";
 import { Index } from "@upstash/vector";
 import { DEFAULT_PROMPT } from "./constants";
 import { upstash, openai } from "./models";
-import type { RAGChatConfig, UpstashDict } from "./types";
+import type { RAGChatConfig, UpstashDict, OpenAIChatLanguageModel } from "./types";
 import type { CustomPrompt } from "./rag-chat";
 
 export class Config {
@@ -15,7 +15,7 @@ export class Config {
   public readonly ratelimit?: Ratelimit;
   public readonly ratelimitSessionId?: string;
 
-  public readonly model?: BaseLanguageModelInterface;
+  public readonly model?: BaseLanguageModelInterface | OpenAIChatLanguageModel;
   public readonly prompt: CustomPrompt;
   public readonly streaming?: boolean;
   public readonly namespace?: string;
