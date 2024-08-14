@@ -1,4 +1,5 @@
 import type { ChatOpenAI } from "@langchain/openai";
+import type { openai } from "@ai-sdk/openai";
 import type { Ratelimit } from "@upstash/ratelimit";
 import type { Redis } from "@upstash/redis";
 import type { Index } from "@upstash/vector";
@@ -86,7 +87,7 @@ export type RAGChatConfig = {
       apiKey,
     })
   */
-  model?: ChatOpenAI;
+  model?: ChatOpenAI | OpenAIChatLanguageModel;
 
   /**
      * Ratelimit instance
@@ -176,3 +177,5 @@ export type UpstashMessage<TMetadata extends UpstashDict = UpstashDict> = {
   };
   id: string;
 };
+
+export type OpenAIChatLanguageModel = ReturnType<typeof openai>;
