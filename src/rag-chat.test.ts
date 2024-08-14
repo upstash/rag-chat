@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { ChatOpenAI } from "@langchain/openai";
+import { openai } from "@ai-sdk/openai";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import { Index } from "@upstash/vector";
@@ -782,4 +783,51 @@ describe("RAGChat - result metadata", () => {
     },
     { timeout: 30_000 }
   );
+});
+
+describe("RAG Chat with Vercel AI SDK", () => {
+  const vector = new Index({
+    token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
+    url: process.env.UPSTASH_VECTOR_REST_URL!,
+  });
+
+  const ragChat = new RAGChat({
+    model: openai("gpt-3.5-turbo"),
+    vector,
+    redis: new Redis({
+      token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+      url: process.env.UPSTASH_REDIS_REST_URL!,
+    }),
+    sessionId: "ai-sdk-session",
+    namespace: "ai-sdk",
+  });
+
+  beforeAll(async () => {
+    await ragChat.context.add({
+      type: "text",
+      data: "Paris, the capital of France, is renowned for its iconic landmark, the Eiffel Tower, which was completed in 1889 and stands at 330 meters tall.",
+      options: { namespace: "ai-sdk" },
+    });
+    await awaitUntilIndexed(vector);
+  });
+
+  afterAll(async () => await vector.reset());
+
+  test("should get result without streaming", async () => {
+    const result = await ragChat.chat(
+      "What year was the construction of the Eiffel Tower completed, and what is its height?",
+      { streaming: false }
+    );
+    expect(result.output).toContain("330");
+  });
+
+  test("should get result with streaming", async () => {
+    const streamResult = await ragChat.chat(
+      "What year was the construction of the Eiffel Tower completed, and what is its height?",
+      {
+        streaming: true,
+      }
+    );
+    await checkStream(streamResult.output, ["330"]);
+  });
 });

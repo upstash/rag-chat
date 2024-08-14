@@ -1,5 +1,6 @@
 import type { BaseMessage } from "@langchain/core/messages";
-import type { ChatOptions } from "./types";
+import type { ChatOptions, OpenAIChatLanguageModel } from "./types";
+import type { BaseLanguageModelInterface } from "@langchain/core/language_models/base";
 import {
   DEFAULT_CHAT_SESSION_ID,
   DEFAULT_CHAT_RATELIMIT_SESSION_ID,
@@ -67,4 +68,10 @@ export function appendDefaultsIfNeeded(options: ChatOptions): ModifiedChatOption
 const DEFAULT_DELAY = 20_000;
 export function delay(ms = DEFAULT_DELAY): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export function isOpenAIChatLanguageModel(
+  model: BaseLanguageModelInterface | OpenAIChatLanguageModel
+): model is OpenAIChatLanguageModel {
+  return Object.prototype.hasOwnProperty.call(model, "specificationVersion");
 }
