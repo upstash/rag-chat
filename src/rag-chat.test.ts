@@ -4,7 +4,17 @@ import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import { Index } from "@upstash/vector";
 import { LangChainAdapter, StreamingTextResponse } from "ai";
-import { afterAll, afterEach, beforeAll, describe, expect, test } from "bun:test";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  test,
+  spyOn,
+} from "bun:test";
+import type { Mock } from "bun:test";
 import { RatelimitUpstashError } from "./error";
 import { custom, upstash } from "./models";
 import { RAGChat } from "./rag-chat";
@@ -808,6 +818,7 @@ describe("RAG Chat with disableHistory option", () => {
   });
 
   const testSessionId = "test-disable-history-session";
+  let getMessagesSpy: Mock<typeof ragChat.history.getMessages>;
 
   beforeAll(async () => {
     await ragChat.context.add({
@@ -815,6 +826,14 @@ describe("RAG Chat with disableHistory option", () => {
       data: "The capital of France is Paris.",
     });
     await awaitUntilIndexed(vector);
+  });
+
+  beforeEach(() => {
+    getMessagesSpy = spyOn(ragChat.history, "getMessages");
+  });
+
+  afterEach(() => {
+    getMessagesSpy.mockRestore();
   });
 
   afterAll(async () => {
@@ -884,5 +903,27 @@ describe("RAG Chat with disableHistory option", () => {
     const history = await ragChat.history.getMessages({ sessionId });
     expect(history.length).toBe(1);
     expect(history[0].content).toBe("What is the capital of Italy?");
+  });
+
+  test("should not call Redis when disableHistory is true", async () => {
+    const question = "What is the capital of France?";
+    await ragChat.chat(question, {
+      streaming: false,
+      sessionId: testSessionId,
+      disableHistory: true,
+    });
+
+    expect(getMessagesSpy).not.toHaveBeenCalled();
+  });
+
+  test("should call Redis when disableHistory is false", async () => {
+    const question = "What is the capital of France?";
+    await ragChat.chat(question, {
+      streaming: false,
+      sessionId: testSessionId,
+      disableHistory: false,
+    });
+
+    expect(getMessagesSpy).toHaveBeenCalled();
   });
 });

@@ -82,21 +82,15 @@ export class RAGChat {
     try {
       const optionsWithDefault = this.getOptionsWithDefaults(options);
 
-      // Checks ratelimit of the user. If not enabled `success` will be always true.
       await this.checkRatelimit(optionsWithDefault);
 
-      // Only add user message to history if disableHistory is false
-      if (!optionsWithDefault.disableHistory) {
-        await this.addUserMessageToHistory(input, optionsWithDefault);
-      }
-
-      // Sanitizes the given input by stripping all the newline chars.
       const question = sanitizeQuestion(input);
       const { formattedContext: context, metadata } = await this.context._getContext<TMetadata>(
         optionsWithDefault,
         input,
         this.debug
       );
+
       const formattedHistory = await this.getChatHistory(optionsWithDefault);
 
       const prompt = await this.generatePrompt(
@@ -106,7 +100,6 @@ export class RAGChat {
         formattedHistory
       );
 
-      //   Either calls streaming or non-streaming function from RAGChatBase. Streaming function returns AsyncIterator and allows callbacks like onComplete.
       const llmResult = await this.llm.callLLM<TChatOptions>(
         optionsWithDefault,
         prompt,
@@ -115,7 +108,6 @@ export class RAGChat {
           onChunk: optionsWithDefault.onChunk,
           onComplete: async (output) => {
             await this.debug?.endLLMResponse(output);
-            // Only add assistant message to history if disableHistory is false
             if (!optionsWithDefault.disableHistory) {
               await this.addAssistantMessageToHistory(output, optionsWithDefault);
             }
@@ -123,6 +115,10 @@ export class RAGChat {
         },
         this.debug
       );
+
+      if (!optionsWithDefault.disableHistory) {
+        await this.addUserMessageToHistory(input, optionsWithDefault);
+      }
 
       return {
         ...llmResult,
@@ -149,16 +145,24 @@ export class RAGChat {
     return prompt;
   }
 
-  private async getChatHistory(optionsWithDefault: ModifiedChatOptions) {
+  private async getChatHistory(optionsWithDefault: ModifiedChatOptions): Promise<string> {
+    if (optionsWithDefault.disableHistory) {
+      this.debug?.logRetrieveFormatHistory("History disabled, returning empty history");
+      return "";
+    }
+
     this.debug?.startRetrieveHistory();
+
     // Gets the chat history from redis or in-memory store.
     const originalChatHistory = await this.history.getMessages({
       sessionId: optionsWithDefault.sessionId,
       amount: optionsWithDefault.historyLength,
     });
+
     const clonedChatHistory = structuredClone(originalChatHistory);
     const modifiedChatHistory =
       (await optionsWithDefault.onChatHistoryFetched?.(clonedChatHistory)) ?? originalChatHistory;
+
     await this.debug?.endRetrieveHistory(clonedChatHistory);
 
     // Formats the chat history for better accuracy when querying LLM
@@ -170,6 +174,7 @@ export class RAGChat {
           : `YOUR MESSAGE: ${message.content}`;
       })
       .join("\n");
+
     await this.debug?.logRetrieveFormatHistory(formattedHistory);
     return formattedHistory;
   }
