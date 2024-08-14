@@ -2,6 +2,7 @@ import type { OpenAIChatInput } from "@langchain/openai";
 import { ChatOpenAI } from "@langchain/openai";
 import { Client as LangsmithClient } from "langsmith";
 import type { OLLAMA_MODELS } from "./constants";
+import { ChatMistralAI } from "@langchain/mistralai";
 
 // Initialize global Langsmith tracer
 // We use a global variable because:
@@ -61,7 +62,15 @@ export type LLMClientConfig = {
   baseUrl: string;
 };
 
-type Providers = "openai" | "upstash" | "custom" | "ollama";
+type Providers =
+  | "openai"
+  | "upstash"
+  | "custom"
+  | "ollama"
+  | "groq"
+  | "togetherai"
+  | "openrouter"
+  | "mistral";
 type AnalyticsConfig =
   | { name: "helicone"; token: string }
   | { name: "langsmith"; token: string; apiUrl?: string };
@@ -215,4 +224,31 @@ export const ollama = (
     });
 
   return createLLMClient(model, { ...options, baseUrl: `${baseUrl}/v1` }, "ollama");
+};
+
+export const groq = (model: string, options?: Omit<ModelOptions, "baseUrl">) => {
+  return createLLMClient(model, { ...options, baseUrl: "https://api.groq.com/openai/v1" }, "groq");
+};
+
+export const togetherai = (model: string, options?: Omit<ModelOptions, "baseUrl">) => {
+  return createLLMClient(
+    model,
+    { ...options, baseUrl: "https://api.together.xyz/v1" },
+    "togetherai"
+  );
+};
+
+export const openrouter = (model: string, options?: Omit<ModelOptions, "baseUrl">) => {
+  return createLLMClient(
+    model,
+    { ...options, baseUrl: "https://openrouter.ai/api/v1" },
+    "openrouter"
+  );
+};
+/** Mistral AI does not support any analytics */
+export const mistralai = (model: string, options?: Omit<ModelOptions, "baseUrl">) => {
+  return new ChatMistralAI({
+    model,
+    ...options,
+  });
 };
