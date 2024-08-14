@@ -79,6 +79,7 @@
     "react-dom": "^18.3.1"
   },
   "optionalDependencies": {
-    "langsmith": "^0.1.41"
+    "langsmith": "^0.1.41",
+    "@langchain/mistralai": "^0.0.28"
   }
 }

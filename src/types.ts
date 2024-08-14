@@ -3,6 +3,7 @@ import type { Ratelimit } from "@upstash/ratelimit";
 import type { Redis } from "@upstash/redis";
 import type { Index } from "@upstash/vector";
 import type { CustomPrompt } from "./rag-chat";
+import type { ChatMistralAI } from "@langchain/mistralai";
 
 declare const __brand: unique symbol;
 type Brand<B> = { [__brand]: B };
@@ -86,7 +87,7 @@ export type RAGChatConfig = {
       apiKey,
     })
   */
-  model?: ChatOpenAI;
+  model?: ChatOpenAI | ChatMistralAI;
 
   /**
      * Ratelimit instance
