@@ -197,13 +197,18 @@ type OllamaModelResult = {
 export const ollama = (model: OllamaModels, options?: Omit<ModelOptions, "baseUrl">) => {
   const baseUrl = "http://localhost:11434";
 
-  void fetch(`${baseUrl}/api/tags`).then((tags) => {
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    tags.json().then((data: unknown) => {
-      const mappedModels = (data as OllamaModelResult).models.filter((m) => m.name.includes(model));
-      if (mappedModels.length === 0) throw new Error("Please, pull the model before you run.");
+  fetch(`${baseUrl}/api/tags`)
+    .then((response) => response.json())
+    .then((data: unknown) => {
+      const modelExists = (data as OllamaModelResult).models.some((m) => m.name.includes(model));
+      if (!modelExists) {
+        console.error(`Model not found. Please pull the model before running.
+            Run: ollama pull ${model}`);
+      }
+    })
+    .catch((error: unknown) => {
+      console.error("Error checking model availability:", error);
     });
-  });
 
   return createLLMClient(model, { ...options, baseUrl: `${baseUrl}/v1` }, "ollama");
 };
