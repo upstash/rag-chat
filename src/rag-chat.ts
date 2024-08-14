@@ -184,6 +184,10 @@ export class RAGChat {
   private async getChatHistory(_optionsWithDefault: ModifiedChatOptions) {
     return traceable(
       async (optionsWithDefault: ModifiedChatOptions) => {
+        if (optionsWithDefault.disableHistory) {
+          await this.debug?.logRetrieveFormatHistory("History disabled, returning empty history");
+          return "";
+        }
         this.debug?.startRetrieveHistory();
         // Gets the chat history from redis or in-memory store.
         const originalChatHistory = await this.history.getMessages({
