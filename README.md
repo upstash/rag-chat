@@ -65,7 +65,6 @@ export const ragChat = new RAGChat({
   model: openai("gpt-4-turbo"),
 });
 
-
 await ragChat.context.add({
   type: "text",
   data: "The speed of light is approximately 299,792,458 meters per second.",

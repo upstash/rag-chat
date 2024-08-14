@@ -1,6 +1,7 @@
 import type { OpenAIChatInput } from "@langchain/openai";
 import { ChatOpenAI } from "@langchain/openai";
 import { Client as LangsmithClient } from "langsmith";
+import type { OLLAMA_MODELS } from "./constants";
 
 // Initialize global Langsmith tracer
 // We use a global variable because:
@@ -60,6 +61,7 @@ export type LLMClientConfig = {
   baseUrl: string;
 };
 
+type Providers = "openai" | "upstash" | "custom" | "ollama";
 type AnalyticsConfig =
   | { name: "helicone"; token: string }
   | { name: "langsmith"; token: string; apiUrl?: string };
@@ -78,7 +80,7 @@ const setupAnalytics = (
   analytics: AnalyticsConfig | undefined,
   providerApiKey: string,
   providerBaseUrl?: string,
-  provider?: "openai" | "upstash" | "custom"
+  provider?: Providers
 ): AnalyticsSetup => {
   if (!analytics) return {};
 
@@ -134,11 +136,7 @@ const setupAnalytics = (
   }
 };
 
-const createLLMClient = (
-  model: string,
-  options: ModelOptions,
-  provider?: "openai" | "upstash" | "custom"
-) => {
+const createLLMClient = (model: string, options: ModelOptions, provider?: Providers) => {
   const apiKey = options.apiKey ?? process.env.OPENAI_API_KEY ?? "";
   const providerBaseUrl = options.baseUrl;
   if (!apiKey) {
@@ -155,7 +153,6 @@ const createLLMClient = (
     streamUsage: provider !== "upstash",
     temperature: 0,
     ...restOptions,
-
     apiKey,
     configuration: {
       baseURL: analyticsSetup.baseURL ?? providerBaseUrl,
@@ -186,4 +183,36 @@ export const custom = (model: string, options: ModelOptions) => {
 
 export const openai = (model: OpenAIChatModel, options?: Omit<ModelOptions, "baseUrl">) => {
   return createLLMClient(model, { ...options, baseUrl: "https://api.openai.com/v1" }, "openai");
+};
+
+// eslint-disable-next-line @typescript-eslint/ban-types
+type OllamaModels = (typeof OLLAMA_MODELS)[number] | (string & {});
+
+type OllamaModelResult = {
+  models: {
+    name: string;
+  }[];
+};
+
+const DEFAULT_OLLAMA_PORT = 11_434;
+export const ollama = (
+  model: OllamaModels,
+  options?: Omit<ModelOptions, "baseUrl"> & { port?: number }
+) => {
+  const baseUrl = `http://localhost:${options?.port ?? DEFAULT_OLLAMA_PORT}`;
+
+  fetch(`${baseUrl}/api/tags`)
+    .then((response) => response.json())
+    .then((data: unknown) => {
+      const modelExists = (data as OllamaModelResult).models.some((m) => m.name.includes(model));
+      if (!modelExists) {
+        console.error(`Model not found. Please pull the model before running.
+            Run: ollama pull ${model}`);
+      }
+    })
+    .catch((error: unknown) => {
+      console.error("Error checking model availability:", error);
+    });
+
+  return createLLMClient(model, { ...options, baseUrl: `${baseUrl}/v1` }, "ollama");
 };
