@@ -1,20 +1,30 @@
 import { UpstashError } from "./error/model";
 
+import { traceable } from "langsmith/traceable";
 import { Config } from "./config";
-import { DEFAULT_NAMESPACE, DEFAULT_PROMPT_WITHOUT_RAG } from "./constants";
+import {
+  DEFAULT_CHAT_RATELIMIT_SESSION_ID,
+  DEFAULT_CHAT_SESSION_ID,
+  DEFAULT_HISTORY_LENGTH,
+  DEFAULT_HISTORY_TTL,
+  DEFAULT_NAMESPACE,
+  DEFAULT_PROMPT_WITHOUT_RAG,
+  DEFAULT_SIMILARITY_THRESHOLD,
+  DEFAULT_TOP_K,
+} from "./constants";
 import { ContextService } from "./context-service";
 import { Database } from "./database";
 import { RatelimitUpstashError } from "./error";
 import { UpstashVectorError } from "./error/vector";
 import { HistoryService } from "./history-service";
+import type { InMemoryHistory } from "./history-service/in-memory-history";
+import type { UpstashRedisHistory } from "./history-service/redis-custom-history";
 import { LLMService } from "./llm-service";
 import { ChatLogger } from "./logger";
 import { RateLimitService } from "./ratelimit-service";
 import type { ChatOptions, RAGChatConfig } from "./types";
 import type { ModifiedChatOptions } from "./utils";
-import { appendDefaultsIfNeeded, sanitizeQuestion } from "./utils";
-import type { InMemoryHistory } from "./history-service/in-memory-history";
-import type { UpstashRedisHistory } from "./history-service/redis-custom-history";
+import { sanitizeQuestion } from "./utils";
 
 export type PromptParameters = { chatHistory?: string; question: string; context: string };
 
@@ -79,104 +89,135 @@ export class RAGChat {
     input: string,
     options?: TChatOptions
   ): Promise<ChatReturnType<TMetadata[], TChatOptions>> {
-    try {
-      const optionsWithDefault = this.getOptionsWithDefaults(options);
+    return traceable(
+      async (input: string, options?: TChatOptions) => {
+        try {
+          const optionsWithDefault = this.getOptionsWithDefaults(options);
 
-      await this.checkRatelimit(optionsWithDefault);
+          // Checks ratelimit of the user. If not enabled `success` will be always true.
+          await this.checkRatelimit(optionsWithDefault);
 
-      const question = sanitizeQuestion(input);
-      const { formattedContext: context, metadata } = await this.context._getContext<TMetadata>(
-        optionsWithDefault,
-        input,
-        this.debug
-      );
+          // Sanitizes the given input by stripping all the newline chars.
+          const question = sanitizeQuestion(input);
+          const { formattedContext: context, metadata } = await this.context._getContext<TMetadata>(
+            optionsWithDefault,
+            input,
+            this.debug
+          )(optionsWithDefault.sessionId);
 
-      const formattedHistory = await this.getChatHistory(optionsWithDefault);
+          const formattedHistory = await this.getChatHistory(optionsWithDefault);
 
-      const prompt = await this.generatePrompt(
-        optionsWithDefault,
-        context,
-        question,
-        formattedHistory
-      );
+          const prompt = await this.generatePrompt(
+            optionsWithDefault,
+            context,
+            question,
+            formattedHistory
+          );
 
-      const llmResult = await this.llm.callLLM<TChatOptions>(
-        optionsWithDefault,
-        prompt,
-        options,
-        {
-          onChunk: optionsWithDefault.onChunk,
-          onComplete: async (output) => {
-            await this.debug?.endLLMResponse(output);
-            if (!optionsWithDefault.disableHistory) {
-              await this.addAssistantMessageToHistory(output, optionsWithDefault);
-            }
-          },
-        },
-        this.debug
-      );
+          //   Either calls streaming or non-streaming function from RAGChatBase. Streaming function returns AsyncIterator and allows callbacks like onComplete.
+          const llmResult = await this.llm.callLLM<TChatOptions>(
+            optionsWithDefault,
+            options,
+            {
+              onChunk: optionsWithDefault.onChunk,
+              onComplete: async (output) => {
+                await this.debug?.endLLMResponse(output);
+                if (!optionsWithDefault.disableHistory) {
+                  await this.addAssistantMessageToHistory(output, optionsWithDefault);
+                }
+              },
+            },
+            this.debug
+          )(prompt);
 
-      if (!optionsWithDefault.disableHistory) {
-        await this.addUserMessageToHistory(input, optionsWithDefault);
+          if (!optionsWithDefault.disableHistory) {
+            await this.addUserMessageToHistory(input, optionsWithDefault);
+          }
+
+          return {
+            ...llmResult,
+            metadata,
+          };
+        } catch (error) {
+          await this.debug?.logError(error as Error);
+          throw error;
+        }
+      },
+      {
+        name: "Rag Chat",
+        ...(global.globalTracer === undefined
+          ? { tracingEnabled: false, client: undefined }
+          : { client: global.globalTracer, tracingEnabled: true }),
+        project_name: "Upstash Rag Chat",
+        tags: [options?.streaming ? "streaming" : "non-streaming"],
+        metadata: this.getOptionsWithDefaults(options),
       }
-
-      return {
-        ...llmResult,
-        metadata,
-      };
-    } catch (error) {
-      await this.debug?.logError(error as Error);
-      throw error;
-    }
+    )(input, options);
   }
 
-  private async generatePrompt(
+  private generatePrompt(
     optionsWithDefault: ModifiedChatOptions,
     context: string,
     question: string,
     formattedHistory: string
   ) {
-    const prompt = optionsWithDefault.promptFn({
-      context,
-      question,
-      chatHistory: formattedHistory,
-    });
-    await this.debug?.logFinalPrompt(prompt);
-    return prompt;
+    return traceable(
+      async (
+        optionsWithDefault: ModifiedChatOptions,
+        context: string,
+        question: string,
+        formattedHistory: string
+      ) => {
+        const prompt = optionsWithDefault.promptFn({
+          context,
+          question,
+          chatHistory: formattedHistory,
+        });
+        await this.debug?.logFinalPrompt(prompt);
+        return prompt;
+      },
+      { name: "Final Prompt", run_type: "prompt" }
+    )(optionsWithDefault, context, question, formattedHistory);
   }
 
-  private async getChatHistory(optionsWithDefault: ModifiedChatOptions): Promise<string> {
-    if (optionsWithDefault.disableHistory) {
-      await this.debug?.logRetrieveFormatHistory("History disabled, returning empty history");
-      return "";
-    }
+  private async getChatHistory(_optionsWithDefault: ModifiedChatOptions) {
+    return traceable(
+      async (optionsWithDefault: ModifiedChatOptions) => {
+        if (optionsWithDefault.disableHistory) {
+          await this.debug?.logRetrieveFormatHistory("History disabled, returning empty history");
+          return "";
+        }
+        this.debug?.startRetrieveHistory();
+        // Gets the chat history from redis or in-memory store.
+        const originalChatHistory = await this.history.getMessages({
+          sessionId: optionsWithDefault.sessionId,
+          amount: optionsWithDefault.historyLength,
+        });
+        const clonedChatHistory = structuredClone(originalChatHistory);
+        const modifiedChatHistory =
+          (await optionsWithDefault.onChatHistoryFetched?.(clonedChatHistory)) ??
+          originalChatHistory;
+        await this.debug?.endRetrieveHistory(clonedChatHistory);
 
-    this.debug?.startRetrieveHistory();
-
-    // Gets the chat history from redis or in-memory store.
-    const originalChatHistory = await this.history.getMessages({
-      sessionId: optionsWithDefault.sessionId,
-      amount: optionsWithDefault.historyLength,
-    });
-
-    const clonedChatHistory = structuredClone(originalChatHistory);
-    const modifiedChatHistory =
-      (await optionsWithDefault.onChatHistoryFetched?.(clonedChatHistory)) ?? originalChatHistory;
-
-    await this.debug?.endRetrieveHistory(clonedChatHistory);
-
-    // Formats the chat history for better accuracy when querying LLM
-    const formattedHistory = modifiedChatHistory
-      .reverse()
-      .map((message) => {
-        return message.role === "user"
-          ? `USER MESSAGE: ${message.content}`
-          : `YOUR MESSAGE: ${message.content}`;
-      })
-      .join("\n");
-
-    await this.debug?.logRetrieveFormatHistory(formattedHistory);
-    return formattedHistory;
+        // Formats the chat history for better accuracy when querying LLM
+        const formattedHistory = modifiedChatHistory
+          .reverse()
+          .map((message) => {
+            return message.role === "user"
+              ? `USER MESSAGE: ${message.content}`
+              : `YOUR MESSAGE: ${message.content}`;
+          })
+          .join("\n");
+        await this.debug?.logRetrieveFormatHistory(formattedHistory);
+        return formattedHistory;
+      },
+      {
+        name: "Retrieve History",
+        tags: [this.config.redis === undefined ? "in-memory" : "redis"],
+        metadata: { sessionId: _optionsWithDefault.sessionId },
+        run_type: "retriever",
+      }
+    )(_optionsWithDefault);
   }
 
   private async addUserMessageToHistory(input: string, optionsWithDefault: ModifiedChatOptions) {
@@ -216,16 +257,29 @@ export class RAGChat {
 
   private getOptionsWithDefaults(options?: ChatOptions): ModifiedChatOptions {
     const isRagDisabledAndPromptFunctionMissing = options?.disableRAG && !options.promptFn;
-    return appendDefaultsIfNeeded({
-      ...options,
+
+    return {
+      onChatHistoryFetched: options?.onChatHistoryFetched,
+      onContextFetched: options?.onContextFetched,
+      onChunk: options?.onChunk,
+      ratelimitDetails: options?.ratelimitDetails,
       metadata: options?.metadata ?? this.config.metadata,
-      namespace: options?.namespace ?? this.config.namespace,
-      streaming: options?.streaming ?? this.config.streaming,
-      sessionId: options?.sessionId ?? this.config.sessionId,
-      ratelimitSessionId: options?.ratelimitSessionId ?? this.config.ratelimitSessionId,
+      namespace: options?.namespace ?? this.config.namespace ?? DEFAULT_NAMESPACE,
+      streaming: options?.streaming ?? this.config.streaming ?? false,
+      sessionId: options?.sessionId ?? this.config.sessionId ?? DEFAULT_CHAT_SESSION_ID,
+      disableRAG: options?.disableRAG ?? false,
+      disableHistory: options?.disableHistory ?? false,
+      similarityThreshold: options?.similarityThreshold ?? DEFAULT_SIMILARITY_THRESHOLD,
+      topK: options?.topK ?? DEFAULT_TOP_K,
+      historyLength: options?.historyLength ?? DEFAULT_HISTORY_LENGTH,
+      historyTTL: options?.historyTTL ?? DEFAULT_HISTORY_TTL,
+      ratelimitSessionId:
+        options?.ratelimitSessionId ??
+        this.config.ratelimitSessionId ??
+        DEFAULT_CHAT_RATELIMIT_SESSION_ID,
       promptFn: isRagDisabledAndPromptFunctionMissing
         ? DEFAULT_PROMPT_WITHOUT_RAG
         : (options?.promptFn ?? this.config.prompt),
-    });
+    };
   }
 }
