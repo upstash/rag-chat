@@ -9,7 +9,7 @@ Features:
 - Built-in Vector store for your knowledge base
 - (Optional) built-in Redis compatibility for fast chat history management
 - (Optional) built-in rate limiting
-- (Optional) disableRag option to use it as LLM + chat history
+- (Optional) `disableRag` option to use it as LLM + chat history
 
 ## Getting started
 
