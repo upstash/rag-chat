@@ -5,7 +5,17 @@ import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import { Index } from "@upstash/vector";
 import { LangChainAdapter, StreamingTextResponse } from "ai";
-import { afterAll, afterEach, beforeAll, describe, expect, test } from "bun:test";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  test,
+  spyOn,
+} from "bun:test";
+import type { Mock } from "bun:test";
 import { RatelimitUpstashError } from "./error";
 import { custom, upstash } from "./models";
 import { RAGChat } from "./rag-chat";
@@ -27,6 +37,7 @@ async function checkStream(
 }
 
 describe("RAG Chat with advance configs and direct instances", () => {
+  const namespace = "advanced";
   const vector = new Index({
     token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
     url: process.env.UPSTASH_VECTOR_REST_URL!,
@@ -41,6 +52,7 @@ describe("RAG Chat with advance configs and direct instances", () => {
       apiKey: process.env.OPENAI_API_KEY,
     }),
     vector,
+    namespace,
     redis: new Redis({
       token: process.env.UPSTASH_REDIS_REST_TOKEN!,
       url: process.env.UPSTASH_REDIS_REST_URL!,
@@ -51,11 +63,15 @@ describe("RAG Chat with advance configs and direct instances", () => {
     await ragChat.context.add({
       type: "text",
       data: "Paris, the capital of France, is renowned for its iconic landmark, the Eiffel Tower, which was completed in 1889 and stands at 330 meters tall.",
+      options: { namespace },
     });
     await awaitUntilIndexed(vector);
   });
 
-  afterAll(async () => await vector.reset());
+  afterAll(async () => {
+    await vector.reset({ namespace });
+    await vector.deleteNamespace(namespace);
+  });
 
   test("should get result without streaming", async () => {
     const result = await ragChat.chat(
@@ -77,6 +93,7 @@ describe("RAG Chat with advance configs and direct instances", () => {
 });
 
 describe("RAG Chat with ratelimit", () => {
+  const namespace = "ratelimit";
   const redis = new Redis({
     token: process.env.UPSTASH_REDIS_REST_TOKEN!,
     url: process.env.UPSTASH_REDIS_REST_URL!,
@@ -96,6 +113,7 @@ describe("RAG Chat with ratelimit", () => {
     }),
     vector,
     redis,
+    namespace,
     ratelimit: new Ratelimit({
       redis,
       limiter: Ratelimit.tokenBucket(1, "1d", 1),
@@ -105,7 +123,8 @@ describe("RAG Chat with ratelimit", () => {
 
   afterAll(async () => {
     await redis.flushdb();
-    await vector.reset();
+    await vector.reset({ namespace });
+    await vector.deleteNamespace(namespace);
   });
 
   test(
@@ -116,6 +135,7 @@ describe("RAG Chat with ratelimit", () => {
       await ragChat.context.add({
         type: "text",
         data: "Paris, the capital of France, is renowned for its iconic landmark, the Eiffel Tower, which was completed in 1889 and stands at 330 meters tall.",
+        options: { namespace },
       });
       await awaitUntilIndexed(vector);
       await ragChat.chat(
@@ -140,12 +160,14 @@ describe("RAG Chat with ratelimit", () => {
 });
 
 describe("RAG Chat with custom template", () => {
+  const namespace = "custom-template";
   const vector = new Index({
     token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
     url: process.env.UPSTASH_VECTOR_REST_URL!,
   });
   const ragChat = new RAGChat({
     vector,
+    namespace,
     redis: new Redis({
       token: process.env.UPSTASH_REDIS_REST_TOKEN!,
       url: process.env.UPSTASH_REDIS_REST_URL!,
@@ -160,12 +182,18 @@ describe("RAG Chat with custom template", () => {
     }),
   });
 
+  afterAll(async () => {
+    await vector.reset({ namespace });
+    await vector.deleteNamespace(namespace);
+  });
+
   test(
     "should get result without streaming",
     async () => {
       await ragChat.context.add({
         type: "text",
         data: "Ankara is the capital of Turkiye.",
+        options: { namespace },
       });
 
       await awaitUntilIndexed(vector);
@@ -181,6 +209,7 @@ describe("RAG Chat with custom template", () => {
 });
 
 describe("RAG Chat addContext using PDF", () => {
+  const namespace = "pdf";
   const vector = new Index({
     token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
     url: process.env.UPSTASH_VECTOR_REST_URL!,
@@ -192,6 +221,7 @@ describe("RAG Chat addContext using PDF", () => {
   const ragChat = new RAGChat({
     redis,
     vector,
+    namespace,
     model: new ChatOpenAI({
       modelName: "gpt-3.5-turbo",
       streaming: false,
@@ -202,7 +232,9 @@ describe("RAG Chat addContext using PDF", () => {
   });
 
   afterAll(async () => {
-    await vector.reset();
+    await redis.flushdb();
+    await vector.reset({ namespace });
+    await vector.deleteNamespace(namespace);
   });
 
   test(
@@ -212,6 +244,7 @@ describe("RAG Chat addContext using PDF", () => {
         type: "pdf",
         fileSource: "./data/the_wonderful_wizard_of_oz.pdf",
         config: { chunkSize: 500, chunkOverlap: 50 },
+        options: { namespace },
       });
       await awaitUntilIndexed(vector);
       const result = await ragChat.chat("Whats the author of The Wonderful Wizard of Oz?", {
@@ -224,6 +257,7 @@ describe("RAG Chat addContext using PDF", () => {
 });
 
 describe("RAG Chat without Redis, but In-memory chat history", () => {
+  const namespace = "in-memory";
   const vector = new Index({
     token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
     url: process.env.UPSTASH_VECTOR_REST_URL!,
@@ -238,16 +272,22 @@ describe("RAG Chat without Redis, but In-memory chat history", () => {
       apiKey: process.env.OPENAI_API_KEY,
     }),
     vector,
+    namespace,
   });
 
   afterAll(async () => {
-    await vector.reset();
+    await vector.reset({ namespace });
+    await vector.deleteNamespace(namespace);
   });
 
   test(
     "should reply back using in-memory db",
     async () => {
-      await ragChat.context.add({ data: "Ankara is the capital of Turkiye.", type: "text" });
+      await ragChat.context.add({
+        data: "Ankara is the capital of Turkiye.",
+        type: "text",
+        options: { namespace },
+      });
       await awaitUntilIndexed(vector);
 
       await ragChat.chat("Hello, my name is Oz!", {
@@ -272,128 +312,7 @@ describe("RAG Chat without Redis, but In-memory chat history", () => {
 });
 
 describe("RAG Chat addContext using CSV", () => {
-  const vector = new Index({
-    token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
-    url: process.env.UPSTASH_VECTOR_REST_URL!,
-  });
-
-  const ragChat = new RAGChat({
-    vector,
-    model: new ChatOpenAI({
-      modelName: "gpt-3.5-turbo",
-      streaming: false,
-      verbose: false,
-      temperature: 0,
-      apiKey: process.env.OPENAI_API_KEY,
-    }),
-  });
-
-  afterAll(async () => {
-    await vector.reset();
-  });
-
-  test(
-    "should be able to successfully query csv",
-    async () => {
-      await ragChat.context.add({
-        type: "csv",
-        fileSource: "./data/list_of_user_info.csv",
-      });
-      await awaitUntilIndexed(vector);
-      const result = await ragChat.chat("Whats username of Rachel Booker?", {
-        streaming: false,
-      });
-      expect(result.output).toContain("booker12");
-    },
-    { timeout: 30_000 }
-  );
-});
-
-describe("RAG Chat addContext using text-file", () => {
-  const vector = new Index({
-    token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
-    url: process.env.UPSTASH_VECTOR_REST_URL!,
-  });
-
-  const ragChat = new RAGChat({
-    vector,
-    model: new ChatOpenAI({
-      modelName: "gpt-3.5-turbo",
-      streaming: false,
-      verbose: false,
-      temperature: 0,
-      apiKey: process.env.OPENAI_API_KEY,
-    }),
-  });
-
-  afterAll(async () => {
-    await vector.reset();
-  });
-
-  test(
-    "should be able to successfully query txt file",
-    async () => {
-      await ragChat.context.add({
-        type: "text-file",
-        fileSource: "./data/the_wonderful_wizard_of_oz_summary.txt",
-        config: { chunkSize: 500, chunkOverlap: 50 },
-      });
-      await awaitUntilIndexed(vector);
-
-      const result = await ragChat.chat("Whats the author of The Wonderful Wizard of Oz?", {
-        streaming: false,
-        metadataKey: "text",
-      });
-
-      expect(result.output).toContain("Frank");
-    },
-    { timeout: 30_000 }
-  );
-});
-
-describe("RAG Chat addContext using HTML", () => {
-  const vector = new Index({
-    token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
-    url: process.env.UPSTASH_VECTOR_REST_URL!,
-  });
-
-  const ragChat = new RAGChat({
-    vector,
-    model: new ChatOpenAI({
-      modelName: "gpt-3.5-turbo",
-      streaming: false,
-      verbose: false,
-      temperature: 0,
-      apiKey: process.env.OPENAI_API_KEY,
-    }),
-  });
-
-  afterAll(async () => {
-    await vector.reset();
-  });
-
-  test(
-    "should be able to successfully query html file",
-    async () => {
-      await ragChat.context.add({
-        type: "html",
-        source: "./data/the_wonderful_wizard_of_oz_summary.html",
-      });
-      await awaitUntilIndexed(vector);
-
-      const result = await ragChat.chat("Whats the author of The Wonderful Wizard of Oz?", {
-        streaming: false,
-        metadataKey: "text",
-      });
-
-      expect(result.output).toContain("Frank");
-    },
-    { timeout: 30_000 }
-  );
-});
-
-describe("RAGChat with namespaces", () => {
-  const namespace = "japan";
+  const namespace = "csv";
   const vector = new Index({
     token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
     url: process.env.UPSTASH_VECTOR_REST_URL!,
@@ -413,27 +332,120 @@ describe("RAGChat with namespaces", () => {
 
   afterAll(async () => {
     await vector.reset({ namespace });
+    await vector.deleteNamespace(namespace);
   });
 
   test(
-    "should be able to add context with plain text",
+    "should be able to successfully query csv",
     async () => {
-      await ragChat.context.add("Adana is the capital of Japan.");
+      await ragChat.context.add({
+        type: "csv",
+        fileSource: "./data/list_of_user_info.csv",
+        options: { namespace },
+      });
+      await awaitUntilIndexed(vector);
+      const result = await ragChat.chat("Whats username of Rachel Booker?", {
+        streaming: false,
+      });
+      expect(result.output).toContain("booker12");
+    },
+    { timeout: 30_000 }
+  );
+});
+
+describe("RAG Chat addContext using text-file", () => {
+  const namespace = "text-file";
+  const vector = new Index({
+    token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
+    url: process.env.UPSTASH_VECTOR_REST_URL!,
+  });
+
+  const ragChat = new RAGChat({
+    vector,
+    namespace,
+    model: new ChatOpenAI({
+      modelName: "gpt-3.5-turbo",
+      streaming: false,
+      verbose: false,
+      temperature: 0,
+      apiKey: process.env.OPENAI_API_KEY,
+    }),
+  });
+
+  afterAll(async () => {
+    await vector.reset({ namespace });
+    await vector.deleteNamespace(namespace);
+  });
+
+  test(
+    "should be able to successfully query txt file",
+    async () => {
+      await ragChat.context.add({
+        type: "text-file",
+        fileSource: "./data/the_wonderful_wizard_of_oz_summary.txt",
+        config: { chunkSize: 500, chunkOverlap: 50 },
+        options: { namespace },
+      });
       await awaitUntilIndexed(vector);
 
-      const result = await ragChat.chat("What is the capital of Japan?", {
+      const result = await ragChat.chat("Whats the author of The Wonderful Wizard of Oz?", {
         streaming: false,
         metadataKey: "text",
       });
 
-      expect(result.output).toContain("Adana");
+      expect(result.output).toContain("Frank");
+    },
+    { timeout: 30_000 }
+  );
+});
+
+describe("RAG Chat addContext using HTML", () => {
+  const namespace = "html";
+  const vector = new Index({
+    token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
+    url: process.env.UPSTASH_VECTOR_REST_URL!,
+  });
+
+  const ragChat = new RAGChat({
+    vector,
+    namespace,
+    model: new ChatOpenAI({
+      modelName: "gpt-3.5-turbo",
+      streaming: false,
+      verbose: false,
+      temperature: 0,
+      apiKey: process.env.OPENAI_API_KEY,
+    }),
+  });
+
+  afterAll(async () => {
+    await vector.reset({ namespace });
+    await vector.deleteNamespace(namespace);
+  });
+
+  test(
+    "should be able to successfully query html file",
+    async () => {
+      await ragChat.context.add({
+        type: "html",
+        source: "./data/the_wonderful_wizard_of_oz_summary.html",
+        options: { namespace },
+      });
+      await awaitUntilIndexed(vector);
+
+      const result = await ragChat.chat("Whats the author of The Wonderful Wizard of Oz?", {
+        streaming: false,
+        metadataKey: "text",
+      });
+
+      expect(result.output).toContain("Frank");
     },
     { timeout: 30_000 }
   );
 });
 
 describe("RAGChat init with custom model", () => {
-  const namespace = "japan";
+  const namespace = "custom-model";
   const vector = new Index({
     token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
     url: process.env.UPSTASH_VECTOR_REST_URL!,
@@ -446,6 +458,7 @@ describe("RAGChat init with custom model", () => {
 
   afterAll(async () => {
     await vector.reset({ namespace });
+    await vector.deleteNamespace(namespace);
   });
 
   test(
@@ -481,8 +494,8 @@ describe("RAGChat pass options from constructor", () => {
       chatOptions: { world: "hello" },
     },
     namespace: {
-      constructorInit: "Germany",
-      chatOptions: "Turkiye",
+      constructorInit: "constructor-constructor-init",
+      chatOptions: "constructor-chat-options",
     },
     sessionId: {
       constructorInit: "something",
@@ -542,49 +555,8 @@ describe("RAGChat pass options from constructor", () => {
   });
 });
 
-describe("RAGChat - chat usage with onHistoryFetched hook", () => {
-  const namespace = "japan";
-  const vector = new Index({
-    token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
-    url: process.env.UPSTASH_VECTOR_REST_URL!,
-  });
-
-  const ragChat = new RAGChat({
-    vector,
-    streaming: true,
-    model: upstash("meta-llama/Meta-Llama-3-8B-Instruct"),
-  });
-
-  afterAll(async () => {
-    await vector.reset({ namespace });
-  });
-
-  test(
-    "should be able to insert data into a namespace and query it with onHistoryFetched",
-    async () => {
-      await ragChat.context.add({
-        type: "text",
-        data: "Tokyo is the Capital of Japan.",
-        options: { namespace },
-      });
-      await awaitUntilIndexed(vector);
-
-      let firstHistoryContent = "";
-      await ragChat.chat("Where is the capital of Japan?", {
-        namespace,
-        onChatHistoryFetched(messages) {
-          firstHistoryContent = messages[0].content;
-          return messages;
-        },
-      });
-      expect(firstHistoryContent).toBe("Where is the capital of Japan?");
-    },
-    { timeout: 30_000 }
-  );
-});
-
 describe("RAGChat - chat usage with disabled RAG ", () => {
-  const namespace = "japan";
+  const namespace = "disabled-rag";
   const vector = new Index({
     token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
     url: process.env.UPSTASH_VECTOR_REST_URL!,
@@ -593,6 +565,7 @@ describe("RAGChat - chat usage with disabled RAG ", () => {
 
   const ragChat = new RAGChat({
     vector,
+    namespace,
     streaming: false,
     redis,
     model: custom("meta-llama/Meta-Llama-3-8B-Instruct", {
@@ -601,9 +574,10 @@ describe("RAGChat - chat usage with disabled RAG ", () => {
     }),
   });
 
-  afterEach(async () => {
-    await vector.reset({ namespace });
+  afterAll(async () => {
     await redis.flushdb();
+    await vector.reset({ namespace });
+    await vector.deleteNamespace(namespace);
   });
 
   test(
@@ -698,7 +672,7 @@ describe("RAGChat - chat usage with disabled RAG ", () => {
 });
 
 describe("RAGChat - result metadata", () => {
-  const namespace = "japan-v2";
+  const namespace = "result-metadata";
   const vector = new Index({
     token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
     url: process.env.UPSTASH_VECTOR_REST_URL!,
@@ -706,6 +680,7 @@ describe("RAGChat - result metadata", () => {
 
   const ragChat = new RAGChat({
     vector,
+    namespace,
     streaming: true,
     model: upstash("meta-llama/Meta-Llama-3-8B-Instruct"),
   });
@@ -748,32 +723,40 @@ describe("RAGChat - result metadata", () => {
 });
 
 describe("RAG Chat with Vercel AI SDK", () => {
+  const namespace = "ai-sdk";
+  const sessionId = "ai-sdk-session";
   const vector = new Index({
     token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
     url: process.env.UPSTASH_VECTOR_REST_URL!,
   });
 
+  const redis = new Redis({
+    token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+    url: process.env.UPSTASH_REDIS_REST_URL!,
+  });
+
   const ragChat = new RAGChat({
     model: openai("gpt-3.5-turbo"),
     vector,
-    redis: new Redis({
-      token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-      url: process.env.UPSTASH_REDIS_REST_URL!,
-    }),
-    sessionId: "ai-sdk-session",
-    namespace: "ai-sdk",
+    namespace,
+    redis,
+    sessionId,
   });
 
   beforeAll(async () => {
     await ragChat.context.add({
       type: "text",
       data: "Paris, the capital of France, is renowned for its iconic landmark, the Eiffel Tower, which was completed in 1889 and stands at 330 meters tall.",
-      options: { namespace: "ai-sdk" },
+      options: { namespace },
     });
     await awaitUntilIndexed(vector);
   });
 
-  afterAll(async () => await vector.reset());
+  afterAll(async () => {
+    await vector.reset({ namespace });
+    await vector.deleteNamespace(namespace);
+    await redis.flushdb();
+  });
 
   test("should get result without streaming", async () => {
     const result = await ragChat.chat(
@@ -791,5 +774,144 @@ describe("RAG Chat with Vercel AI SDK", () => {
       }
     );
     await checkStream(streamResult.output, ["330"]);
+  });
+});
+
+describe("RAG Chat with disableHistory option", () => {
+  const namespace = "disable-history";
+  const vector = new Index({
+    token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
+    url: process.env.UPSTASH_VECTOR_REST_URL!,
+  });
+
+  const redis = new Redis({
+    token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+    url: process.env.UPSTASH_REDIS_REST_URL!,
+  });
+
+  const ragChat = new RAGChat({
+    model: new ChatOpenAI({
+      modelName: "gpt-3.5-turbo",
+      streaming: false,
+      verbose: false,
+      temperature: 0,
+      apiKey: process.env.OPENAI_API_KEY,
+    }),
+    vector,
+    redis,
+    namespace,
+  });
+
+  const testSessionId = "test-disable-history-session";
+  let getMessagesSpy: Mock<typeof ragChat.history.getMessages>;
+
+  beforeAll(async () => {
+    await ragChat.context.add({
+      type: "text",
+      data: "The capital of France is Paris.",
+      options: { namespace },
+    });
+    await awaitUntilIndexed(vector);
+  });
+
+  beforeEach(() => {
+    getMessagesSpy = spyOn(ragChat.history, "getMessages");
+  });
+
+  afterEach(() => {
+    getMessagesSpy.mockRestore();
+  });
+
+  afterAll(async () => {
+    await vector.reset({ namespace });
+    await vector.deleteNamespace(namespace);
+    await redis.flushdb();
+  });
+
+  test("should not store chat history when disableHistory is true", async () => {
+    const question = "What is the capital of France?";
+    await ragChat.chat(question, {
+      streaming: false,
+      sessionId: testSessionId,
+      disableHistory: true,
+    });
+
+    const history = await ragChat.history.getMessages({ sessionId: testSessionId });
+    expect(history.length).toBe(0);
+  });
+
+  test("should store chat history when disableHistory is false", async () => {
+    const question = "What is the capital of France?";
+    await ragChat.chat(question, {
+      streaming: false,
+      sessionId: testSessionId,
+      disableHistory: false,
+    });
+
+    const history = await ragChat.history.getMessages({ sessionId: testSessionId });
+    expect(history.length).toBeGreaterThan(0);
+    expect([history[0].content, history[1].content]).toContain(question);
+  });
+
+  test("should not affect context retrieval when disableHistory is true", async () => {
+    const question = "What is the capital of France?";
+    const result = await ragChat.chat(question, {
+      streaming: false,
+      disableHistory: true,
+    });
+
+    expect(result.output.toLowerCase()).toContain("paris");
+  });
+
+  test("should work correctly with multiple sequential chats and varying disableHistory", async () => {
+    const sessionId = "multi-chat-session";
+
+    // First chat with disableHistory true
+    await ragChat.chat("What is the capital of France?", {
+      streaming: false,
+      sessionId,
+      disableHistory: true,
+    });
+
+    // Second chat with disableHistory false
+    await ragChat.chat("What is the capital of Italy?", {
+      streaming: false,
+      sessionId,
+      disableHistory: false,
+    });
+
+    // Third chat with disableHistory true
+    await ragChat.chat("What is the capital of Germany?", {
+      streaming: false,
+      sessionId,
+      disableHistory: true,
+    });
+
+    const history = await ragChat.history.getMessages({ sessionId });
+    const expectedHistoryLength = 2; // Only the assistant and user message of the second chat should be stored
+    expect(history.length).toBe(expectedHistoryLength);
+    expect([history[0].content, history[1].content]).toContain("What is the capital of Italy?");
+  });
+
+  test("should not call Redis when disableHistory is true", async () => {
+    const question = "What is the capital of France?";
+    await ragChat.chat(question, {
+      streaming: false,
+      sessionId: testSessionId,
+      disableHistory: true,
+    });
+
+    expect(getMessagesSpy).not.toHaveBeenCalled();
+  });
+
+  test("should call Redis when disableHistory is false", async () => {
+    const question = "What is the capital of France?";
+    await ragChat.chat(question, {
+      streaming: false,
+      sessionId: testSessionId,
+      disableHistory: false,
+    });
+
+    expect(getMessagesSpy).toHaveBeenCalled();
   });
 });
