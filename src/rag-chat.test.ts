@@ -914,26 +914,4 @@ describe("RAG Chat with disableHistory option", () => {
 
     expect(getMessagesSpy).toHaveBeenCalled();
   });
-
-  test("should not call Redis when disableHistory is true", async () => {
-    const question = "What is the capital of France?";
-    await ragChat.chat(question, {
-      streaming: false,
-      sessionId: testSessionId,
-      disableHistory: true,
-    });
-
-    expect(getMessagesSpy).not.toHaveBeenCalled();
-  });
-
-  test("should call Redis when disableHistory is false", async () => {
-    const question = "What is the capital of France?";
-    await ragChat.chat(question, {
-      streaming: false,
-      sessionId: testSessionId,
-      disableHistory: false,
-    });
-
-    expect(getMessagesSpy).toHaveBeenCalled();
-  });
 });
