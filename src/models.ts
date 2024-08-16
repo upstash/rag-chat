@@ -116,6 +116,15 @@ const setupAnalytics = (
             },
           };
         }
+        case "anthropic": {
+          return {
+            baseURL: "https://anthropic.helicone.ai",
+            defaultHeaders: {
+              "Helicone-Auth": `Bearer ${analytics.token}`,
+              Authorization: `Bearer ${providerApiKey}`,
+            },
+          };
+        }
         default: {
           return {
             baseURL: "https://gateway.helicone.ai",
