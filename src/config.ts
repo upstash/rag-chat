@@ -6,6 +6,9 @@ import { DEFAULT_PROMPT } from "./constants";
 import { upstash, openai } from "./models";
 import type { RAGChatConfig, UpstashDict, OpenAIChatLanguageModel } from "./types";
 import type { CustomPrompt } from "./rag-chat";
+import type { ChatAnthropic } from "@langchain/anthropic";
+import type { ChatOpenAI } from "@langchain/openai";
+import type { ChatMistralAI } from "@langchain/mistralai";
 
 export class Config {
   public readonly vector?: Index;
@@ -15,7 +18,12 @@ export class Config {
   public readonly ratelimit?: Ratelimit;
   public readonly ratelimitSessionId?: string;
 
-  public readonly model?: BaseLanguageModelInterface | OpenAIChatLanguageModel;
+  public readonly model?:
+    | BaseLanguageModelInterface
+    | ChatOpenAI
+    | ChatMistralAI
+    | OpenAIChatLanguageModel
+    | ChatAnthropic;
   public readonly prompt: CustomPrompt;
   public readonly streaming?: boolean;
   public readonly namespace?: string;

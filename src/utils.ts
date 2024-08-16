@@ -2,6 +2,7 @@ import type { BaseMessage } from "@langchain/core/messages";
 import type { BaseLanguageModelInterface } from "@langchain/core/language_models/base";
 import type { CustomPrompt } from "./rag-chat";
 import type { ChatOptions, OpenAIChatLanguageModel } from "./types";
+import { ChatAnthropic } from "@langchain/anthropic";
 
 export const sanitizeQuestion = (question: string) => {
   return question.trim().replaceAll("\n", " ");
@@ -43,7 +44,16 @@ export function delay(ms = DEFAULT_DELAY): Promise<void> {
 }
 
 export function isOpenAIChatLanguageModel(
-  model: BaseLanguageModelInterface | OpenAIChatLanguageModel
+  model: BaseLanguageModelInterface | OpenAIChatLanguageModel | ChatAnthropic
 ): model is OpenAIChatLanguageModel {
-  return Object.prototype.hasOwnProperty.call(model, "specificationVersion");
+  return (
+    Object.prototype.hasOwnProperty.call(model, "specificationVersion") &&
+    !isAnthropicChatLanguageModel(model)
+  );
+}
+
+export function isAnthropicChatLanguageModel(
+  model: BaseLanguageModelInterface | OpenAIChatLanguageModel | ChatAnthropic
+): model is ChatAnthropic {
+  return model instanceof ChatAnthropic;
 }

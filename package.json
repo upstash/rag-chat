@@ -59,7 +59,9 @@
     "vitest": "latest"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^0.0.42",
     "@ai-sdk/openai": "^0.0.44",
+    "@langchain/anthropic": "^0.2.15",
     "@langchain/community": "^0.2.13",
     "@langchain/core": "^0.2.9",
     "@upstash/vector": "^1.1.3",

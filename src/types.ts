@@ -1,10 +1,13 @@
 import type { ChatOpenAI } from "@langchain/openai";
 import type { openai } from "@ai-sdk/openai";
+import type { anthropic } from "@ai-sdk/anthropic";
 import type { Ratelimit } from "@upstash/ratelimit";
 import type { Redis } from "@upstash/redis";
 import type { Index } from "@upstash/vector";
 import type { CustomPrompt } from "./rag-chat";
 import type { ChatMistralAI } from "@langchain/mistralai";
+import type { BaseLanguageModelInterface } from "@langchain/core/language_models/base";
+import type { ChatAnthropicMessages } from "@langchain/anthropic";
 
 declare const __brand: unique symbol;
 type Brand<B> = { [__brand]: B };
@@ -90,7 +93,12 @@ export type RAGChatConfig = {
   */
 
   // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
-  model?: ChatOpenAI | ChatMistralAI | OpenAIChatLanguageModel;
+  model?:
+    | BaseLanguageModelInterface
+    | ChatOpenAI
+    | ChatMistralAI
+    | OpenAIChatLanguageModel
+    | ChatAnthropicMessages;
   /**
      * Ratelimit instance
      * @example new Ratelimit({
@@ -181,3 +189,5 @@ export type UpstashMessage<TMetadata extends UpstashDict = UpstashDict> = {
 };
 
 export type OpenAIChatLanguageModel = ReturnType<typeof openai>;
+
+export type ChatAnthropic = ReturnType<typeof anthropic>;

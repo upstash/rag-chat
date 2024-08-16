@@ -7,7 +7,7 @@ import { Index } from "@upstash/vector";
 import { LangChainAdapter, StreamingTextResponse } from "ai";
 import { afterAll, afterEach, beforeAll, describe, expect, test } from "bun:test";
 import { RatelimitUpstashError } from "./error";
-import { custom, upstash } from "./models";
+import { anthropic, custom, upstash } from "./models";
 import { RAGChat } from "./rag-chat";
 import { awaitUntilIndexed } from "./test-utils";
 
@@ -792,4 +792,81 @@ describe("RAG Chat with Vercel AI SDK", () => {
     );
     await checkStream(streamResult.output, ["330"]);
   });
+});
+
+describe("RAG Chat with Anthropic model", () => {
+  const namespace = "anthropic-test";
+  const vector = new Index({
+    token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
+    url: process.env.UPSTASH_VECTOR_REST_URL!,
+  });
+
+  const ragChat = new RAGChat({
+    vector,
+    model: anthropic("claude-3-opus-20240229"),
+    namespace,
+  });
+
+  beforeAll(async () => {
+    await ragChat.context.add({
+      type: "text",
+      data: "The Eiffel Tower, located in Paris, France, was completed in 1889 and stands at a height of 330 meters.",
+      options: { namespace },
+    });
+    await awaitUntilIndexed(vector);
+  });
+
+  afterAll(async () => {
+    await vector.reset({ namespace });
+  });
+
+  test(
+    "should get result without streaming",
+    async () => {
+      const result = await ragChat.chat(
+        "What year was the Eiffel Tower completed and how tall is it?",
+        { streaming: false, namespace }
+      );
+
+      // Direct assertions on the result.output
+      expect(typeof result.output).toBe("string");
+      expect(result.output).toMatch(/\b1889\b/);
+      expect(result.output).toMatch(/\b330\b/);
+      expect(result.output).toMatch(/\bmeter(s)?\b/i);
+    },
+    { timeout: 30_000 }
+  );
+
+  test("should get result with streaming", async () => {
+    const streamResult = await ragChat.chat(
+      "What year was the construction of the Eiffel Tower completed, and what is its height?",
+      {
+        streaming: true,
+      }
+    );
+    await checkStream(streamResult.output, ["330"]);
+  });
+
+  test(
+    "should work with custom prompt",
+    async () => {
+      const customPromptResult = await ragChat.chat("Tell me about the Eiffel Tower", {
+        streaming: false,
+        namespace,
+        promptFn: ({ context, question }) => `
+        Based on the following context, answer the question in the style of an excited tour guide:
+        Context: ${context}
+        Question: ${question}
+      `,
+      });
+      expect(customPromptResult.output).toMatch(/!/); // Check for exclamation marks
+      expect(customPromptResult.output).toMatch(
+        /\b(wow|amazing|incredible|fantastic|thrilling)\b/i
+      ); // Check for enthusiastic words
+      expect(customPromptResult.output).toMatch(/\b1889\b/);
+      expect(customPromptResult.output).toMatch(/\b330\b/);
+      expect(customPromptResult.output).toMatch(/\bmeter(s)?\b/i);
+    },
+    { timeout: 30_000 }
+  );
 });
