@@ -257,11 +257,17 @@ export const mistralai = (model: string, options?: Omit<ModelOptions, "baseUrl">
 
 export const anthropic = (
   model: string,
-  options?: Omit<ModelOptions, "baseUrl">
+  options?: Omit<ModelOptions, "baseUrl"> & { apiKey?: string }
 ): ChatAnthropic => {
+  const apiKey = options?.apiKey ?? process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    throw new Error(
+      "API key is required. Provide it in options or set ANTHROPIC_API_KEY environment variable."
+    );
+  }
   return new ChatAnthropic({
     modelName: model,
-    anthropicApiKey: process.env.ANTHROPIC_API_KEY,
+    anthropicApiKey: apiKey,
     ...options,
   });
 };
