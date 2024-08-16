@@ -3,6 +3,7 @@ import { ChatOpenAI } from "@langchain/openai";
 import { Client as LangsmithClient } from "langsmith";
 import type { OLLAMA_MODELS } from "./constants";
 import { ChatMistralAI } from "@langchain/mistralai";
+import { ChatAnthropic } from "@langchain/anthropic";
 
 // Initialize global Langsmith tracer
 // We use a global variable because:
@@ -70,7 +71,8 @@ type Providers =
   | "groq"
   | "togetherai"
   | "openrouter"
-  | "mistral";
+  | "mistral"
+  | "anthropic";
 type AnalyticsConfig =
   | { name: "helicone"; token: string }
   | { name: "langsmith"; token: string; apiUrl?: string };
@@ -108,6 +110,15 @@ const setupAnalytics = (
         case "upstash": {
           return {
             baseURL: "https://qstash.helicone.ai/llm/v1",
+            defaultHeaders: {
+              "Helicone-Auth": `Bearer ${analytics.token}`,
+              Authorization: `Bearer ${providerApiKey}`,
+            },
+          };
+        }
+        case "anthropic": {
+          return {
+            baseURL: "https://anthropic.helicone.ai",
             defaultHeaders: {
               "Helicone-Auth": `Bearer ${analytics.token}`,
               Authorization: `Bearer ${providerApiKey}`,
@@ -251,4 +262,34 @@ export const mistralai = (model: string, options?: Omit<ModelOptions, "baseUrl">
     model,
     ...options,
   });
+};
+
+const createAnthropicClient = (model: string, options: ModelOptions) => {
+  const apiKey = options.apiKey ?? process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    throw new Error(
+      "API key is required. Provide it in options or set ANTHROPIC_API_KEY environment variable."
+    );
+  }
+
+  const { analytics, ...restOptions } = options;
+  const analyticsSetup = setupAnalytics(analytics, apiKey, undefined, "anthropic");
+
+  return new ChatAnthropic({
+    modelName: model,
+    anthropicApiKey: apiKey,
+    ...restOptions,
+    clientOptions: {
+      baseURL: analyticsSetup.baseURL,
+      ...(analyticsSetup.defaultHeaders && { defaultHeaders: analyticsSetup.defaultHeaders }),
+      ...restOptions,
+    },
+  });
+};
+
+export const anthropic = (
+  model: string,
+  options?: Omit<ModelOptions, "baseUrl"> & { apiKey?: string }
+) => {
+  return createAnthropicClient(model, { ...options, baseUrl: "https://api.anthropic.com" });
 };

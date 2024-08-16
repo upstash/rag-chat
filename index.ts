@@ -7,3 +7,4 @@ export * from "./src/types";
 export * from "./src/models";
 export { MODEL_NAME_WITH_PROVIDER_SPLITTER } from "./src/constants";
 export { ChatOpenAI } from "@langchain/openai";
+export { ChatAnthropic } from "@langchain/anthropic";

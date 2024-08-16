@@ -1,7 +1,8 @@
 import { afterAll, describe, expect, test } from "bun:test";
 import { Client } from "langsmith";
-import { custom, openai, upstash } from "./models";
+import { anthropic, custom, openai, upstash } from "./models";
 import { RAGChat } from "./rag-chat";
+import { ChatAnthropic } from "@langchain/anthropic";
 
 const originalEnvironment = { ...process.env };
 
@@ -79,6 +80,20 @@ describe("Model inits", () => {
         expect(client[key]).toEqual(value);
       }
     }
+  });
+
+  test("Anthropic client configuration with Helicone", () => {
+    const client = anthropic("claude-3-opus-20240229", {
+      apiKey: "mock-anthropic-api-key",
+      analytics: { name: "helicone", token: "mock-helicone-token" },
+    });
+
+    expect(client).toBeInstanceOf(ChatAnthropic);
+    expect(client.clientOptions.baseURL).toBe("https://anthropic.helicone.ai");
+    expect(client.clientOptions.defaultHeaders).toEqual({
+      "Helicone-Auth": "Bearer mock-helicone-token",
+      "x-api-key": "mock-anthropic-api-key",
+    });
   });
 
   test("Upstash client configuration", () => {

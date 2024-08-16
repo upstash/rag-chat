@@ -6,6 +6,7 @@ import { type ModifiedChatOptions, isOpenAIChatLanguageModel } from "./utils";
 import type { ChatLogger } from "./logger";
 import { streamText, generateText } from "ai";
 import { traceable } from "langsmith/traceable";
+import { type ChatAnthropic } from "@langchain/anthropic";
 
 type ChatReturnType<T extends Partial<ChatOptions>> = Promise<
   T["streaming"] extends true
@@ -16,7 +17,9 @@ type ChatReturnType<T extends Partial<ChatOptions>> = Promise<
     : { output: string; isStream: false }
 >;
 export class LLMService {
-  constructor(private model: BaseLanguageModelInterface | OpenAIChatLanguageModel) {}
+  constructor(
+    private model: BaseLanguageModelInterface | OpenAIChatLanguageModel | ChatAnthropic
+  ) {}
 
   callLLM<TChatOptions extends ChatOptions>(
     optionsWithDefault: ModifiedChatOptions,
