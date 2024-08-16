@@ -16,7 +16,7 @@ Features:
 
 ### Installation
 
-Install the package using your preferred package manager:
+Install the package using your preferred package manager
 
 ```sh
 pnpm add @upstash/rag-chat
