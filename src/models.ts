@@ -264,19 +264,32 @@ export const mistralai = (model: string, options?: Omit<ModelOptions, "baseUrl">
   });
 };
 
-export const anthropic = (
-  model: string,
-  options?: Omit<ModelOptions, "baseUrl"> & { apiKey?: string }
-): ChatAnthropic => {
-  const apiKey = options?.apiKey ?? process.env.ANTHROPIC_API_KEY;
+const createAnthropicClient = (model: string, options: ModelOptions) => {
+  const apiKey = options.apiKey ?? process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     throw new Error(
       "API key is required. Provide it in options or set ANTHROPIC_API_KEY environment variable."
     );
   }
+
+  const { analytics, ...restOptions } = options;
+  const analyticsSetup = setupAnalytics(analytics, apiKey, undefined, "anthropic");
+
   return new ChatAnthropic({
     modelName: model,
     anthropicApiKey: apiKey,
-    ...options,
+    ...restOptions,
+    clientOptions: {
+      baseURL: analyticsSetup.baseURL,
+      ...(analyticsSetup.defaultHeaders && { defaultHeaders: analyticsSetup.defaultHeaders }),
+      ...restOptions,
+    },
   });
+};
+
+export const anthropic = (
+  model: string,
+  options?: Omit<ModelOptions, "baseUrl"> & { apiKey?: string }
+) => {
+  return createAnthropicClient(model, { ...options, baseUrl: "https://api.anthropic.com" });
 };
