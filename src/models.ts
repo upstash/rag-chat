@@ -73,7 +73,8 @@ type Providers =
   | "mistral";
 type AnalyticsConfig =
   | { name: "helicone"; token: string }
-  | { name: "langsmith"; token: string; apiUrl?: string };
+  | { name: "langsmith"; token: string; apiUrl?: string }
+  | { name: "cloudflare"; token: string; accountId: string; gatewayName: string };
 
 type ModelOptions = Omit<LLMClientConfig, "model"> & {
   analytics?: AnalyticsConfig;
@@ -138,6 +139,17 @@ const setupAnalytics = (
       }
       return { client: undefined };
     }
+
+    case "cloudflare": {
+      return {
+        baseURL: `https://gateway.ai.cloudflare.com/v1/${analytics.accountId}/${analytics.gatewayName}`,
+        defaultHeaders: {
+          Authorization: `Bearer ${analytics.token}`,
+          "Content-Type": "application/json",
+        },
+      };
+    }
+
     default: {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       throw new Error(`Unsupported analytics provider: ${JSON.stringify(analytics)}`);
