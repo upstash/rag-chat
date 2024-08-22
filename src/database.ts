@@ -5,11 +5,18 @@ import { nanoid } from "nanoid";
 import { DEFAULT_SIMILARITY_THRESHOLD, DEFAULT_TOP_K } from "./constants";
 import { FileDataLoader } from "./file-loader";
 import type { AddContextOptions } from "./types";
+import type { UnstructuredLoaderOptions } from "@langchain/community/document_loaders/fs/unstructured";
 
 export type FilePath = string;
 export type URL = string;
 
 export type DatasWithFileSource =
+  | {
+      type: "unstructured";
+      fileSource: FilePath;
+      options?: AddContextOptions;
+      unstructuredConfig?: UnstructuredLoaderOptions;
+    }
   | {
       type: "pdf";
       fileSource: FilePath | Blob;
@@ -162,7 +169,13 @@ export class Database {
     } else {
       try {
         const fileArgs =
-          "pdfOpts" in input ? input.pdfOpts : "csvOpts" in input ? input.csvOpts : {};
+          "pdfConfig" in input
+            ? input.pdfConfig
+            : "csvConfig" in input
+              ? input.csvConfig
+              : "unstructuredConfig" in input
+                ? input.unstructuredConfig
+                : {};
 
         const transformOrSplit = await new FileDataLoader(input).loadFile(fileArgs);
 
