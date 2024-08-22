@@ -61,7 +61,7 @@ export class FileDataLoader {
           : new TextLoader(this.config.source);
       }
 
-      //INFO: This will much cleaner once langchain fixes their unstructured loader
+      //INFO: This will be much cleaner once langchain fixes their unstructured loader
       case "unstructured": {
         const client = new UnstructuredClient({
           serverURL: "https://api.unstructuredapp.io",
