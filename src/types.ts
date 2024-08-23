@@ -187,3 +187,8 @@ export type UpstashMessage<TMetadata extends UpstashDict = UpstashDict> = {
 };
 
 export type OpenAIChatLanguageModel = ReturnType<typeof openai>;
+
+export type Prettify<T> = {
+  [K in keyof T]: T[K];
+  // eslint-disable-next-line @typescript-eslint/ban-types
+} & {};

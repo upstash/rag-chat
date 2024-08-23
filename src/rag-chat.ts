@@ -22,7 +22,13 @@ import type { UpstashRedisHistory } from "./history-service/redis-custom-history
 import { LLMService } from "./llm-service";
 import { ChatLogger } from "./logger";
 import { RateLimitService } from "./ratelimit-service";
-import type { ChatOptions, RAGChatConfig } from "./types";
+import type {
+  ChatOptions,
+  PrepareChatResult,
+  Prettify,
+  RAGChatConfig,
+  UpstashMessage,
+} from "./types";
 import type { ModifiedChatOptions } from "./utils";
 import { sanitizeQuestion } from "./utils";
 
@@ -38,7 +44,11 @@ type ChatReturnType<TMetadata extends unknown[], T extends Partial<ChatOptions>>
         output: ReadableStream<string>;
         isStream: true;
       }
-    : { output: string; isStream: false }) & { metadata: TMetadata }
+    : { output: string; isStream: false }) & {
+    metadata: TMetadata;
+    context: Prettify<PrepareChatResult>;
+    history: Prettify<UpstashMessage>[];
+  }
 >;
 
 export class RAGChat {
@@ -104,13 +114,18 @@ export class RAGChat {
 
           // Sanitizes the given input by stripping all the newline chars.
           const question = sanitizeQuestion(input);
-          const { formattedContext: context, metadata } = await this.context._getContext<TMetadata>(
+          const {
+            formattedContext: context,
+            metadata,
+            rawContext,
+          } = await this.context._getContext<TMetadata>(
             optionsWithDefault,
             input,
             this.debug
           )(optionsWithDefault.sessionId);
 
-          const formattedHistory = await this.getChatHistory(optionsWithDefault);
+          const { formattedHistory, modifiedChatHistory } =
+            await this.getChatHistory(optionsWithDefault);
 
           const prompt = await this.generatePrompt(
             optionsWithDefault,
@@ -138,6 +153,8 @@ export class RAGChat {
           return {
             ...llmResult,
             metadata,
+            context: rawContext ?? [],
+            history: modifiedChatHistory,
           };
         } catch (error) {
           await this.debug?.logError(error as Error);
@@ -186,7 +203,7 @@ export class RAGChat {
       async (optionsWithDefault: ModifiedChatOptions) => {
         if (optionsWithDefault.disableHistory) {
           await this.debug?.logRetrieveFormatHistory("History disabled, returning empty history");
-          return "";
+          return { formattedHistory: "", modifiedChatHistory: [] };
         }
         this.debug?.startRetrieveHistory();
         // Gets the chat history from redis or in-memory store.
@@ -198,7 +215,7 @@ export class RAGChat {
         const modifiedChatHistory =
           (await optionsWithDefault.onChatHistoryFetched?.(clonedChatHistory)) ??
           originalChatHistory;
-        await this.debug?.endRetrieveHistory(clonedChatHistory);
+        await this.debug?.endRetrieveHistory(modifiedChatHistory);
 
         // Formats the chat history for better accuracy when querying LLM
         const formattedHistory = modifiedChatHistory
@@ -210,7 +227,7 @@ export class RAGChat {
           })
           .join("\n");
         await this.debug?.logRetrieveFormatHistory(formattedHistory);
-        return formattedHistory;
+        return { formattedHistory, modifiedChatHistory };
       },
       {
         name: "Retrieve History",

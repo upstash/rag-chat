@@ -115,7 +115,7 @@ export class Database {
     const facts = result
       .filter((x) => x.score >= similarityThreshold)
       .map((embedding) => ({
-        data: `- ${embedding.data ?? ""}`,
+        data: embedding.data ?? "",
         id: embedding.id.toString(),
         metadata: embedding.metadata as TMetadata,
       }));
