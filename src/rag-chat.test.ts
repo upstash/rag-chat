@@ -842,7 +842,6 @@ describe("RAG Chat with disableHistory option", () => {
     await ragChat.chat(question, {
       streaming: false,
       sessionId: testSessionId,
-      disableHistory: false,
     });
 
     const history = await ragChat.history.getMessages({ sessionId: testSessionId });
