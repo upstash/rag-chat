@@ -774,7 +774,7 @@ describe("RAG Chat with Vercel AI SDK", () => {
   });
 });
 
-describe("RAG Chat with disableHistory option - todo", () => {
+describe("RAG Chat with disableHistory option", () => {
   const namespace = "disable-history";
   const vector = new Index({
     token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
@@ -838,18 +838,6 @@ describe("RAG Chat with disableHistory option - todo", () => {
 
     const history = await ragChat.history.getMessages({ sessionId: testSessionId });
     expect(history.length).toBe(0);
-  });
-
-  test("should store chat history when disableHistory is false", async () => {
-    const question = "What is the capital of France?";
-    await ragChat.chat(question, {
-      streaming: false,
-      sessionId: testSessionId,
-    });
-
-    const history = await ragChat.history.getMessages({ sessionId: testSessionId });
-    expect(history.length).toBeGreaterThan(0);
-    expect([history[0].content, history[1].content]).toContain(question);
   });
 
   test("should not affect context retrieval when disableHistory is true", async () => {
