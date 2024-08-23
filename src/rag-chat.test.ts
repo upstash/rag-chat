@@ -774,7 +774,7 @@ describe("RAG Chat with Vercel AI SDK", () => {
   });
 });
 
-describe("RAG Chat with disableHistory option", () => {
+describe("RAG Chat with disableHistory option - todo", () => {
   const namespace = "disable-history";
   const vector = new Index({
     token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
@@ -822,6 +822,9 @@ describe("RAG Chat with disableHistory option", () => {
   afterAll(async () => {
     await vector.reset({ namespace });
     await vector.deleteNamespace(namespace);
+  });
+
+  afterEach(async () => {
     await redis.flushdb();
   });
 
