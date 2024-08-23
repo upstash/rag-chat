@@ -10,7 +10,7 @@ Features:
 - (Optional) built-in Redis compatibility for fast chat history management
 - (Optional) built-in rate limiting
 - (Optional) disableRag option to use it as LLM + chat history
-- (Optional) Analytics via [Helicone](https://www.helicone.ai/) and [Langsmith](https://www.langchain.com/langsmith)
+- (Optional) Analytics via [Helicone](https://www.helicone.ai/), [Langsmith](https://www.langchain.com/langsmith) and [Cloudflare AI Gateway](https://developers.cloudflare.com/ai-gateway/)
 
 ## Getting started
 

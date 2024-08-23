@@ -49,6 +49,26 @@ describe("Model inits", () => {
     });
   });
 
+  test("OpenAI client configuration with Cloudflare AI Gateway", () => {
+    const client = openai("gpt-3.5-turbo", {
+      analytics: {
+        name: "cloudflare",
+        accountId: "mock-account-id",
+        gatewayName: "mock-gateway-name",
+      },
+    });
+
+    //@ts-expect-error required for testing
+    expect(client.clientConfig.baseURL).toBe(
+      "https://gateway.ai.cloudflare.com/v1/mock-account-id/mock-gateway-name"
+    );
+    //@ts-expect-error required for testing
+    expect(client.clientConfig.defaultHeaders).toEqual({
+      Authorization: "Bearer mock-cloudflare-token",
+      "Content-Type": "application/json",
+    });
+  });
+
   test("OpenAI client configuration without analytics", () => {
     const config = {
       apiKey: "no-key",
