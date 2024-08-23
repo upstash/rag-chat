@@ -74,7 +74,7 @@ type Providers =
 type AnalyticsConfig =
   | { name: "helicone"; token: string }
   | { name: "langsmith"; token: string; apiUrl?: string }
-  | { name: "cloudflare"; token: string; accountId: string; gatewayName: string };
+  | { name: "cloudflare"; accountId: string; gatewayName: string };
 
 type ModelOptions = Omit<LLMClientConfig, "model"> & {
   analytics?: AnalyticsConfig;
@@ -139,12 +139,11 @@ const setupAnalytics = (
       }
       return { client: undefined };
     }
-
     case "cloudflare": {
       return {
-        baseURL: `https://gateway.ai.cloudflare.com/v1/${analytics.accountId}/${analytics.gatewayName}`,
+        baseURL: `https://gateway.ai.cloudflare.com/v1/${analytics.accountId}/${analytics.gatewayName}/openai`,
         defaultHeaders: {
-          Authorization: `Bearer ${analytics.token}`,
+          Authorization: `Bearer ${providerApiKey}`,
           "Content-Type": "application/json",
         },
       };

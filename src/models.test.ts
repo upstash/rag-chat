@@ -53,7 +53,6 @@ describe("Model inits", () => {
     const client = openai("gpt-3.5-turbo", {
       analytics: {
         name: "cloudflare",
-        token: "mock-cloudflare-token",
         accountId: "mock-account-id",
         gatewayName: "mock-gateway-name",
       },
