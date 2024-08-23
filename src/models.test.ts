@@ -60,11 +60,11 @@ describe("Model inits", () => {
 
     //@ts-expect-error required for testing
     expect(client.clientConfig.baseURL).toBe(
-      "https://gateway.ai.cloudflare.com/v1/mock-account-id/mock-gateway-name"
+      "https://gateway.ai.cloudflare.com/v1/mock-account-id/mock-gateway-name/openai"
     );
     //@ts-expect-error required for testing
     expect(client.clientConfig.defaultHeaders).toEqual({
-      Authorization: "Bearer mock-cloudflare-token",
+      Authorization: "Bearer mock-openai-api-key",
       "Content-Type": "application/json",
     });
   });

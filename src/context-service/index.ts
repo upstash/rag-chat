@@ -103,6 +103,7 @@ export class ContextService {
             }
           )(context),
           metadata: context.map(({ metadata }) => metadata) as TMetadata[],
+          rawContext: context,
         };
       },
       {

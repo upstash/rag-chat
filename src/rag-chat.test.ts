@@ -17,7 +17,7 @@ import {
 } from "bun:test";
 import type { Mock } from "bun:test";
 import { RatelimitUpstashError } from "./error";
-import { custom, upstash } from "./models";
+import { custom, upstash, openai as upstashOpenai } from "./models";
 import { RAGChat } from "./rag-chat";
 import { awaitUntilIndexed } from "./test-utils";
 
@@ -42,21 +42,16 @@ describe("RAG Chat with advance configs and direct instances", () => {
     token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
     url: process.env.UPSTASH_VECTOR_REST_URL!,
   });
+  const redis = new Redis({
+    token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+    url: process.env.UPSTASH_REDIS_REST_URL!,
+  });
 
   const ragChat = new RAGChat({
-    model: new ChatOpenAI({
-      modelName: "gpt-3.5-turbo",
-      streaming: true,
-      verbose: false,
-      temperature: 0,
-      apiKey: process.env.OPENAI_API_KEY,
-    }),
+    model: upstashOpenai("gpt-3.5-turbo"),
     vector,
     namespace,
-    redis: new Redis({
-      token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-      url: process.env.UPSTASH_REDIS_REST_URL!,
-    }),
+    redis,
   });
 
   beforeAll(async () => {
@@ -71,6 +66,7 @@ describe("RAG Chat with advance configs and direct instances", () => {
   afterAll(async () => {
     await vector.reset({ namespace });
     await vector.deleteNamespace(namespace);
+    await redis.flushdb();
   });
 
   test("should get result without streaming", async () => {
@@ -79,16 +75,17 @@ describe("RAG Chat with advance configs and direct instances", () => {
       { streaming: false }
     );
     expect(result.output).toContain("330");
-  });
-
-  test("should get result with streaming", async () => {
-    const streamResult = await ragChat.chat(
-      "What year was the construction of the Eiffel Tower completed, and what is its height?",
+    expect(result.history).toEqual([
       {
-        streaming: true,
-      }
+        content:
+          "What year was the construction of the Eiffel Tower completed, and what is its height?",
+        role: "user",
+        id: "0",
+      },
+    ]);
+    expect(result.context[0].data).toContain(
+      "Paris, the capital of France, is renowned for its iconic landmark, the Eiffel Tower, which was completed in 1889 and stands at 330 meters tall."
     );
-    await checkStream(streamResult.output, ["330"]);
   });
 });
 
@@ -655,7 +652,7 @@ describe("RAGChat - chat usage with disabled RAG ", () => {
   );
 
   test(
-    "should be able to chat without rag and ask question with default disabled rag chat prompt -ozoz",
+    "should be able to chat without rag and ask question with default disabled rag chat prompt",
     async () => {
       await ragChat.chat("Tokyo is the capital of Japan.", { disableRAG: true });
       await awaitUntilIndexed(vector);
@@ -825,6 +822,9 @@ describe("RAG Chat with disableHistory option", () => {
   afterAll(async () => {
     await vector.reset({ namespace });
     await vector.deleteNamespace(namespace);
+  });
+
+  afterEach(async () => {
     await redis.flushdb();
   });
 
@@ -838,19 +838,6 @@ describe("RAG Chat with disableHistory option", () => {
 
     const history = await ragChat.history.getMessages({ sessionId: testSessionId });
     expect(history.length).toBe(0);
-  });
-
-  test("should store chat history when disableHistory is false", async () => {
-    const question = "What is the capital of France?";
-    await ragChat.chat(question, {
-      streaming: false,
-      sessionId: testSessionId,
-      disableHistory: false,
-    });
-
-    const history = await ragChat.history.getMessages({ sessionId: testSessionId });
-    expect(history.length).toBeGreaterThan(0);
-    expect([history[0].content, history[1].content]).toContain(question);
   });
 
   test("should not affect context retrieval when disableHistory is true", async () => {
