@@ -219,7 +219,6 @@ export class RAGChat {
 
         // Formats the chat history for better accuracy when querying LLM
         const formattedHistory = modifiedChatHistory
-          .reverse()
           .map((message) => {
             return message.role === "user"
               ? `USER MESSAGE: ${message.content}`
