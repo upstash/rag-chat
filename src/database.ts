@@ -174,13 +174,7 @@ export class Database {
     } else {
       try {
         const fileArgs =
-          "pdfConfig" in input
-            ? input.pdfConfig
-            : "csvConfig" in input
-              ? input.csvConfig
-              : "unstructuredConfig" in input
-                ? input.unstructuredConfig
-                : {};
+          "pdfConfig" in input ? input.pdfConfig : "csvConfig" in input ? input.csvConfig : {};
 
         const transformOrSplit = await new FileDataLoader(input).loadFile(fileArgs);
 
