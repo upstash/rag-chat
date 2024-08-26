@@ -10,12 +10,17 @@ import type { UnstructuredLoaderOptions } from "@langchain/community/document_lo
 export type FilePath = string;
 export type URL = string;
 
+export type ProcessorType = {
+  name: "unstructured";
+  options: UnstructuredLoaderOptions;
+};
+
 export type DatasWithFileSource =
   | {
-      type: "unstructured";
+      type?: "pdf" | "csv" | "text-file" | "html";
       fileSource: FilePath;
       options?: AddContextOptions;
-      unstructuredConfig?: UnstructuredLoaderOptions;
+      processor: ProcessorType;
     }
   | {
       type: "pdf";

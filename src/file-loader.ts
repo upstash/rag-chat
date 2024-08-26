@@ -11,7 +11,7 @@ import { TextLoader } from "langchain/document_loaders/fs/text";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { nanoid } from "nanoid";
 import { UnstructuredClient } from "unstructured-client";
-import type { DatasWithFileSource, FilePath, URL } from "./database";
+import type { DatasWithFileSource, FilePath, ProcessorType, URL } from "./database";
 
 type Element = {
   type: string;
@@ -36,6 +36,53 @@ export class FileDataLoader {
   }
 
   private async createLoader(args: any) {
+    if (hasProcessor(this.config)) {
+      const client = new UnstructuredClient({
+        serverURL: "https://api.unstructuredapp.io",
+        security: {
+          apiKeyAuth: this.config.processor.options.apiKey,
+        },
+      });
+
+      //@ts-expect-error TS can't pick up the correct type due to complex union
+      const fileData = await Bun.file(this.config.fileSource).text();
+      const response = await client.general.partition({
+        //@ts-expect-error Will be fixed soon
+        partitionParameters: {
+          files: {
+            content: fileData,
+            //@ts-expect-error TS can't pick up the correct type due to complex union
+            fileName: this.config.fileSource,
+          },
+          ...this.config.processor.options,
+        },
+      });
+      const elements = response.elements?.filter(
+        (element) => typeof element.text === "string"
+      ) as Element[];
+
+      return {
+        // eslint-disable-next-line @typescript-eslint/require-await
+        load: async (): Promise<Document[]> => {
+          const documents: Document[] = [];
+          for (const element of elements) {
+            const { metadata, text } = element;
+            if (typeof text === "string" && text !== "") {
+              documents.push(
+                new Document({
+                  pageContent: text,
+                  metadata: {
+                    ...metadata,
+                    category: element.type,
+                  },
+                })
+              );
+            }
+          }
+          return documents;
+        },
+      };
+    }
     switch (this.config.type) {
       case "pdf": {
         return new PDFLoader(
@@ -61,55 +108,8 @@ export class FileDataLoader {
           : new TextLoader(this.config.source);
       }
 
-      //INFO: This will be much cleaner once langchain fixes their unstructured loader
-      case "unstructured": {
-        const client = new UnstructuredClient({
-          serverURL: "https://api.unstructuredapp.io",
-          security: {
-            apiKeyAuth: this.config.unstructuredConfig?.apiKey,
-          },
-        });
-
-        const fileData = await Bun.file(this.config.fileSource).text();
-        const response = await client.general.partition({
-          //@ts-expect-error Will be fixed soon
-          partitionParameters: {
-            files: {
-              content: fileData,
-              fileName: this.config.fileSource,
-            },
-            ...this.config.unstructuredConfig,
-          },
-        });
-        const elements = response.elements?.filter(
-          (element) => typeof element.text === "string"
-        ) as Element[];
-
-        return {
-          // eslint-disable-next-line @typescript-eslint/require-await
-          load: async (): Promise<Document[]> => {
-            const documents: Document[] = [];
-            for (const element of elements) {
-              const { metadata, text } = element;
-              if (typeof text === "string" && text !== "") {
-                documents.push(
-                  new Document({
-                    pageContent: text,
-                    metadata: {
-                      ...metadata,
-                      category: element.type,
-                    },
-                  })
-                );
-              }
-            }
-            return documents;
-          },
-        };
-      }
-
       default: {
-        // @ts-expect-error config type is set as never
+        //@ts-expect-error TS can't pick up the correct type due to complex union
         throw new Error(`Unsupported data type: ${this.config.type}`);
       }
     }
@@ -158,7 +158,7 @@ export class FileDataLoader {
         return mapDocumentsIntoInsertPayload(newDocuments);
       }
 
-      case "unstructured": {
+      case undefined: {
         const documents_ = documents.map(
           (item) => new Document({ pageContent: item.pageContent, metadata: item.metadata })
         );
@@ -186,4 +186,10 @@ export class FileDataLoader {
       }));
     }
   }
+}
+
+function hasProcessor(
+  data: DatasWithFileSource
+): data is DatasWithFileSource & { processor: ProcessorType } {
+  return "processor" in data && typeof data.processor === "object" && "options" in data.processor;
 }
