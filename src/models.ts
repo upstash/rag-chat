@@ -3,6 +3,7 @@ import { ChatOpenAI } from "@langchain/openai";
 import { Client as LangsmithClient } from "langsmith";
 import type { OLLAMA_MODELS } from "./constants";
 import { ChatMistralAI } from "@langchain/mistralai";
+import { ChatAnthropic } from "@langchain/anthropic";
 
 // Initialize global Langsmith tracer
 // We use a global variable because:
@@ -259,6 +260,13 @@ export const openrouter = (model: string, options?: Omit<ModelOptions, "baseUrl"
 /** Mistral AI does not support any analytics */
 export const mistralai = (model: string, options?: Omit<ModelOptions, "baseUrl">) => {
   return new ChatMistralAI({
+    model,
+    ...options,
+  });
+};
+
+export const antrophic = (model: string, options?: Omit<ModelOptions, "baseUrl">) => {
+  return new ChatAnthropic({
     model,
     ...options,
   });

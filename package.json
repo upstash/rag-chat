@@ -82,6 +82,7 @@
   },
   "optionalDependencies": {
     "langsmith": "^0.1.41",
-    "@langchain/mistralai": "^0.0.28"
+    "@langchain/mistralai": "^0.0.28",
+    "@langchain/anthropic": "^0.2.15"
   }
 }
