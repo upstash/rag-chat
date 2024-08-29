@@ -72,7 +72,8 @@ type Providers =
   | "groq"
   | "togetherai"
   | "openrouter"
-  | "mistral";
+  | "mistral"
+  | "anthropic";
 type AnalyticsConfig =
   | { name: "helicone"; token: string }
   | { name: "langsmith"; token: string; apiUrl?: string }
@@ -102,6 +103,15 @@ const setupAnalytics = (
         case "openai": {
           return {
             baseURL: "https://oai.helicone.ai/v1",
+            defaultHeaders: {
+              "Helicone-Auth": `Bearer ${analytics.token}`,
+              Authorization: `Bearer ${providerApiKey}`,
+            },
+          };
+        }
+        case "anthropic": {
+          return {
+            baseURL: "https://anthropic.helicone.ai",
             defaultHeaders: {
               "Helicone-Auth": `Bearer ${analytics.token}`,
               Authorization: `Bearer ${providerApiKey}`,
@@ -266,9 +276,20 @@ export const mistralai = (model: string, options?: Omit<ModelOptions, "baseUrl">
   });
 };
 
-export const antrophic = (model: string, options?: Omit<ModelOptions, "baseUrl">) => {
+export const anthropic = (model: string, options?: Omit<ModelOptions, "baseUrl">) => {
+  if (!options?.apiKey) {
+    throw new Error("Failed to create Anthropic client: Anthropic key not found.");
+  }
+  const analyticsSetup = options.analytics
+    ? setupAnalytics(options.analytics, options.apiKey, undefined, "anthropic")
+    : undefined;
+
   return new ChatAnthropic({
     model,
     ...options,
+    clientOptions: {
+      baseURL: analyticsSetup?.baseURL,
+      defaultHeaders: analyticsSetup?.defaultHeaders,
+    },
   });
 };
