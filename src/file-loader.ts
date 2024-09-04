@@ -12,6 +12,7 @@ import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { nanoid } from "nanoid";
 import { UnstructuredClient } from "unstructured-client";
 import type { DatasWithFileSource, FilePath, ProcessorType, URL } from "./database";
+import { LlamaParseReader } from "llamaindex";
 
 type Element = {
   type: string;
@@ -37,51 +38,7 @@ export class FileDataLoader {
 
   private async createLoader(args: any) {
     if (hasProcessor(this.config)) {
-      const client = new UnstructuredClient({
-        serverURL: "https://api.unstructuredapp.io",
-        security: {
-          apiKeyAuth: this.config.processor.options.apiKey,
-        },
-      });
-
-      //@ts-expect-error TS can't pick up the correct type due to complex union
-      const fileData = await Bun.file(this.config.fileSource).text();
-      const response = await client.general.partition({
-        //@ts-expect-error Will be fixed soon
-        partitionParameters: {
-          files: {
-            content: fileData,
-            //@ts-expect-error TS can't pick up the correct type due to complex union
-            fileName: this.config.fileSource,
-          },
-          ...this.config.processor.options,
-        },
-      });
-      const elements = response.elements?.filter(
-        (element) => typeof element.text === "string"
-      ) as Element[];
-
-      return {
-        // eslint-disable-next-line @typescript-eslint/require-await
-        load: async (): Promise<Document[]> => {
-          const documents: Document[] = [];
-          for (const element of elements) {
-            const { metadata, text } = element;
-            if (typeof text === "string" && text !== "") {
-              documents.push(
-                new Document({
-                  pageContent: text,
-                  metadata: {
-                    ...metadata,
-                    category: element.type,
-                  },
-                })
-              );
-            }
-          }
-          return documents;
-        },
-      };
+      return await this.createLoaderForProcessors();
     }
     switch (this.config.type) {
       case "pdf": {
@@ -111,6 +68,84 @@ export class FileDataLoader {
       default: {
         //@ts-expect-error TS can't pick up the correct type due to complex union
         throw new Error(`Unsupported data type: ${this.config.type}`);
+      }
+    }
+  }
+
+  private async createLoaderForProcessors() {
+    // Without this check typescript complains about types because of unions
+    if (!hasProcessor(this.config)) throw new Error("Only processors are allowed");
+
+    switch (this.config.processor.name) {
+      case "unstructured": {
+        const client = new UnstructuredClient({
+          serverURL: "https://api.unstructuredapp.io",
+          security: {
+            apiKeyAuth: this.config.processor.options.apiKey,
+          },
+        });
+
+        //@ts-expect-error TS can't pick up the correct type due to complex union
+        const fileData = await Bun.file(this.config.fileSource).text();
+        const response = await client.general.partition({
+          //@ts-expect-error Will be fixed soon
+          partitionParameters: {
+            files: {
+              content: fileData,
+              //@ts-expect-error TS can't pick up the correct type due to complex union
+              fileName: this.config.fileSource,
+            },
+            ...this.config.processor.options,
+          },
+        });
+        const elements = response.elements?.filter(
+          (element) => typeof element.text === "string"
+        ) as Element[];
+
+        return {
+          // eslint-disable-next-line @typescript-eslint/require-await
+          load: async (): Promise<Document[]> => {
+            const documents: Document[] = [];
+            for (const element of elements) {
+              const { metadata, text } = element;
+              if (typeof text === "string" && text !== "") {
+                documents.push(
+                  new Document({
+                    pageContent: text,
+                    metadata: {
+                      ...metadata,
+                      category: element.type,
+                    },
+                  })
+                );
+              }
+            }
+            return documents;
+          },
+        };
+      }
+      case "llama-parse": {
+        const reader = new LlamaParseReader(this.config.processor.options);
+        //@ts-expect-error TS can't pick up the correct type due to complex union
+        const parsedDocuments = await reader.loadData(this.config.fileSource);
+        return {
+          // eslint-disable-next-line @typescript-eslint/require-await
+          load: async (): Promise<Document[]> => {
+            const documents: Document[] = [];
+            for (const element of parsedDocuments) {
+              const { metadata, text } = element;
+              if (typeof text === "string" && text !== "") {
+                documents.push(
+                  new Document({
+                    pageContent: text,
+                    metadata,
+                  })
+                );
+              }
+            }
+            return documents;
+          },
+        };
       }
     }
   }
@@ -158,6 +193,7 @@ export class FileDataLoader {
         return mapDocumentsIntoInsertPayload(newDocuments);
       }
 
+      // Processors will be handled here. E.g. "unstructured", "llama-parse"
       case undefined: {
         const documents_ = documents.map(
           (item) => new Document({ pageContent: item.pageContent, metadata: item.metadata })
