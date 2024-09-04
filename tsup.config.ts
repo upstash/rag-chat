@@ -8,6 +8,7 @@ export default defineConfig([
     clean: true,
     dts: true,
     minify: false,
+    external: ["@langchain/anthropic", "@langchain/mistralai", "langsmith"],
   },
   {
     entry: ["src/nextjs/rsc-server.ts", "src/nextjs/rsc-client.ts"],

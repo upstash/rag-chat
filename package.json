@@ -73,10 +73,10 @@
     "unstructured-client": "^0.15.1"
   },
   "peerDependencies": {
-    "@upstash/redis": "^1.31.3",
-    "@upstash/vector": "^1.1.3",
-    "@upstash/ratelimit": "^1.1.3",
-    "@langchain/openai": "^0.2.5",
+    "@upstash/redis": "^1.34.0",
+    "@upstash/vector": "^1.1.5",
+    "@upstash/ratelimit": "^2.0.2",
+    "@langchain/openai": "^0.2.8",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
