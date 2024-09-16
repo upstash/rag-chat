@@ -12,7 +12,7 @@ import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { nanoid } from "nanoid";
 import { UnstructuredClient } from "unstructured-client";
 import type { DatasWithFileSource, FilePath, ProcessorType, URL } from "./database";
-import { LlamaParseReader } from "llamaindex";
+import { LlamaParseReader } from "llamaindex/readers/LlamaParseReader";
 
 type Element = {
   type: string;
