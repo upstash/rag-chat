@@ -68,7 +68,7 @@
     "d3-dsv": "^3.0.1",
     "html-to-text": "^9.0.5",
     "langchain": "^0.2.0",
-    "llamaindex": "0.5.24",
+    "llamaindex": "0.6.0",
     "nanoid": "^5.0.7",
     "pdf-parse": "^1.1.1",
     "unstructured-client": "^0.15.1"
