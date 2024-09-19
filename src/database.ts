@@ -84,7 +84,7 @@ export class Database {
     this.index = index;
   }
 
-  async reset(options?: ResetOptions | undefined) {
+  async reset(options?: ResetOptions  ) {
     await this.index.reset({ namespace: options?.namespace });
   }
 
@@ -97,6 +97,7 @@ export class Database {
    * It takes care of the text-to-embedding conversion by itself.
    * Additionally, it lets consumers pass various options to tweak the output.
    */
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
   async retrieve<TMetadata>({
     question,
     similarityThreshold = DEFAULT_SIMILARITY_THRESHOLD,

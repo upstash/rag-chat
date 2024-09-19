@@ -96,7 +96,6 @@ export type RAGChatConfig = {
     })
   */
 
-  // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
   model?: ChatOpenAI | ChatMistralAI | ChatAnthropic | OpenAIChatLanguageModel;
   /**
      * Ratelimit instance
@@ -191,5 +190,4 @@ export type OpenAIChatLanguageModel = ReturnType<typeof openai>;
 
 export type Prettify<T> = {
   [K in keyof T]: T[K];
-  // eslint-disable-next-line @typescript-eslint/ban-types
 } & {};

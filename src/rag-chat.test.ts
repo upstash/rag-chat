@@ -25,7 +25,7 @@ async function checkStream(
   stream: ReadableStream<string>,
   expectInStream: string[] // array of strings to expect in stream
 ): Promise<void> {
-  const _stream = LangChainAdapter.toAIStream(stream);
+  const _stream = LangChainAdapter.toDataStream(stream);
   const textResponse = new StreamingTextResponse(_stream);
   const text = await textResponse.text();
 
