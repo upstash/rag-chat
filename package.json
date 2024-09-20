@@ -70,7 +70,10 @@
     "llamaindex": "0.6.0",
     "nanoid": "^5.0.7",
     "pdf-parse": "^1.1.1",
-    "unstructured-client": "^0.15.1"
+    "unstructured-client": "^0.15.1",
+    "@langchain/anthropic": "^0.2.15",
+    "@langchain/mistralai": "^0.0.28",
+    "langsmith": "^0.1.41"
   },
   "peerDependencies": {
     "@langchain/openai": "^0.2.8",
@@ -79,10 +82,5 @@
     "@upstash/vector": "^1.1.5",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
-  },
-  "optionalDependencies": {
-    "@langchain/anthropic": "^0.2.15",
-    "@langchain/mistralai": "^0.0.28",
-    "langsmith": "^0.1.41"
   }
 }
