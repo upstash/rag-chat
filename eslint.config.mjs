@@ -15,7 +15,7 @@ const compat = new FlatCompat({
 
 export default [
   {
-    ignores: ["**/*.config.*"],
+    ignores: ["**/*.config.*", "examples/**/*"],
   },
   ...compat.extends(
     "eslint:recommended",
@@ -55,7 +55,6 @@ export default [
         },
       ],
 
-      //   "@typescript-eslint/no-magic-numbers": "off",
       "@typescript-eslint/unbound-method": "off",
       "@typescript-eslint/prefer-as-const": "error",
       "@typescript-eslint/consistent-type-imports": "error",
