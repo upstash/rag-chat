@@ -40,8 +40,8 @@ jobs:
 
       - name: Publish release candidate
         if: "github.event.release.prerelease"
-        run: npm publish --access public --tag=canary --no-git-checks
+        run: npm publish --access public --tag=canary
 
       - name: Publish
         if: "!github.event.release.prerelease"
-        run: npm publish --access public --no-git-checks
+        run: npm publish --access public
