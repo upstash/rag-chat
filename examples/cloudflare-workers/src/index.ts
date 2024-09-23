@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { Index } from "@upstash/vector";
-import { RAGChat, upstash } from "@upstash/rag-chat";
+import { openai, RAGChat, upstash } from "@upstash/rag-chat";
 
 const app = new Hono<{
   Variables: {
@@ -18,7 +18,13 @@ const app = new Hono<{
 
 app.use("*", async (c, next) => {
   const ragChat = new RAGChat({
-    model: upstash("meta-llama/Meta-Llama-3-8B-Instruct", { apiKey: c.env.QSTASH_TOKEN }),
+    // model: upstash("meta-llama/Meta-Llama-3-8B-Instruct", { apiKey: c.env.QSTASH_TOKEN }),
+    
+    // 👇 ALTERNATIVE
+    model: openai("gpt-4-turbo", {
+      apiKey: c.env.OPENAI_API_KEY,
+    }),
+
     vector: new Index({
       url: c.env.UPSTASH_VECTOR_REST_URL,
       token: c.env.UPSTASH_VECTOR_REST_TOKEN,
@@ -39,8 +45,7 @@ app.get("/", (c) => {
         <ul>
           <li><a href="/add-data">Add Data</a></li>
           <li><a href="/chat">Chat</a></li>
-          <li><a href="/chat-stream">Chat Stream (Upstash)</a></li>
-          <li><a href="/chat-stream-openai">Chat Stream (Open AI)</a></li>
+          <li><a href="/chat-stream">Chat Stream</a></li>
         </ul>
       </body>
     </html>
@@ -84,32 +89,6 @@ app.get("/chat", async (c) => {
 });
 
 app.get("/chat-stream", async (c) => {
-  const response = await c.var.ragChat.chat(
-    "Describe what Paris is known as, narrating in the style of Dostoyevsky, and provide the answer in approximately a thousand words.",
-    { streaming: true }
-  );
-
-  const textEncoder = new TextEncoder();
-  const { readable, writable } = new TransformStream<string>({
-    transform(chunk, controller) {
-      controller.enqueue(textEncoder.encode(chunk));
-    },
-  });
-
-  // Start pumping the body. NOTE: No await!
-  void response.output.pipeTo(writable);
-
-  // ... and deliver our Response while that’s running.
-  return new Response(readable, {
-    status: 200,
-    headers: {
-      "Content-Type": "text/plain; charset=utf-8",
-      "Cache-Control": "no-cache, no-transform",
-    },
-  });
-});
-
-app.get("/chat-stream-openai", async (c) => {
   const response = await c.var.ragChat.chat(
     "Describe what Paris is known as, narrating in the style of Dostoyevsky, and provide the answer in approximately a thousand words.",
     { streaming: true }
