@@ -35,7 +35,7 @@
       "require": "./dist/nextjs/index.js"
     }
   },
-  "homepage": "https://upstash.com/vector",
+  "homepage": "https://upstash.com/docs/vector/sdks/rag-chat",
   "keywords": [
     "vector",
     "upstash",
