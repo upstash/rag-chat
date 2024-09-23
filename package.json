@@ -26,12 +26,10 @@
   ],
   "exports": {
     ".": {
-      "types": "./dist/base/index.d.ts",
       "import": "./dist/base/index.mjs",
       "require": "./dist/base/index.js"
     },
     "./nextjs": {
-      "types": "./dist/nextjs/index.d.ts",
       "react-server": "./dist/nextjs/rsc-server.mjs",
       "import": "./dist/nextjs/index.mjs",
       "require": "./dist/nextjs/index.js"
