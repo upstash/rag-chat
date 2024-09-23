@@ -1,1 +1,1 @@
-bun run lint && bun run fmt
+bun run lint-staged && bun run check-types

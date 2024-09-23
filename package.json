@@ -6,9 +6,16 @@
   "scripts": {
     "test": "bun test",
     "fmt": "prettier --write .",
-    "lint": "tsc && eslint \"src/**/*.{js,ts,tsx}\" --quiet --fix",
+    "lint": "eslint \"src/**/*.{js,ts,tsx}\" --quiet --fix",
     "build": "tsup",
-    "prepare": "husky"
+    "prepare": "husky",
+    "check-types": "tsc --noEmit"
+  },
+  "lint-staged": {
+    "*": [
+      "eslint --fix",
+      "prettier --ignore-unknown --write"
+    ]
   },
   "bugs": {
     "url": "https://github.com/upstash/rag-chat/issues"
@@ -49,14 +56,15 @@
     "@commitlint/config-conventional": "^19.2.2",
     "@types/react": "^18.3.3",
     "@typescript-eslint/eslint-plugin": "^8.6.0",
-    "bun-types": "latest",
-    "eslint": "^9.10.0",
+    "bun-types": "^1.1.19",
+    "eslint": "^9.11.0",
     "eslint-plugin-unicorn": "^55.0.0",
     "husky": "^9.0.10",
+    "lint-staged": "^15.2.10",
     "prettier": "^3.2.5",
-    "tsup": "latest",
+    "tsup": "^8.3.0",
     "typescript": "^5.4.5",
-    "vitest": "latest"
+    "vitest": "^2.1.1"
   },
   "dependencies": {
     "@ai-sdk/openai": "^0.0.44",
