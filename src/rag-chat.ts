@@ -22,13 +22,7 @@ import type { UpstashRedisHistory } from "./history-service/redis-custom-history
 import { LLMService } from "./llm-service";
 import { ChatLogger } from "./logger";
 import { RateLimitService } from "./ratelimit-service";
-import type {
-  ChatOptions,
-  PrepareChatResult,
-  Prettify,
-  RAGChatConfig,
-  UpstashMessage,
-} from "./types";
+import type { ChatOptions, PrepareChatResult, RAGChatConfig, UpstashMessage } from "./types";
 import type { ModifiedChatOptions } from "./utils";
 import { sanitizeQuestion } from "./utils";
 
@@ -46,8 +40,8 @@ type ChatReturnType<TMetadata extends unknown[], T extends Partial<ChatOptions>>
       }
     : { output: string; isStream: false }) & {
     metadata: TMetadata;
-    context: Prettify<PrepareChatResult>;
-    history: Prettify<UpstashMessage>[];
+    context: PrepareChatResult;
+    history: UpstashMessage[];
   }
 >;
 
