@@ -9,7 +9,7 @@ The project includes four endpoints:
 - `/chat-stream` to make a chat request with rag-chat using Upstash LLM with streaming.
 - `/chat-stream-openai` to make a chat request with rag-chat using OpenAI LLM with streaming.
 
-You can check out the `src/router.ts` file to see how each endpoint works.
+You can check out the `src/index.ts` file to see how each endpoint works.
 
 For running the app locally, first run `npm install` to install the packages. Then, see the `Set Environment Variables` and `Development` sections below.
 
@@ -28,13 +28,7 @@ npm install @upstash/rag-chat
 Ensure your wrangler.toml file includes the following configuration to enable Node.js compatibility:
 
 ```toml
-node_compat = true
-```
-
-In older CF worker versions, you may need to set the following compatibility flags:
-
-```toml
-compatibility_flags = [ "streams_enable_constructors", "transformstream_enable_standard_constructor" ]
+compatibility_flags = ["nodejs_compat_v2"]
 ```
 
 ### 3. Set Environment Variables

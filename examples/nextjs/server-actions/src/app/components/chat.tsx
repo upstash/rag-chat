@@ -10,29 +10,30 @@ export const Chat = ({ initialMessages }: { initialMessages?: UpstashMessage[] }
   const [input, setInput] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
     if (!input.trim()) return;
 
     const userMessage: UpstashMessage = { content: input, role: "user", id: Date.now().toString() };
-    setMessages((prev) => [...prev, userMessage]);
+    setMessages((previous) => [...previous, userMessage]);
     setInput("");
     setIsLoading(true);
 
     try {
       const stream = await serverChat({ userMessage });
-      let aiMessage: UpstashMessage = {
+      const aiMessage: UpstashMessage = {
         content: "",
         role: "assistant",
         id: (Date.now() + 1).toString(),
       };
-      setMessages((prev) => [...prev, aiMessage]);
+      setMessages((previous) => [...previous, aiMessage]);
 
       for await (const chunk of readServerActionStream(stream)) {
+        if (!chunk) continue;
         aiMessage.content += chunk;
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === aiMessage.id ? { ...msg, content: aiMessage.content } : msg
+        setMessages((previous) =>
+          previous.map((message) =>
+            message.id === aiMessage.id ? { ...message, content: aiMessage.content } : message
           )
         );
       }
@@ -68,7 +69,9 @@ export const Chat = ({ initialMessages }: { initialMessages?: UpstashMessage[] }
           className="flex-grow p-2 border border-gray-300 rounded-l shadow-xl"
           value={input}
           placeholder="Ask something..."
-          onChange={(e) => setInput(e.target.value)}
+          onChange={(event) => {
+            setInput(event.target.value);
+          }}
           disabled={isLoading}
         />
         <button

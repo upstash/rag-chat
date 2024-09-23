@@ -1,5 +1,5 @@
 {
-  "name": "solidstart-openai",
+  "name": "solid-example",
   "private": true,
   "type": "module",
   "scripts": {
@@ -14,13 +14,11 @@
     "vinxi": "^0.3.12"
   },
   "dependencies": {
-    "@ai-sdk/openai": "latest",
-    "@ai-sdk/solid": "latest",
+    "@ai-sdk/solid": "^0.0.47",
     "@solidjs/meta": "0.29.4",
     "@solidjs/router": "^0.13.6",
     "@solidjs/start": "^1.0.2",
-    "@upstash/rag-chat": "1.0.1",
-    "ai": "latest",
+    "@upstash/rag-chat": "latest",
     "solid-js": "^1.8.17",
     "zod": "^3.23.8"
   },
