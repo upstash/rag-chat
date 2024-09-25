@@ -60,6 +60,7 @@ export type LLMClientConfig = {
   logprobs?: boolean;
   topLogprobs?: number;
   openAIApiKey?: string;
+  organization?: string;
   apiKey?: string;
   baseUrl: string;
 };
@@ -170,6 +171,7 @@ const setupAnalytics = (
 
 const createLLMClient = (model: string, options: ModelOptions, provider?: Providers) => {
   const apiKey = options.apiKey ?? process.env.OPENAI_API_KEY ?? "";
+  const organization = options.organization ?? process.env.OPENAI_ORGANIZATION ?? "";
   const providerBaseUrl = options.baseUrl;
   if (!apiKey) {
     throw new Error(
@@ -189,11 +191,15 @@ const createLLMClient = (model: string, options: ModelOptions, provider?: Provid
     configuration: {
       baseURL: analyticsSetup.baseURL ?? providerBaseUrl,
       ...(analyticsSetup.defaultHeaders && { defaultHeaders: analyticsSetup.defaultHeaders }),
+      organization,
     },
   });
 };
 
-export const upstash = (model: UpstashChatModel, options?: Omit<ModelOptions, "baseUrl">) => {
+export const upstash = (
+  model: UpstashChatModel,
+  options?: Omit<ModelOptions, "baseUrl" | "organization">
+) => {
   const apiKey = options?.apiKey ?? process.env.QSTASH_TOKEN ?? "";
   if (!apiKey) {
     throw new Error(
@@ -208,7 +214,7 @@ export const upstash = (model: UpstashChatModel, options?: Omit<ModelOptions, "b
   );
 };
 
-export const custom = (model: string, options: ModelOptions) => {
+export const custom = (model: string, options: Omit<ModelOptions, "organization">) => {
   if (!options.baseUrl) throw new Error("baseUrl cannot be empty or undefined.");
   return createLLMClient(model, options, "custom");
 };
