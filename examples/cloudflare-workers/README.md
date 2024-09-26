@@ -31,6 +31,12 @@ Ensure your wrangler.toml file includes the following configuration to enable No
 compatibility_flags = ["nodejs_compat_v2"]
 ```
 
+In older CF worker versions, you may need to set the following compatibility flags:
+
+```toml
+compatibility_flags = [ "streams_enable_constructors", "transformstream_enable_standard_constructor" ]
+```
+
 ### 3. Set Environment Variables
 
 For local development, create a `.dev.vars` file and populate it with the following variables:
