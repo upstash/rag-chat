@@ -18,12 +18,12 @@ const app = new Hono<{
 
 app.use("*", async (c, next) => {
   const ragChat = new RAGChat({
-    // model: upstash("meta-llama/Meta-Llama-3-8B-Instruct", { apiKey: c.env.QSTASH_TOKEN }),
-    
+    model: upstash("meta-llama/Meta-Llama-3-8B-Instruct", { apiKey: c.env.QSTASH_TOKEN }),
+
     // 👇 ALTERNATIVE
-    model: openai("gpt-4-turbo", {
-      apiKey: c.env.OPENAI_API_KEY,
-    }),
+    // model: openai("gpt-4-turbo", {
+    //   apiKey: c.env.OPENAI_API_KEY,
+    // }),
 
     vector: new Index({
       url: c.env.UPSTASH_VECTOR_REST_URL,
