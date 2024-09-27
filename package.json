@@ -1,8 +1,10 @@
 {
   "name": "@upstash/rag-chat",
   "version": "1.0.5",
-  "main": "./dist/base/index.mjs",
-  "types": "./dist/base/index.d.ts",
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
   "scripts": {
     "test": "bun test",
     "fmt": "prettier --write .",
@@ -22,17 +24,18 @@
   },
   "description": "Simple RAG Chat using Upstash",
   "files": [
-    "dist"
+    "dist",
+    "nextjs/dist"
   ],
   "exports": {
     ".": {
-      "import": "./dist/base/index.mjs",
-      "require": "./dist/base/index.js"
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
     },
     "./nextjs": {
-      "react-server": "./dist/nextjs/rsc-server.mjs",
-      "import": "./dist/nextjs/index.mjs",
-      "require": "./dist/nextjs/index.js"
+      "react-server": "./nextjs/dist/rsc-server.mjs",
+      "import": "./nextjs/dist/index.mjs",
+      "require": "./nextjs/dist/index.js"
     }
   },
   "homepage": "https://upstash.com/docs/vector/sdks/rag-chat",

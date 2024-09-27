@@ -1,24 +1,22 @@
 import { defineConfig } from "tsup";
 export default defineConfig([
   {
-    entry: ["./index.ts"],
-    outDir: "dist/base",
+    entry: ["src/index.ts"],
+    outDir: "dist",
     format: ["cjs", "esm"],
     clean: true,
     dts: true,
   },
   {
-    entry: ["src/nextjs/rsc-server.ts"],
-    outDir: "dist/nextjs",
+    entry: ["nextjs/rsc-server.ts"],
+    outDir: "nextjs/dist",
     format: ["esm"],
-    clean: true,
     dts: true,
   },
   {
-    entry: ["src/nextjs/index.ts"],
-    outDir: "dist/nextjs",
+    entry: ["nextjs/index.ts"],
+    outDir: "nextjs/dist",
     format: ["cjs", "esm"],
-    clean: true,
     dts: true,
   },
 ]);
