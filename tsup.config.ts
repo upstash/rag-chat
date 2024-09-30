@@ -8,14 +8,14 @@ export default defineConfig([
     dts: true,
   },
   {
-    entry: ["nextjs/rsc-server.ts"],
-    outDir: "nextjs/dist",
+    entry: ["src/nextjs/rsc-server.ts"],
+    outDir: "dist/nextjs",
     format: ["esm"],
     dts: true,
   },
   {
-    entry: ["nextjs/index.ts"],
-    outDir: "nextjs/dist",
+    entry: ["src/nextjs/index.ts"],
+    outDir: "dist/nextjs",
     format: ["cjs", "esm"],
     dts: true,
   },
