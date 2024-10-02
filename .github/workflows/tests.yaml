@@ -41,3 +41,88 @@ jobs:
 
       - name: Run Build
         run: bun run build
+
+  cloudflare-workers-local:
+    needs:
+      - test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup repo
+        uses: actions/checkout@v3
+      - name: Setup nodejs
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install Dependencies
+        run: bun install
+
+      - name: Build
+        run: bun run build
+
+      - name: Change directory
+        run: cd examples/cloudflare-workers
+
+      - name: Install example
+        run: bun add @upstash/rag-chat@../../dist
+
+      - name: Add environment
+        run: |
+          echo '[vars]' >> wrangler.toml
+          echo "UPSTASH_VECTOR_REST_URL = \"$UPSTASH_VECTOR_REST_URL\"" >> ./wrangler.toml
+          echo "UPSTASH_VECTOR_REST_TOKEN = \"$UPSTASH_VECTOR_REST_TOKEN\"" >> ./wrangler.toml
+
+      - name: Start example
+        run: bun dev & sleep 5
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+          UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+
+      - name: Test
+        run: bun test ci.test.ts
+
+  cloudflare-workers-deployed:
+    if: false
+    concurrency: cloudflare-workers-deployed
+    needs:
+      - release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup repo
+        uses: actions/checkout@v3
+      - name: Setup nodejs
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install example
+        run: |
+          bun add @upstash/redis@${{needs.release.outputs.version}}
+          npm i -g wrangler
+        working-directory: examples/cloudflare-workers-with-typescript
+
+      - name: Add account ID
+        run: echo 'account_id = "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}"' >> wrangler.toml
+        working-directory: examples/cloudflare-workers-with-typescript
+
+      - name: Deploy
+        run: wrangler publish
+        working-directory: examples/cloudflare-workers-with-typescript
+        env:
+          CLOUDFLARE_API_TOKEN: ${{secrets.CF_API_TOKEN}}
+
+      - name: Test
+        run: bun test examples/cloudflare-workers-with-typescript/ci.test.ts
+        env:
+          DEPLOYMENT_URL: https://cloudflare-workers-with-typescript.upstash.workers.dev
