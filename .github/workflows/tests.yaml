@@ -85,7 +85,7 @@ jobs:
         run: bun test ci.test.ts
         working-directory: examples/cloudflare-workers
         env:
-          DEPLOYMENT_URL: http://localhost:3000
+          DEPLOYMENT_URL: http://localhost:8787
 
   nodejs-local:
     needs:
@@ -120,7 +120,7 @@ jobs:
         run: bun test ci.test.ts
         working-directory: examples/nodejs
         env:
-          DEPLOYMENT_URL: http://localhost:3000
+          DEPLOYMENT_URL: http://localhost:8080
 
   nextjs-chat-to-website:
     # skip because there is an issue in how the page interacts with local build
