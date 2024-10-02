@@ -188,12 +188,13 @@ jobs:
 
       - name: Deploy
         run: |
-          pnpm --dir=examples/nextjs/chat-to-website add @upstash/rag-chat@${{needs.release.outputs.version}}
+          pnpm add @upstash/rag-chat@${{needs.release.outputs.version}}
           DEPLOYMENT_URL=$(npx vercel --token=${{ secrets.VERCEL_TOKEN }})
           echo "DEPLOYMENT_URL=${DEPLOYMENT_URL}" >> $GITHUB_ENV
         env:
           VERCEL_ORG_ID: ${{secrets.VERCEL_TEAM_ID}}
           VERCEL_PROJECT_ID: "prj_lVGCSdQpf4Zne4tbDcaTbZNW6abq"
+        working-directory: examples/nextjs/chat-to-website
 
       - name: Test
         run: bun test examples/nextjs/chat-to-website/ci.test.ts
