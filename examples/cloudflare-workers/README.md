@@ -1,3 +1,5 @@
+> NOTE: Currently there is an issue with our dependencies that is causing the bundle size to exceed the 1MB free limit of Cloudflare Workers. We are working on a fix and will update this example once it is resolved.
+
 # RAGChat with Cloudflare Workers
 
 This project demonstrates how to implement RAGChat (Retrieval-Augmented Generation Chat) using a basic Cloudflare Workers with Hono Router.
