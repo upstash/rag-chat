@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@nextui-org/react": "^2.4.6",
-    "@upstash/rag-chat": "latest",
+    "@upstash/rag-chat": "^1.6.4",
     "@upstash/redis": "^1.34.0",
     "ai": "^3.3.0",
     "class-variance-authority": "^0.7.0",
