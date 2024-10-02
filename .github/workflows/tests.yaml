@@ -74,6 +74,9 @@ jobs:
           echo '[vars]' >> wrangler.toml
           echo "UPSTASH_VECTOR_REST_URL = \"$UPSTASH_VECTOR_REST_URL\"" >> ./wrangler.toml
           echo "UPSTASH_VECTOR_REST_TOKEN = \"$UPSTASH_VECTOR_REST_TOKEN\"" >> ./wrangler.toml
+          echo "UPSTASH_REDIS_REST_URL = \"$UPSTASH_REDIS_REST_URL\"" >> ./wrangler.toml
+          echo "UPSTASH_REDIS_REST_TOKEN = \"$UPSTASH_REDIS_REST_TOKEN\"" >> ./wrangler.toml
+          echo "QSTASH_TOKEN = \"$QSTASH_TOKEN\"" >> ./wrangler.toml
         working-directory: examples/cloudflare-workers
 
       - name: Start example
