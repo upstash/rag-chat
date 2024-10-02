@@ -86,3 +86,35 @@ jobs:
 
       - name: Test
         run: bun test ci.test.ts
+
+  nodejs-local:
+    needs:
+      - test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup repo
+        uses: actions/checkout@v3
+      - name: Setup nodejs
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install Dependencies
+        run: bun install
+
+      - name: Build
+        run: bun run build
+
+      - name: Change directory
+        run: cd examples/nodejs
+
+      - name: Install example
+        run: bun add @upstash/rag-chat@../../dist
+
+      - name: Run example
+        run: npm run dev
