@@ -17,5 +17,5 @@ test("/chat endpoint returning", async () => {
 
   const text = await res.text();
 
-  console.log("/chat returned", text);
+  console.log("/chat returned >", text, "<");
 });
