@@ -747,6 +747,7 @@ describe("RAG Chat with Vercel AI SDK", () => {
       options: { namespace },
     });
     await awaitUntilIndexed(vector);
+    await redis.flushdb();
   });
 
   afterAll(async () => {
@@ -809,6 +810,7 @@ describe("RAG Chat with disableHistory option", () => {
       options: { namespace },
     });
     await awaitUntilIndexed(vector);
+    await redis.flushdb();
   });
 
   beforeEach(() => {
