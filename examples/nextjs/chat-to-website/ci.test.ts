@@ -2,6 +2,11 @@ import { test, expect } from "bun:test";
 import { Redis } from "@upstash/redis";
 import { Index } from "@upstash/vector";
 
+const deploymentURL = process.env.DEPLOYMENT_URL;
+if (!deploymentURL) {
+  throw new Error("DEPLOYMENT_URL not set");
+}
+
 async function collectStream(response: Response): Promise<string> {
   if (!response.body) {
     throw new Error("No response body");
@@ -28,14 +33,13 @@ async function collectStream(response: Response): Promise<string> {
 }
 
 async function invokeLoadPage(
-  url = "http://localhost:3000/",
   website = "https://raw.githubusercontent.com/upstash/docs/refs/heads/main/qstash/workflow/basics/caveats.mdx"
 ) {
-  await fetch(`${url}${website}`, { method: "GET" });
+  await fetch(`${deploymentURL}/${website}`, { method: "GET" });
 }
 
 async function invokeChat(userMessage: string, url = "http://localhost:3000/") {
-  return await fetch("http://localhost:3000/api/chat-stream", {
+  return await fetch(`${deploymentURL}/api/chat-stream`, {
     body: JSON.stringify({
       messages: [
         {

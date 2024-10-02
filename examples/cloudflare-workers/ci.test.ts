@@ -1,9 +1,12 @@
 import { test, expect } from "bun:test";
 
-const url = `http://localhost:8787`;
+const deploymentURL = process.env.DEPLOYMENT_URL;
+if (!deploymentURL) {
+  throw new Error("DEPLOYMENT_URL not set");
+}
 
 test("the server is running", async () => {
-  const res = await fetch(url);
+  const res = await fetch(deploymentURL);
   if (res.status !== 200) {
     console.log(await res.text());
   }
@@ -11,7 +14,7 @@ test("the server is running", async () => {
 });
 
 test("/chat endpoint returning", async () => {
-  const res = await fetch(`${url}/chat`);
+  const res = await fetch(`${deploymentURL}/chat`);
 
   expect(res.status).toEqual(200);
 

@@ -1,11 +1,14 @@
 import { test, expect } from "bun:test";
 
-const url = `http://localhost:8080`;
+const deploymentURL = process.env.DEPLOYMENT_URL;
+if (!deploymentURL) {
+  throw new Error("DEPLOYMENT_URL not set");
+}
 
 test(
   "the server is running",
   async () => {
-    const res = await fetch(url);
+    const res = await fetch(deploymentURL);
 
     expect(res.status).toEqual(200);
 
