@@ -17,9 +17,7 @@ jobs:
         run: echo "VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
 
       - name: Setup Node
-        uses: actions/setup-node@v2
-        with:
-          node-version: 18
+        uses: actions/setup-node@v3
 
       - name: Set package version
         run: echo $(jq --arg v "${{ env.VERSION }}" '(.version) = $v' package.json) > package.json
