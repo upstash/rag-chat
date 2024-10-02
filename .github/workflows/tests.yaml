@@ -82,6 +82,7 @@ jobs:
 
       - name: Test
         run: bun test ci.test.ts
+        working-directory: examples/cloudflare-workers
 
   nodejs-local:
     needs:
