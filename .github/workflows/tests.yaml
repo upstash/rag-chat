@@ -65,24 +65,20 @@ jobs:
       - name: Build
         run: bun run build
 
-      - name: Change directory
-        run: cd examples/cloudflare-workers
-
       - name: Install example
         run: bun add @upstash/rag-chat@../../dist
+        working-directory: examples/cloudflare-workers
 
       - name: Add environment
         run: |
           echo '[vars]' >> wrangler.toml
           echo "UPSTASH_VECTOR_REST_URL = \"$UPSTASH_VECTOR_REST_URL\"" >> ./wrangler.toml
           echo "UPSTASH_VECTOR_REST_TOKEN = \"$UPSTASH_VECTOR_REST_TOKEN\"" >> ./wrangler.toml
+        working-directory: examples/cloudflare-workers
 
       - name: Start example
-        run: bun dev & sleep 5
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
-          UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
-          UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+        run: bun dev & sleep 10
+        working-directory: examples/cloudflare-workers
 
       - name: Test
         run: bun test ci.test.ts
@@ -110,11 +106,14 @@ jobs:
       - name: Build
         run: bun run build
 
-      - name: Change directory
-        run: cd examples/nodejs
-
       - name: Install example
         run: bun add @upstash/rag-chat@../../dist
+        working-directory: examples/nodejs
 
       - name: Run example
-        run: npm run dev
+        run: npm run dev & sleep 20
+        working-directory: examples/nodejs
+
+      - name: Test
+        run: bun test ci.test.ts
+        working-directory: examples/nodejs
