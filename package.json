@@ -55,6 +55,7 @@
   "devDependencies": {
     "@commitlint/cli": "^19.2.2",
     "@commitlint/config-conventional": "^19.2.2",
+    "@types/bun": "^1.1.10",
     "@types/react": "^18.3.3",
     "@typescript-eslint/eslint-plugin": "^8.6.0",
     "bun-types": "^1.1.19",
