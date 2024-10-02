@@ -6,7 +6,7 @@
   "types": "./index.d.ts",
   "sideEffects": false,
   "scripts": {
-    "test": "bun test",
+    "test": "bun test src",
     "fmt": "prettier --write .",
     "lint": "eslint \"src/**/*.{js,ts,tsx}\" --quiet --fix",
     "build": "tsup && cp package.json README.md LICENSE dist/",
