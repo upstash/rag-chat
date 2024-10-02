@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { Index } from "@upstash/vector";
-import { openai, RAGChat, upstash } from "@upstash/rag-chat";
+import { RAGChat, upstash } from "@upstash/rag-chat";
 
 const app = new Hono<{
   Variables: {
