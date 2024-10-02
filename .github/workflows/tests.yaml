@@ -117,3 +117,114 @@ jobs:
       - name: Test
         run: bun test ci.test.ts
         working-directory: examples/nodejs
+
+  nextjs-chat-to-website:
+    needs:
+      - test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup repo
+        uses: actions/checkout@v3
+      - name: Setup nodejs
+        uses: actions/setup-node@v3
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install Dependencies
+        run: bun install
+
+      - name: Build
+        run: bun run build
+
+      - name: Install example
+        run: bun add @upstash/rag-chat@../../../dist
+        working-directory: examples/nextjs/chat-to-website
+
+      - name: Build example
+        run: bun run build
+        working-directory: examples/nextjs/chat-to-website
+
+      - name: Run example
+        run: npm run start &
+        working-directory: examples/nextjs/chat-to-website
+
+      - name: Test
+        run: bun test ci.test.ts
+        working-directory: examples/nextjs/chat-to-website
+
+  nextjs-server-actions:
+    needs:
+      - test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup repo
+        uses: actions/checkout@v3
+      - name: Setup nodejs
+        uses: actions/setup-node@v3
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install Dependencies
+        run: bun install
+
+      - name: Build
+        run: bun run build
+
+      - name: Install example
+        run: bun add @upstash/rag-chat@../../../dist
+        working-directory: examples/nextjs/server-actions
+
+      - name: Build example
+        run: bun run build
+        working-directory: examples/nextjs/server-actions
+
+      - name: Run example
+        run: npm run start &
+        working-directory: examples/nextjs/server-actions
+
+      - name: Test
+        run: bun test ci.test.ts
+        working-directory: examples/nextjs/server-actions
+
+  nextjs-vercel-ai-sdk:
+    needs:
+      - test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup repo
+        uses: actions/checkout@v3
+      - name: Setup nodejs
+        uses: actions/setup-node@v3
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install Dependencies
+        run: bun install
+
+      - name: Build
+        run: bun run build
+
+      - name: Install example
+        run: bun add @upstash/rag-chat@../../../dist
+        working-directory: examples/nextjs/vercel-ai-sdk
+
+      - name: Build example
+        run: bun run build
+        working-directory: examples/nextjs/vercel-ai-sdk
+
+      - name: Run example
+        run: npm run start &
+        working-directory: examples/nextjs/vercel-ai-sdk
+
+      - name: Test
+        run: bun test ci.test.ts
+        working-directory: examples/nextjs/vercel-ai-sdk

@@ -1,4 +1,4 @@
-# RAGChat with Nuxt.js Example
+# RAGChat with Next.js Example
 
 This project demonstrates how to implement RAGChat (Retrieval-Augmented Generation Chat) using Next.js server actions.
 

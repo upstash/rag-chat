@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-magic-numbers */
 import { RAGChat } from "@upstash/rag-chat";
 
 export async function POST() {
