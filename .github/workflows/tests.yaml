@@ -125,12 +125,12 @@ jobs:
         run: wrangler publish
         working-directory: examples/cloudflare-workers
         env:
-          CLOUDFLARE_API_TOKEN: ${{secrets.CF_API_TOKEN}}
+          CLOUDFLARE_API_TOKEN: ${{secrets.CLOUDFLARE_API_TOKEN}}
 
       - name: Test
         run: bun test examples/cloudflare-workers/ci.test.ts
         env:
-          DEPLOYMENT_URL: https://upstash-rag-chat.upstash.workers.dev
+          DEPLOYMENT_URL: https://upstash-rag-chat.upsdev.workers.dev
 
   nodejs-local:
     needs:
