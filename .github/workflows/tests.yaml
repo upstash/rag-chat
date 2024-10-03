@@ -42,3 +42,379 @@ jobs:
 
       - name: Run Build
         run: bun run build
+
+  cloudflare-workers-local:
+    needs:
+      - test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup repo
+        uses: actions/checkout@v3
+      - name: Setup nodejs
+        uses: actions/setup-node@v3
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install Dependencies
+        run: bun install
+
+      - name: Build
+        run: bun run build
+
+      - name: Install example
+        run: bun add @upstash/rag-chat@../../dist
+        working-directory: examples/cloudflare-workers
+
+      - name: Add environment
+        run: |
+          echo '[vars]' >> wrangler.toml
+          echo "UPSTASH_VECTOR_REST_URL = \"$UPSTASH_VECTOR_REST_URL\"" >> ./wrangler.toml
+          echo "UPSTASH_VECTOR_REST_TOKEN = \"$UPSTASH_VECTOR_REST_TOKEN\"" >> ./wrangler.toml
+          echo "UPSTASH_REDIS_REST_URL = \"$UPSTASH_REDIS_REST_URL\"" >> ./wrangler.toml
+          echo "UPSTASH_REDIS_REST_TOKEN = \"$UPSTASH_REDIS_REST_TOKEN\"" >> ./wrangler.toml
+          echo "QSTASH_TOKEN = \"$QSTASH_TOKEN\"" >> ./wrangler.toml
+        working-directory: examples/cloudflare-workers
+
+      - name: Start example
+        run: bun dev &
+        working-directory: examples/cloudflare-workers
+
+      - name: Test
+        run: bun test ci.test.ts
+        working-directory: examples/cloudflare-workers
+        env:
+          DEPLOYMENT_URL: http://127.0.0.1:8787
+
+  cloudflare-workers-deployed:
+    concurrency: cloudflare-workers-deployed
+    needs:
+      - release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup repo
+        uses: actions/checkout@v3
+      - name: Setup nodejs
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install example
+        run: |
+          bun add @upstash/rag-chat@${{needs.release.outputs.version}}
+          npm i -g wrangler
+        working-directory: examples/cloudflare-workers
+
+      - name: Add account ID
+        run: echo 'account_id = "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}"' >> wrangler.toml
+        working-directory: examples/cloudflare-workers
+
+      - name: Add environment
+        run: |
+          echo '[vars]' >> wrangler.toml
+          echo "UPSTASH_VECTOR_REST_URL = \"$UPSTASH_VECTOR_REST_URL\"" >> ./wrangler.toml
+          echo "UPSTASH_VECTOR_REST_TOKEN = \"$UPSTASH_VECTOR_REST_TOKEN\"" >> ./wrangler.toml
+          echo "UPSTASH_REDIS_REST_URL = \"$UPSTASH_REDIS_REST_URL\"" >> ./wrangler.toml
+          echo "UPSTASH_REDIS_REST_TOKEN = \"$UPSTASH_REDIS_REST_TOKEN\"" >> ./wrangler.toml
+          echo "QSTASH_TOKEN = \"$QSTASH_TOKEN\"" >> ./wrangler.toml
+        working-directory: examples/cloudflare-workers
+
+      - name: Deploy
+        run: wrangler publish
+        working-directory: examples/cloudflare-workers
+        env:
+          CLOUDFLARE_API_TOKEN: ${{secrets.CLOUDFLARE_API_TOKEN}}
+
+      - name: Test
+        run: bun test examples/cloudflare-workers/ci.test.ts
+        env:
+          DEPLOYMENT_URL: https://upstash-rag-chat.upsdev.workers.dev
+
+  nodejs-local:
+    needs:
+      - test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup repo
+        uses: actions/checkout@v3
+      - name: Setup nodejs
+        uses: actions/setup-node@v3
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install Dependencies
+        run: bun install
+
+      - name: Build
+        run: bun run build
+
+      - name: Install example
+        run: bun add @upstash/rag-chat@../../dist
+        working-directory: examples/nodejs
+
+      - name: Run example
+        run: npm run dev &
+        working-directory: examples/nodejs
+
+      - name: Test
+        run: bun test ci.test.ts
+        working-directory: examples/nodejs
+        env:
+          DEPLOYMENT_URL: http://localhost:8080
+
+  nextjs-chat-to-website:
+    # skip because there is an issue in how the page interacts with local build
+    # see https://github.com/upstash/rag-chat/actions/runs/11146663030/job/30979203308
+    # it's tested after pre-release with nextjs-chat-to-website-deployed
+    if: false
+    needs:
+      - test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup repo
+        uses: actions/checkout@v3
+      - name: Setup nodejs
+        uses: actions/setup-node@v3
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install Dependencies
+        run: bun install
+
+      - name: Build
+        run: bun run build
+
+      - name: Install example
+        run: bun add @upstash/rag-chat@../../../dist
+        working-directory: examples/nextjs/chat-to-website
+
+      - name: Build example
+        run: bun run build
+        working-directory: examples/nextjs/chat-to-website
+
+      - name: Run example
+        run: npm run start &
+        working-directory: examples/nextjs/chat-to-website
+
+      - name: Test
+        run: bun test ci.test.ts
+        working-directory: examples/nextjs/chat-to-website
+        env:
+          DEPLOYMENT_URL: http://localhost:3000
+
+  nextjs-chat-to-website-deployed:
+    concurrency: nextjs-chat-to-website-deployed
+    runs-on: ubuntu-latest
+    needs:
+      - release
+    steps:
+      - name: Setup repo
+        uses: actions/checkout@v3
+      - name: Setup node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - uses: pnpm/action-setup@v2
+        with:
+          version: latest
+
+      - name: Deploy
+        run: |
+          pnpm add @upstash/rag-chat@${{needs.release.outputs.version}}
+          DEPLOYMENT_URL=$(npx vercel --token=${{ secrets.VERCEL_TOKEN }})
+          echo "DEPLOYMENT_URL=${DEPLOYMENT_URL}" >> $GITHUB_ENV
+        env:
+          VERCEL_ORG_ID: ${{secrets.VERCEL_TEAM_ID}}
+          VERCEL_PROJECT_ID: "prj_lVGCSdQpf4Zne4tbDcaTbZNW6abq"
+        working-directory: examples/nextjs/chat-to-website
+
+      - name: Test
+        run: bun test examples/nextjs/chat-to-website/ci.test.ts
+        working-directory: examples/nextjs/chat-to-website
+
+  nextjs-server-actions:
+    if: false # skip because we can't reliably call server action
+    needs:
+      - test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup repo
+        uses: actions/checkout@v3
+      - name: Setup nodejs
+        uses: actions/setup-node@v3
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install Dependencies
+        run: bun install
+
+      - name: Build
+        run: bun run build
+
+      - name: Install example
+        run: bun add @upstash/rag-chat@../../../dist
+        working-directory: examples/nextjs/server-actions
+
+      - name: Build example
+        run: bun run build
+        working-directory: examples/nextjs/server-actions
+
+      - name: Run example
+        run: npm run start &
+        working-directory: examples/nextjs/server-actions
+
+      - name: Test
+        run: bun test ci.test.ts
+        working-directory: examples/nextjs/server-actions
+        env:
+          DEPLOYMENT_URL: http://localhost:3000
+
+  nextjs-vercel-ai-sdk:
+    needs:
+      - test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup repo
+        uses: actions/checkout@v3
+      - name: Setup nodejs
+        uses: actions/setup-node@v3
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install Dependencies
+        run: bun install
+
+      - name: Build
+        run: bun run build
+
+      - name: Install example
+        run: bun add @upstash/rag-chat@../../../dist
+        working-directory: examples/nextjs/vercel-ai-sdk
+
+      - name: Build example
+        run: bun run build
+        working-directory: examples/nextjs/vercel-ai-sdk
+
+      - name: Run example
+        run: npm run start &
+        working-directory: examples/nextjs/vercel-ai-sdk
+
+      - name: Test
+        run: bun test ci.test.ts
+        working-directory: examples/nextjs/vercel-ai-sdk
+        env:
+          DEPLOYMENT_URL: http://localhost:3000
+
+  nextjs-vercel-ai-sdk-deployed:
+    concurrency: nextjs-vercel-ai-sdk-deployed
+    runs-on: ubuntu-latest
+    needs:
+      - release
+    steps:
+      - name: Setup repo
+        uses: actions/checkout@v3
+      - name: Setup node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - uses: pnpm/action-setup@v2
+        with:
+          version: latest
+
+      - name: Deploy
+        run: |
+          pnpm add @upstash/rag-chat@${{needs.release.outputs.version}}
+          DEPLOYMENT_URL=$(npx vercel --token=${{ secrets.VERCEL_TOKEN }})
+          echo "DEPLOYMENT_URL=${DEPLOYMENT_URL}" >> $GITHUB_ENV
+        env:
+          VERCEL_ORG_ID: ${{secrets.VERCEL_TEAM_ID}}
+          VERCEL_PROJECT_ID: "prj_aDwZaThGXoRDQshllLdtoPtANb9W"
+        working-directory: examples/nextjs/vercel-ai-sdk
+
+      - name: Test
+        run: bun test examples/nextjs/vercel-ai-sdk/ci.test.ts
+        working-directory: examples/nextjs/vercel-ai-sdk
+
+  release:
+    concurrency: release
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    needs:
+      - cloudflare-workers-local
+      - nodejs-local
+      # removed these two because they are skipped:
+      # - nextjs-chat-to-website
+      # - nextjs-server-actions
+      - nextjs-vercel-ai-sdk
+
+    name: Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+
+      - name: Get version
+        id: version
+        run: echo "::set-output name=version::v0.0.0-ci.${GITHUB_SHA}-$(date +%Y%m%d%H%M%S)"
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Set version
+        run: |
+          echo $(jq --arg v "${{ steps.version.outputs.version }}" '(.version) = $v' package.json) > package.json
+
+      - name: Install Dependencies
+        run: bun install
+
+      - name: Build
+        run: bun run build
+
+      - name: Set NPM_TOKEN
+        run: npm config set //registry.npmjs.org/:_authToken=${{secrets.NPM_TOKEN}}
+
+      - name: Publish ci version
+        run: npm publish --tag=ci --verbose
+        working-directory: ./dist
+
+      - name: Sleep for 10s
+        run: sleep 10s
+        shell: bash

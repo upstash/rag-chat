@@ -25,7 +25,8 @@ async function checkStream(
   stream: ReadableStream<string>,
   expectInStream: string[] // array of strings to expect in stream
 ): Promise<void> {
-  const _stream = LangChainAdapter.toAIStream(stream);
+  const _stream = LangChainAdapter.toDataStream(stream);
+  // eslint-disable-next-line @typescript-eslint/no-deprecated
   const textResponse = new StreamingTextResponse(_stream);
   const text = await textResponse.text();
 
@@ -772,6 +773,7 @@ describe("RAG Chat with Vercel AI SDK", () => {
       options: { namespace },
     });
     await awaitUntilIndexed(vector);
+    await redis.flushdb();
   });
 
   afterAll(async () => {
@@ -837,6 +839,7 @@ describe("RAG Chat with disableHistory option", () => {
       options: { namespace },
     });
     await awaitUntilIndexed(vector);
+    await redis.flushdb();
   });
 
   beforeEach(() => {

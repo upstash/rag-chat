@@ -16,6 +16,7 @@ export const aiUseChatAdapter = (
 ) => {
   const streamData = new StreamData();
 
+  // eslint-disable-next-line @typescript-eslint/no-deprecated
   const wrappedStream = LangChainAdapter.toAIStream(response.output, {
     onStart() {
       if (metadata) {
@@ -26,5 +27,6 @@ export const aiUseChatAdapter = (
       void streamData.close();
     },
   });
+  // eslint-disable-next-line @typescript-eslint/no-deprecated
   return new StreamingTextResponse(wrappedStream, {}, streamData);
 };

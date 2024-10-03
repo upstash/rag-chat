@@ -49,7 +49,7 @@ export class ContextService {
     return args.map((data) => this.add(data));
   }
 
-  async deleteEntireContext(options?: ResetOptions | undefined) {
+  async deleteEntireContext(options?: ResetOptions  ) {
     await this.#vectorService.reset(
       options?.namespace ? { namespace: options.namespace } : undefined
     );

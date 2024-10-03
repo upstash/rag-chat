@@ -1,5 +1,5 @@
 {
-  "name": "nextjs-app-router",
+  "name": "vercel-ai-sdk",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -9,7 +9,8 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@upstash/rag-chat": "^1.0.1",
+    "@upstash/rag-chat": "1.6.4",
+    "ai": "^3.4.8",
     "next": "14.2.11",
     "react": "^18",
     "react-dom": "^18"

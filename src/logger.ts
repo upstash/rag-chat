@@ -1,5 +1,5 @@
-const LOG_LEVELS = ["DEBUG", "INFO", "WARN", "ERROR"] as const;
-type LogLevel = (typeof LOG_LEVELS)[number];
+const _LOG_LEVELS = ["DEBUG", "INFO", "WARN", "ERROR"] as const;
+type LogLevel = (typeof _LOG_LEVELS)[number];
 
 type ChatLogEntry = {
   timestamp: number;

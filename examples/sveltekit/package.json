@@ -1,5 +1,5 @@
 {
-  "name": "sveltekit-openai",
+  "name": "sveltekit-example",
   "version": "0.0.0",
   "private": true,
   "scripts": {
@@ -10,10 +10,8 @@
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
   },
   "dependencies": {
-    "@ai-sdk/openai": "latest",
-    "@ai-sdk/svelte": "latest",
-    "@upstash/rag-chat": "1.0.1",
-    "ai": "latest",
+    "@ai-sdk/svelte": "^0.0.49",
+    "@upstash/rag-chat": "latest",
     "openai": "4.47.1"
   },
   "devDependencies": {

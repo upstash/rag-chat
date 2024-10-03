@@ -73,7 +73,7 @@ export class LLMService {
           let value: UpstashMessage | string | undefined;
 
           try {
-            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition, no-constant-condition
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
             while (true) {
               ({ done, value } = await reader.read());
               if (done) break;
@@ -118,8 +118,8 @@ export class LLMService {
       });
       content = text;
     } else {
-      const { content: text } = (await this.model.invoke(prompt)) as BaseMessage;
-      content = text;
+      const { content: output } = (await this.model.invoke(prompt)) as BaseMessage;
+      content = output;
     }
     onComplete?.(content as string);
     return { output: content as string, isStream: false };

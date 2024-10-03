@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-floating-promises */
 /* eslint-disable @typescript-eslint/no-unnecessary-condition */
-/* eslint-disable no-constant-condition */
 import { type StreamableValue, createStreamableValue } from "ai/rsc";
 
 export const createServerActionStream = (

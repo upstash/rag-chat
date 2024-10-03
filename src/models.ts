@@ -163,7 +163,6 @@ const setupAnalytics = (
     }
 
     default: {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       throw new Error(`Unsupported analytics provider: ${JSON.stringify(analytics)}`);
     }
   }
@@ -223,7 +222,6 @@ export const openai = (model: OpenAIChatModel, options?: Omit<ModelOptions, "bas
   return createLLMClient(model, { ...options, baseUrl: "https://api.openai.com/v1" }, "openai");
 };
 
-// eslint-disable-next-line @typescript-eslint/ban-types
 type OllamaModels = (typeof OLLAMA_MODELS)[number] | (string & {});
 
 type OllamaModelResult = {

@@ -1,35 +1,44 @@
 {
   "name": "@upstash/rag-chat",
   "version": "1.0.5",
-  "main": "./dist/base/index.mjs",
-  "types": "./dist/base/index.d.ts",
+  "main": "./index.mjs",
+  "module": "./index.mjs",
+  "types": "./index.d.ts",
+  "sideEffects": false,
   "scripts": {
-    "test": "bun test",
+    "test": "bun test src",
     "fmt": "prettier --write .",
-    "lint": "tsc && eslint \"src/**/*.{js,ts,tsx}\" --quiet --fix",
-    "build": "tsup",
-    "prepare": "husky install"
+    "lint": "eslint \"src/**/*.{js,ts,tsx}\" --quiet --fix",
+    "build": "tsup && cp package.json README.md LICENSE dist/",
+    "prepare": "husky",
+    "check-types": "tsc --noEmit",
+    "check-exports": "bun run build && cd dist && attw -P"
+  },
+  "lint-staged": {
+    "*": [
+      "eslint --fix",
+      "prettier --ignore-unknown --write"
+    ]
   },
   "bugs": {
     "url": "https://github.com/upstash/rag-chat/issues"
   },
   "description": "Simple RAG Chat using Upstash",
   "files": [
-    "dist"
+    "./*"
   ],
   "exports": {
     ".": {
-      "types": "./dist/base/index.d.ts",
-      "import": "./dist/base/index.mjs",
-      "require": "./dist/base/index.js"
+      "import": "./index.mjs",
+      "require": "./index.js"
     },
     "./nextjs": {
-      "types": "./dist/nextjs/index.d.ts",
-      "react-server": "./dist/nextjs/rsc-server.mjs",
-      "import": "./dist/nextjs/rsc-client.mjs"
+      "react-server": "./nextjs/rsc-server.mjs",
+      "import": "./nextjs/index.mjs",
+      "require": "./nextjs/index.js"
     }
   },
-  "homepage": "https://upstash.com/vector",
+  "homepage": "https://upstash.com/docs/vector/sdks/rag-chat",
   "keywords": [
     "vector",
     "upstash",
@@ -46,44 +55,42 @@
   "devDependencies": {
     "@commitlint/cli": "^19.2.2",
     "@commitlint/config-conventional": "^19.2.2",
+    "@types/bun": "^1.1.10",
     "@types/react": "^18.3.3",
-    "@typescript-eslint/eslint-plugin": "^7.0.1",
-    "@typescript-eslint/parser": "^7.0.1",
-    "bun-types": "latest",
-    "eslint": "^8",
-    "eslint-plugin-unicorn": "^51.0.1",
+    "@typescript-eslint/eslint-plugin": "^8.6.0",
+    "bun-types": "^1.1.19",
+    "eslint": "^9.11.0",
+    "eslint-plugin-unicorn": "^55.0.0",
     "husky": "^9.0.10",
+    "lint-staged": "^15.2.10",
     "prettier": "^3.2.5",
-    "tsup": "latest",
+    "tsup": "^8.3.0",
     "typescript": "^5.4.5",
-    "vitest": "latest"
+    "vitest": "^2.1.1"
   },
   "dependencies": {
     "@ai-sdk/openai": "^0.0.44",
-    "@langchain/community": "^0.2.28",
+    "@langchain/anthropic": "^0.2.15",
+    "@langchain/community": "^0.3.4",
     "@langchain/core": "^0.2.9",
+    "@langchain/mistralai": "^0.0.28",
     "@upstash/vector": "^1.1.3",
     "ai": "^3.1.1",
     "cheerio": "^1.0.0-rc.12",
     "d3-dsv": "^3.0.1",
     "html-to-text": "^9.0.5",
     "langchain": "^0.2.0",
-    "llamaindex": "0.6.0",
+    "langsmith": "^0.1.41",
     "nanoid": "^5.0.7",
     "pdf-parse": "^1.1.1",
     "unstructured-client": "^0.15.1"
   },
   "peerDependencies": {
     "@langchain/openai": "^0.2.8",
-    "@upstash/ratelimit": "^2.0.2",
+    "@upstash/ratelimit": "^1 || ^2",
     "@upstash/redis": "^1.34.0",
     "@upstash/vector": "^1.1.5",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
-  },
-  "optionalDependencies": {
-    "@langchain/anthropic": "^0.2.15",
-    "@langchain/mistralai": "^0.0.28",
-    "langsmith": "^0.1.41"
+    "react": "^18 || ^19",
+    "react-dom": "^18 || ^19"
   }
 }

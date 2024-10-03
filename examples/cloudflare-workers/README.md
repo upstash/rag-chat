@@ -1,3 +1,5 @@
+> NOTE: Currently there is an issue with our dependencies that is causing the bundle size to exceed the 1MB free limit of Cloudflare Workers. We are working on a fix and will update this example once it is resolved.
+
 # RAGChat with Cloudflare Workers
 
 This project demonstrates how to implement RAGChat (Retrieval-Augmented Generation Chat) using a basic Cloudflare Workers with Hono Router.
@@ -7,9 +9,8 @@ The project includes four endpoints:
 - `/add-data` to add data to your endpoint.
 - `/chat` to make a chat request with rag-chat using Upstash LLM.
 - `/chat-stream` to make a chat request with rag-chat using Upstash LLM with streaming.
-- `/chat-stream-openai` to make a chat request with rag-chat using OpenAI LLM with streaming.
 
-You can check out the `src/router.ts` file to see how each endpoint works.
+You can check out the `src/index.ts` file to see how each endpoint works.
 
 For running the app locally, first run `npm install` to install the packages. Then, see the `Set Environment Variables` and `Development` sections below.
 
@@ -28,7 +29,7 @@ npm install @upstash/rag-chat
 Ensure your wrangler.toml file includes the following configuration to enable Node.js compatibility:
 
 ```toml
-node_compat = true
+compatibility_flags = ["nodejs_compat"]
 ```
 
 In older CF worker versions, you may need to set the following compatibility flags:
@@ -47,11 +48,10 @@ UPSTASH_REDIS_REST_TOKEN="***"
 UPSTASH_VECTOR_REST_URL="***"
 UPSTASH_VECTOR_REST_TOKEN="***"
 QSTASH_TOKEN="***"
-OPENAI_API_KEY="***"
 ```
 
-- `QSTASH_TOKEN` is needed for the `/chat` and `/chat-stream` endpoints.
-- `OPENAI_API_KEY` is needed for the `/chat-stream-openai` endpoint.
+`QSTASH_TOKEN` is needed for the `/chat` and `/chat-stream` endpoints. If you want to use the openai models for the llm,
+you can provide the `OPENAI_API_KEY` environment variable instead.
 
 For deployment, use the `wrangler` CLI to securely set environment variables.
 Run the following command for each secret:
