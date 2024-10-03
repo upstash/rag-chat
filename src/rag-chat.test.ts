@@ -26,6 +26,7 @@ async function checkStream(
   expectInStream: string[] // array of strings to expect in stream
 ): Promise<void> {
   const _stream = LangChainAdapter.toDataStream(stream);
+  // eslint-disable-next-line @typescript-eslint/no-deprecated
   const textResponse = new StreamingTextResponse(_stream);
   const text = await textResponse.text();
 
