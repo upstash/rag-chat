@@ -12,7 +12,6 @@ import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { nanoid } from "nanoid";
 import { UnstructuredClient } from "unstructured-client";
 import type { DatasWithFileSource, FilePath, ProcessorType, URL } from "./database";
-import { LlamaParseReader } from "llamaindex/readers/LlamaParseReader";
 
 type Element = {
   type: string;
@@ -125,27 +124,7 @@ export class FileDataLoader {
         };
       }
       case "llama-parse": {
-        const reader = new LlamaParseReader(this.config.processor.options);
-        //@ts-expect-error TS can't pick up the correct type due to complex union
-        const parsedDocuments = await reader.loadData(this.config.fileSource);
-        return {
-          // eslint-disable-next-line @typescript-eslint/require-await
-          load: async (): Promise<Document[]> => {
-            const documents: Document[] = [];
-            for (const element of parsedDocuments) {
-              const { metadata, text } = element;
-              if (typeof text === "string" && text !== "") {
-                documents.push(
-                  new Document({
-                    pageContent: text,
-                    metadata,
-                  })
-                );
-              }
-            }
-            return documents;
-          },
-        };
+        throw new Error("llama-parse has been deprecated in @upstash/rag-chat 2.0.0.");
       }
     }
   }

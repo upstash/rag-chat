@@ -6,7 +6,6 @@ import { DEFAULT_SIMILARITY_THRESHOLD, DEFAULT_TOP_K } from "./constants";
 import { FileDataLoader } from "./file-loader";
 import type { AddContextOptions } from "./types";
 import type { UnstructuredLoaderOptions } from "@langchain/community/document_loaders/fs/unstructured";
-import type { LlamaParseReader } from "llamaindex/readers/LlamaParseReader";
 
 export type FilePath = string;
 export type URL = string;
@@ -16,7 +15,7 @@ export type ProcessorType =
       name: "unstructured";
       options: UnstructuredLoaderOptions;
     }
-  | { name: "llama-parse"; options: Partial<LlamaParseReader> };
+  | { name: "llama-parse"; options: unknown };
 
 export type DatasWithFileSource =
   | {
