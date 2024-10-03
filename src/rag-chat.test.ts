@@ -107,6 +107,13 @@ describe("RAG Chat with ratelimit", () => {
       verbose: false,
       temperature: 0,
       apiKey: process.env.OPENAI_API_KEY,
+      configuration: {
+        // if the OPENAI_ORGANIZATION env var is not set, the test may pass.
+        // we don't want it to pass so we pass a wrong key to make the test
+        // fail
+        // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
+        organization: process.env.OPENAI_ORGANIZATION || "wrong-key",
+      },
     }),
     vector,
     redis,
@@ -176,6 +183,9 @@ describe("RAG Chat with custom template", () => {
       verbose: false,
       temperature: 0,
       apiKey: process.env.OPENAI_API_KEY,
+      configuration: {
+        organization: process.env.OPENAI_ORGANIZATION,
+      },
     }),
   });
 
@@ -225,6 +235,9 @@ describe("RAG Chat addContext using PDF", () => {
       verbose: false,
       temperature: 0,
       apiKey: process.env.OPENAI_API_KEY,
+      configuration: {
+        organization: process.env.OPENAI_ORGANIZATION,
+      },
     }),
   });
 
@@ -267,6 +280,9 @@ describe("RAG Chat without Redis, but In-memory chat history", () => {
       verbose: false,
       temperature: 0,
       apiKey: process.env.OPENAI_API_KEY,
+      configuration: {
+        organization: process.env.OPENAI_ORGANIZATION,
+      },
     }),
     vector,
     namespace,
@@ -324,6 +340,9 @@ describe("RAG Chat addContext using CSV", () => {
       verbose: false,
       temperature: 0,
       apiKey: process.env.OPENAI_API_KEY,
+      configuration: {
+        organization: process.env.OPENAI_ORGANIZATION,
+      },
     }),
   });
 
@@ -366,6 +385,9 @@ describe("RAG Chat addContext using text-file", () => {
       verbose: false,
       temperature: 0,
       apiKey: process.env.OPENAI_API_KEY,
+      configuration: {
+        organization: process.env.OPENAI_ORGANIZATION,
+      },
     }),
   });
 
@@ -412,6 +434,9 @@ describe("RAG Chat addContext using HTML", () => {
       verbose: false,
       temperature: 0,
       apiKey: process.env.OPENAI_API_KEY,
+      configuration: {
+        organization: process.env.OPENAI_ORGANIZATION,
+      },
     }),
   });
 
@@ -793,6 +818,9 @@ describe("RAG Chat with disableHistory option", () => {
       verbose: false,
       temperature: 0,
       apiKey: process.env.OPENAI_API_KEY,
+      configuration: {
+        organization: process.env.OPENAI_ORGANIZATION,
+      },
     }),
     vector,
     redis,

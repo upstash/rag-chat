@@ -62,11 +62,12 @@ const initializeRedis = () => {
 const initializeModel = () => {
   const qstashToken = process.env.QSTASH_TOKEN;
   const openAIToken = process.env.OPENAI_API_KEY;
+  const organization = process.env.OPENAI_ORGANIZATION;
 
   if (qstashToken) return upstash("meta-llama/Meta-Llama-3-8B-Instruct", { apiKey: qstashToken });
 
   if (openAIToken) {
-    return openai("gpt-4o", { apiKey: openAIToken });
+    return openai("gpt-4o", { apiKey: openAIToken, organization });
   }
 
   throw new Error(
