@@ -87,6 +87,51 @@ jobs:
         env:
           DEPLOYMENT_URL: http://127.0.0.1:8787
 
+  cloudflare-workers-deployed:
+    concurrency: cloudflare-workers-deployed
+    needs:
+      - release
+    env:
+      UPSTASH_VECTOR_REST_URL: ${{ secrets.UPSTASH_VECTOR_REST_URL }}
+      UPSTASH_VECTOR_REST_TOKEN: ${{ secrets.UPSTASH_VECTOR_REST_TOKEN }}
+      UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+      UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+      QSTASH_TOKEN: ${{ secrets.QSTASH_TOKEN }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup repo
+        uses: actions/checkout@v3
+      - name: Setup nodejs
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install example
+        run: |
+          bun add @upstash/rag-chat@${{needs.release.outputs.version}}
+          npm i -g wrangler
+        working-directory: examples/cloudflare-workers
+
+      - name: Add account ID
+        run: echo 'account_id = "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}"' >> wrangler.toml
+        working-directory: examples/cloudflare-workers
+
+      - name: Deploy
+        run: wrangler publish
+        working-directory: examples/cloudflare-workers
+        env:
+          CLOUDFLARE_API_TOKEN: ${{secrets.CF_API_TOKEN}}
+
+      - name: Test
+        run: bun test examples/cloudflare-workers/ci.test.ts
+        env:
+          DEPLOYMENT_URL: https://upstash-rag-chat.upstash.workers.dev
+
   nodejs-local:
     needs:
       - test
@@ -124,7 +169,8 @@ jobs:
 
   nextjs-chat-to-website:
     # skip because there is an issue in how the page interacts with local build
-    # it's tested in pre-release
+    # see https://github.com/upstash/rag-chat/actions/runs/11146663030/job/30979203308
+    # it's tested after pre-release with nextjs-chat-to-website-deployed
     if: false
     needs:
       - test
