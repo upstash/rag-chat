@@ -75,58 +75,51 @@ export class FileDataLoader {
     // Without this check typescript complains about types because of unions
     if (!hasProcessor(this.config)) throw new Error("Only processors are allowed");
 
-    switch (this.config.processor.name) {
-      case "unstructured": {
-        const client = new UnstructuredClient({
-          serverURL: "https://api.unstructuredapp.io",
-          security: {
-            apiKeyAuth: this.config.processor.options.apiKey,
-          },
-        });
+    const client = new UnstructuredClient({
+      serverURL: "https://api.unstructuredapp.io",
+      security: {
+        apiKeyAuth: this.config.processor.options.apiKey,
+      },
+    });
 
-        //@ts-expect-error TS can't pick up the correct type due to complex union
-        const fileData = await Bun.file(this.config.fileSource).text();
-        const response = await client.general.partition({
-          //@ts-expect-error Will be fixed soon
-          partitionParameters: {
-            files: {
-              content: fileData,
-              //@ts-expect-error TS can't pick up the correct type due to complex union
-              fileName: this.config.fileSource,
-            },
-            ...this.config.processor.options,
-          },
-        });
-        const elements = response.elements?.filter(
-          (element) => typeof element.text === "string"
-        ) as Element[];
+    //@ts-expect-error TS can't pick up the correct type due to complex union
+    const fileData = await Bun.file(this.config.fileSource).text();
+    const response = await client.general.partition({
+      //@ts-expect-error Will be fixed soon
+      partitionParameters: {
+        files: {
+          content: fileData,
+          //@ts-expect-error TS can't pick up the correct type due to complex union
+          fileName: this.config.fileSource,
+        },
+        ...this.config.processor.options,
+      },
+    });
+    const elements = response.elements?.filter(
+      (element) => typeof element.text === "string"
+    ) as Element[];
 
-        return {
-          // eslint-disable-next-line @typescript-eslint/require-await
-          load: async (): Promise<Document[]> => {
-            const documents: Document[] = [];
-            for (const element of elements) {
-              const { metadata, text } = element;
-              if (typeof text === "string" && text !== "") {
-                documents.push(
-                  new Document({
-                    pageContent: text,
-                    metadata: {
-                      ...metadata,
-                      category: element.type,
-                    },
-                  })
-                );
-              }
-            }
-            return documents;
-          },
-        };
-      }
-      case "llama-parse": {
-        throw new Error("llama-parse has been deprecated in @upstash/rag-chat 2.0.0.");
-      }
-    }
+    return {
+      // eslint-disable-next-line @typescript-eslint/require-await
+      load: async (): Promise<Document[]> => {
+        const documents: Document[] = [];
+        for (const element of elements) {
+          const { metadata, text } = element;
+          if (typeof text === "string" && text !== "") {
+            documents.push(
+              new Document({
+                pageContent: text,
+                metadata: {
+                  ...metadata,
+                  category: element.type,
+                },
+              })
+            );
+          }
+        }
+        return documents;
+      },
+    };
   }
 
   private isURL(source: FilePath | Blob): source is URL {

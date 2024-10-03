@@ -10,12 +10,10 @@ import type { UnstructuredLoaderOptions } from "@langchain/community/document_lo
 export type FilePath = string;
 export type URL = string;
 
-export type ProcessorType =
-  | {
-      name: "unstructured";
-      options: UnstructuredLoaderOptions;
-    }
-  | { name: "llama-parse"; options: unknown };
+export type ProcessorType = {
+  name: "unstructured";
+  options: UnstructuredLoaderOptions;
+};
 
 export type DatasWithFileSource =
   | {
