@@ -80,6 +80,7 @@ test(
 
     const result = await collectStream(chatStream);
     console.log("streamed response");
+    console.log(result);
 
     const lowerCaseResult = result.toLowerCase();
 
