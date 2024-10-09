@@ -248,7 +248,7 @@ jobs:
         working-directory: examples/nextjs/chat-to-website
 
       - name: Test
-        run: bun test examples/nextjs/chat-to-website/ci.test.ts
+        run: bun test ci.test.ts
         working-directory: examples/nextjs/chat-to-website
 
   nextjs-server-actions:
@@ -363,7 +363,7 @@ jobs:
         working-directory: examples/nextjs/vercel-ai-sdk
 
       - name: Test
-        run: bun test examples/nextjs/vercel-ai-sdk/ci.test.ts
+        run: bun test ci.test.ts
         working-directory: examples/nextjs/vercel-ai-sdk
 
   release:
