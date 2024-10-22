@@ -48,11 +48,10 @@ export class Config {
  * and returns undefined, allowing RAG CHAT to fall back to using an in-memory database.
  */
 const initializeRedis = () => {
-  try {
-    return Redis.fromEnv();
-  } catch {
-    return;
-  }
+  const environment = typeof process === "undefined" ? ({} as Record<string, string>) : process.env;
+  return environment.UPSTASH_REDIS_REST_URL && environment.UPSTASH_REDIS_REST_TOKEN
+    ? Redis.fromEnv()
+    : undefined;
 };
 
 /**
