@@ -90,3 +90,9 @@ test(
   },
   { timeout: 20_000 }
 );
+
+test("pages router test route should return 200", async () => {
+  const response = await fetch(`${deploymentURL}/api/pages-test`);
+
+  expect(response.status).toBe(200);
+});
