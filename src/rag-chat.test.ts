@@ -965,6 +965,8 @@ describe("RAG Chat with non-embedding db", () => {
 
   beforeAll(async () => {
     await vector.reset({ namespace });
+    // eslint-disable-next-line @typescript-eslint/no-magic-numbers
+    await new Promise((r) => setTimeout(r, 1000));
   });
 
   test("should upsert embedding and query it", async () => {
