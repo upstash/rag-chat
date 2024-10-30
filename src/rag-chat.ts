@@ -114,7 +114,7 @@ export class RAGChat {
             rawContext,
           } = await this.context._getContext<TMetadata>(
             optionsWithDefault,
-            input,
+            options?.embedding ?? input,
             this.debug
           )(optionsWithDefault.sessionId);
 

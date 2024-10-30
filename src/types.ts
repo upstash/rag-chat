@@ -78,6 +78,13 @@ export type ChatOptions = {
    * @default false
    */
   disableHistory?: boolean;
+
+  /**
+   * Embedding to use when fetching context.
+   *
+   * Must be provided if the Vector Database doesn't have default embeddings.
+   */
+  embedding?: number[];
 } & CommonChatAndRAGOptions;
 
 export type PrepareChatResult = { data: string; id: string; metadata: unknown }[];

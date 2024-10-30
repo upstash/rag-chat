@@ -20,6 +20,7 @@ import { RatelimitUpstashError } from "./error";
 import { custom, upstash, openai as upstashOpenai } from "./models";
 import { RAGChat } from "./rag-chat";
 import { awaitUntilIndexed } from "./test-utils";
+import type { PrepareChatResult } from "./types";
 
 async function checkStream(
   stream: ReadableStream<string>,
@@ -931,5 +932,85 @@ describe("RAG Chat with disableHistory option", () => {
     });
 
     expect(getMessagesSpy).toHaveBeenCalled();
+  });
+});
+
+describe("RAG Chat with non-embedding db", () => {
+  const namespace = "non-embedding";
+  const vector = new Index({
+    token: process.env.NON_EMBEDDING_UPSTASH_VECTOR_REST_TOKEN!,
+    url: process.env.NON_EMBEDDING_UPSTASH_VECTOR_REST_URL!,
+  });
+
+  const redis = new Redis({
+    token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+    url: process.env.UPSTASH_REDIS_REST_URL!,
+  });
+
+  const ragChat = new RAGChat({
+    model: new ChatOpenAI({
+      modelName: "gpt-3.5-turbo",
+      streaming: false,
+      verbose: false,
+      temperature: 0,
+      apiKey: process.env.OPENAI_API_KEY,
+      configuration: {
+        organization: process.env.OPENAI_ORGANIZATION,
+      },
+    }),
+    vector,
+    redis,
+    namespace,
+  });
+
+  beforeAll(async () => {
+    await vector.reset({ namespace });
+  });
+
+  test("should upsert embedding and query it", async () => {
+    await ragChat.context.addMany([
+      {
+        id: 1,
+        type: "embedding",
+        data: [1, 1, 0],
+        text: "first embedding",
+        options: { namespace },
+      },
+      {
+        id: 2,
+        type: "embedding",
+        data: [1, 0, 1],
+        text: "second embedding",
+        options: { namespace },
+      },
+    ]);
+
+    // wait indexing
+    // eslint-disable-next-line @typescript-eslint/no-magic-numbers
+    await new Promise((r) => setTimeout(r, 2000));
+
+    let called = false;
+    const onContextFetched = (context: PrepareChatResult) => {
+      // eslint-disable-next-line @typescript-eslint/no-magic-numbers
+      expect(context.length).toBe(2);
+
+      expect(context[0].data).toBe("second embedding");
+      expect(context[0].id).toBe("2");
+
+      expect(context[1].data).toBe("first embedding");
+      expect(context[1].id).toBe("1");
+
+      called = true;
+      return context;
+    };
+
+    await ragChat.chat("hello world!", {
+      // eslint-disable-next-line @typescript-eslint/no-magic-numbers
+      embedding: [0, 0, 0.5],
+      onContextFetched,
+      namespace,
+    });
+
+    expect(called).toBeTrue();
   });
 });
