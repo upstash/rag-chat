@@ -987,9 +987,7 @@ describe("RAG Chat with non-embedding db", () => {
       },
     ]);
 
-    // wait indexing
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers
-    await new Promise((r) => setTimeout(r, 2000));
+    await awaitUntilIndexed(vector);
 
     let called = false;
     const onContextFetched = (context: PrepareChatResult) => {
