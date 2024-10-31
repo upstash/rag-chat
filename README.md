@@ -5,14 +5,14 @@ The `@upstash/rag-chat` package makes it easy to develop powerful retrieval-augm
 Features:
 
 - Next.js compatibility with streaming support
-- Ingest entire websites, PDFs and more out of the box
-- Built-in Vector store for your knowledge base
+- Ingest entire websites, PDFs, and more out of the box
+- Built-in vector store for your knowledge base
 - (Optional) built-in Redis compatibility for fast chat history management
 - (Optional) built-in rate limiting
 - (Optional) disableRag option to use it as LLM + chat history
-- (Optional) Analytics via [Helicone](https://www.helicone.ai/), [Langsmith](https://www.langchain.com/langsmith) and [Cloudflare AI Gateway](https://developers.cloudflare.com/ai-gateway/)
+- (Optional) Analytics via [Helicone](https://www.helicone.ai/), [Langsmith](https://www.langchain.com/langsmith), and [Cloudflare AI Gateway](https://developers.cloudflare.com/ai-gateway/)
 
-## Getting started
+## Getting Started
 
 ### Installation
 
@@ -26,7 +26,7 @@ bun add @upstash/rag-chat
 npm i @upstash/rag-chat
 ```
 
-### Quick start
+### Quick Start
 
 1. Set up your environment variables:
 
