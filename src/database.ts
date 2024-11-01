@@ -59,11 +59,17 @@ export type DatasWithFileSource =
 
 export type AddContextPayload =
   | { type: "text"; data: string; options?: AddContextOptions; id?: string | number }
-  | { type: "embedding"; data: number[]; options?: AddContextOptions; id?: string | number }
+  | {
+      type: "embedding";
+      data: number[];
+      text?: string;
+      options?: AddContextOptions;
+      id?: string | number;
+    }
   | DatasWithFileSource;
 
 export type VectorPayload = {
-  question: string;
+  question: string | number[];
   similarityThreshold?: number;
   topK?: number;
   namespace?: string;
@@ -104,7 +110,7 @@ export class Database {
     const index = this.index;
     const result = await index.query<Record<string, string>>(
       {
-        data: question,
+        ...(typeof question === "string" ? { data: question } : { vector: question }),
         topK,
         includeData: true,
         includeMetadata: true,
@@ -162,6 +168,7 @@ export class Database {
         const vectorId = await this.index.upsert(
           {
             vector: input.data,
+            data: input.text,
             id: input.id ?? nanoid(),
             metadata: input.options?.metadata,
           },

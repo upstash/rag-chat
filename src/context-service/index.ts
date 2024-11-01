@@ -20,13 +20,13 @@ export class ContextService {
    * @example
    * ```typescript
    * await addDataToVectorDb({
-   *   dataType: "pdf",
+   *   type: "pdf",
    *   fileSource: "./data/the_wonderful_wizard_of_oz.pdf",
    *   opts: { chunkSize: 500, chunkOverlap: 50 },
    * });
    * // OR
    * await addDataToVectorDb({
-   *   dataType: "text",
+   *   type: "text",
    *   data: "Paris, the capital of France, is renowned for its iconic landmark, the Eiffel Tower, which was completed in 1889 and stands at 330 meters tall.",
    * });
    * ```
@@ -44,12 +44,11 @@ export class ContextService {
     return await this.#vectorService.save(args);
   }
 
-  // eslint-disable-next-line @typescript-eslint/require-await
   async addMany(args: AddContextPayload[] | string[]) {
-    return args.map((data) => this.add(data));
+    return Promise.all(args.map((data) => this.add(data)));
   }
 
-  async deleteEntireContext(options?: ResetOptions  ) {
+  async deleteEntireContext(options?: ResetOptions) {
     await this.#vectorService.reset(
       options?.namespace ? { namespace: options.namespace } : undefined
     );
@@ -62,13 +61,14 @@ export class ContextService {
   /** This is internal usage only. */
   _getContext<TMetadata extends object>(
     optionsWithDefault: ModifiedChatOptions,
-    input: string,
+    input: string | number[],
     debug?: ChatLogger
   ) {
     return traceable(
       async (sessionId: string) => {
         // Log the input, which will be captured by the outer traceable
-        await debug?.logSendPrompt(input);
+        // eslint-disable-next-line @typescript-eslint/no-magic-numbers
+        await debug?.logSendPrompt(typeof input === "string" ? input : `${input.slice(0, 3)}...`);
         debug?.startRetrieveContext();
 
         if (optionsWithDefault.disableRAG) return { formattedContext: "", metadata: [] };
