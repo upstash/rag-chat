@@ -33,7 +33,7 @@ async function collectStream(response: Response): Promise<string> {
 }
 
 async function invokeLoadPage(
-  website = "https://raw.githubusercontent.com/upstash/docs/refs/heads/main/qstash/workflow/basics/caveats.mdx"
+  website = "https:/raw.githubusercontent.com/upstash/docs/refs/heads/main/workflow/basics/caveats.mdx"
 ) {
   await fetch(`${deploymentURL}/${website}`, { method: "GET" });
 }
