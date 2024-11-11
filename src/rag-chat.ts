@@ -291,6 +291,7 @@ export class RAGChat {
       promptFn: isRagDisabledAndPromptFunctionMissing
         ? DEFAULT_PROMPT_WITHOUT_RAG
         : (options?.promptFn ?? this.config.prompt),
+      contextFilter: options?.contextFilter ?? undefined,
     };
   }
 }
