@@ -1051,7 +1051,12 @@ describe("RAGChat - context filtering", () => {
 
       const result = await ragChat.chat<{ unit: string }>("Where is the capital of Japan?", {
         namespace,
+        topK: 5,
         contextFilter: "unit = 'Samurai'",
+        onContextFetched(context) {
+          expect(context.length).toBe(1);
+          return context;
+        },
       });
 
       expect(result.metadata).toEqual([
