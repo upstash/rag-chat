@@ -131,27 +131,29 @@ export class FileDataLoader {
       case "pdf": {
         const splitter = new RecursiveCharacterTextSplitter(args);
         const splittedDocuments = await splitter.splitDocuments(documents);
-
-        return mapDocumentsIntoInsertPayload(splittedDocuments, (metadata: any, index: number) => ({
-          source: metadata.source,
-          timestamp: new Date().toISOString(),
-          paragraphNumber: index + 1,
-          pageNumber: metadata.loc?.pageNumber || undefined,
-          author: metadata.pdf?.info?.Author || undefined,
-          title: metadata.pdf?.info?.Title || undefined,
-          totalPages: metadata.pdf?.totalPages || undefined,
-          language: metadata.pdf?.metadata?._metadata?.["dc:language"] || undefined,
-        }));
+        return this.mapDocumentsIntoInsertPayload(
+          splittedDocuments,
+          (metadata: any, index: number) => ({
+            source: metadata.source,
+            timestamp: new Date().toISOString(),
+            paragraphNumber: index + 1,
+            pageNumber: metadata.loc?.pageNumber || undefined,
+            author: metadata.pdf?.info?.Author || undefined,
+            title: metadata.pdf?.info?.Title || undefined,
+            totalPages: metadata.pdf?.totalPages || undefined,
+            language: metadata.pdf?.metadata?._metadata?.["dc:language"] || undefined,
+          })
+        );
       }
 
       case "csv": {
-        return mapDocumentsIntoInsertPayload(documents);
+        return this.mapDocumentsIntoInsertPayload(documents);
       }
 
       case "text-file": {
         const splitter = new RecursiveCharacterTextSplitter(args);
         const splittedDocuments = await splitter.splitDocuments(documents);
-        return mapDocumentsIntoInsertPayload(splittedDocuments);
+        return this.mapDocumentsIntoInsertPayload(splittedDocuments);
       }
 
       case "html": {
@@ -162,7 +164,7 @@ export class FileDataLoader {
 
         const newDocuments = await sequence.invoke(documents);
 
-        return mapDocumentsIntoInsertPayload(newDocuments);
+        return this.mapDocumentsIntoInsertPayload(newDocuments);
       }
 
       // Processors will be handled here. E.g. "unstructured", "llama-parse"
@@ -182,17 +184,20 @@ export class FileDataLoader {
         throw new Error(`Unsupported data type: ${this.config.type}`);
       }
     }
+  }
 
-    function mapDocumentsIntoInsertPayload(
-      splittedDocuments: Document[],
-      metadataMapper?: (metadata: any, index: number) => Record<string, any>
-    ) {
-      return splittedDocuments.map((document, index) => ({
-        data: document.pageContent,
-        id: nanoid(),
-        ...(metadataMapper ? { metadata: metadataMapper(document.metadata, index) } : {}),
-      }));
-    }
+  private mapDocumentsIntoInsertPayload(
+    splittedDocuments: Document[],
+    metadataMapper?: (metadata: any, index: number) => Record<string, any>
+  ) {
+    return splittedDocuments.map((document, index) => ({
+      data: document.pageContent,
+      id: nanoid(),
+      metadata: {
+        ...(metadataMapper ? metadataMapper(document.metadata, index) : {}),
+        ...this.config.options?.metadata,
+      },
+    }));
   }
 }
 
