@@ -1,13 +1,13 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { describe, it, expect } from "vitest";
+import { describe, test, expect } from "bun:test";
 import { FileDataLoader } from "./file-loader";
 import type { DatasWithFileSource } from "./database";
 
 describe("FileDataLoader Integration Tests", () => {
   describe("PDF Loading", () => {
-    it("should load and transform Wizard of Oz PDF", async () => {
+    test("should load and transform Wizard of Oz PDF", async () => {
       const config: DatasWithFileSource = {
         type: "pdf",
         fileSource: "./data/the_wonderful_wizard_of_oz.pdf",
@@ -27,19 +27,17 @@ describe("FileDataLoader Integration Tests", () => {
       });
 
       expect(result.length).toBeGreaterThan(0);
-      expect(result[0]).toEqual(
-        expect.objectContaining({
-          data: expect.any(String),
-          id: expect.any(String),
-          metadata: expect.objectContaining({
-            book: "The Wonderful Wizard of Oz",
-            type: "classic literature",
-            source: expect.stringContaining("the_wonderful_wizard_of_oz.pdf"),
-            timestamp: expect.any(String),
-            paragraphNumber: expect.any(Number),
-          }),
-        })
-      );
+      expect(result[0]).toEqual({
+        data: expect.any(String),
+        id: expect.any(String),
+        metadata: expect.objectContaining({
+          book: "The Wonderful Wizard of Oz",
+          type: "classic literature",
+          source: expect.stringContaining("the_wonderful_wizard_of_oz.pdf"),
+          timestamp: expect.any(String),
+          paragraphNumber: expect.any(Number),
+        }),
+      });
 
       const allContent = result.map((document) => document.data).join(" ");
       expect(allContent).toContain("Dorothy");
@@ -47,7 +45,7 @@ describe("FileDataLoader Integration Tests", () => {
   });
 
   describe("CSV Loading", () => {
-    it("should load and transform user info CSV", async () => {
+    test("should load and transform user info CSV", async () => {
       const config: DatasWithFileSource = {
         type: "csv",
         fileSource: "./data/list_of_user_info.csv",
@@ -64,16 +62,14 @@ describe("FileDataLoader Integration Tests", () => {
       const result = await loadFunction({});
 
       expect(result.length).toBeGreaterThan(0);
-      expect(result[0]).toEqual(
-        expect.objectContaining({
-          data: expect.any(String),
-          id: expect.any(String),
-          metadata: expect.objectContaining({
-            dataType: "user_info",
-            version: "1.0",
-          }),
-        })
-      );
+      expect(result[0]).toEqual({
+        data: expect.any(String),
+        id: expect.any(String),
+        metadata: expect.objectContaining({
+          dataType: "user_info",
+          version: "1.0",
+        }),
+      });
 
       for (const document of result) {
         expect(document.data).toBeTruthy();
@@ -83,7 +79,7 @@ describe("FileDataLoader Integration Tests", () => {
   });
 
   describe("Text File Loading", () => {
-    it("should load and transform Wizard of Oz summary text", async () => {
+    test("should load and transform Wizard of Oz summary text", async () => {
       const chunkSize = 500;
       const chunkOverlap = 50;
       const config: DatasWithFileSource = {
@@ -105,16 +101,14 @@ describe("FileDataLoader Integration Tests", () => {
       });
 
       expect(result.length).toBeGreaterThan(0);
-      expect(result[0]).toEqual(
-        expect.objectContaining({
-          data: expect.any(String),
-          id: expect.any(String),
-          metadata: expect.objectContaining({
-            contentType: "summary",
-            subject: "The Wonderful Wizard of Oz",
-          }),
-        })
-      );
+      expect(result[0]).toEqual({
+        data: expect.any(String),
+        id: expect.any(String),
+        metadata: expect.objectContaining({
+          contentType: "summary",
+          subject: "The Wonderful Wizard of Oz",
+        }),
+      });
 
       for (const document of result) {
         expect(document.data.length).toBeLessThanOrEqual(chunkSize + chunkOverlap);
@@ -123,7 +117,7 @@ describe("FileDataLoader Integration Tests", () => {
   });
 
   describe("HTML Loading", () => {
-    it("should load and transform Wizard of Oz summary HTML", async () => {
+    test("should load and transform Wizard of Oz summary HTML", async () => {
       const config: DatasWithFileSource = {
         type: "html",
         source: "./data/the_wonderful_wizard_of_oz_summary.html",
@@ -140,16 +134,14 @@ describe("FileDataLoader Integration Tests", () => {
       const result = await loadFunction({});
 
       expect(result.length).toBeGreaterThan(0);
-      expect(result[0]).toEqual(
-        expect.objectContaining({
-          data: expect.any(String),
-          id: expect.any(String),
-          metadata: expect.objectContaining({
-            format: "html",
-            subject: "The Wonderful Wizard of Oz Summary",
-          }),
-        })
-      );
+      expect(result[0]).toEqual({
+        data: expect.any(String),
+        id: expect.any(String),
+        metadata: expect.objectContaining({
+          format: "html",
+          subject: "The Wonderful Wizard of Oz Summary",
+        }),
+      });
 
       const content = result[0].data;
       expect(content).not.toContain("<html>");
@@ -159,7 +151,7 @@ describe("FileDataLoader Integration Tests", () => {
   });
 
   describe("Multiple File Types", () => {
-    it("should handle loading different formats with consistent metadata", async () => {
+    test("should handle loading different formats with consistent metadata", async () => {
       const commonMetadata = {
         project: "Wizard of Oz Analysis",
         timestamp: new Date().toISOString(),
@@ -193,7 +185,7 @@ describe("FileDataLoader Integration Tests", () => {
 
       for (const result of results) {
         expect(result.length).toBeGreaterThan(0);
-        expect(result[0].metadata).toEqual(expect.objectContaining(commonMetadata));
+        expect(result[0].metadata).toMatchObject(commonMetadata);
       }
 
       const [pdfContent, txtContent, htmlContent] = results.map((r) =>
@@ -208,29 +200,29 @@ describe("FileDataLoader Integration Tests", () => {
 
   describe("FileDataLoader Error Handling", () => {
     describe("Missing Files", () => {
-      it("should handle non-existent files", async () => {
+      test("should handle non-existent files", () => {
         const config: DatasWithFileSource = {
           type: "pdf",
           fileSource: "./data/does_not_exist.pdf",
         };
 
         const loader = new FileDataLoader(config);
-        await expect(loader.loadFile({})).rejects.toThrow(/no such file/i);
+        expect(loader.loadFile({})).rejects.toThrow(/no such file/i);
       });
     });
 
     describe("Invalid Configurations", () => {
-      it("should error with invalid file type", async () => {
+      test("should error with invalid file type", () => {
         const config: DatasWithFileSource = {
           type: "invalid" as any,
           fileSource: "./data/some_file.txt",
         };
 
         const loader = new FileDataLoader(config);
-        await expect(loader.loadFile({})).rejects.toThrow(/unsupported data type/i);
+        expect(loader.loadFile({})).rejects.toThrow(/unsupported data type/i);
       });
 
-      it("should error with missing required options for processors", async () => {
+      test("should error with missing required options for processors", () => {
         const config: DatasWithFileSource = {
           fileSource: "test.doc",
           processor: {
@@ -239,17 +231,17 @@ describe("FileDataLoader Integration Tests", () => {
         } as any;
 
         const loader = new FileDataLoader(config);
-        await expect(loader.loadFile({})).rejects.toThrow();
+        expect(loader.loadFile({})).rejects.toThrow();
       });
 
-      it("should error with invalid file path", async () => {
+      test("should error with invalid file path", () => {
         const config: DatasWithFileSource = {
           type: "pdf",
           fileSource: "",
         };
 
         const loader = new FileDataLoader(config);
-        await expect(loader.loadFile({})).rejects.toThrow();
+        expect(loader.loadFile({})).rejects.toThrow();
       });
     });
   });
