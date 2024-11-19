@@ -88,6 +88,7 @@ export class ContextService {
           similarityThreshold: optionsWithDefault.similarityThreshold,
           topK: optionsWithDefault.topK,
           namespace: optionsWithDefault.namespace,
+          contextFilter: optionsWithDefault.contextFilter,
         });
 
         // Log the result, which will be captured by the outer traceable
