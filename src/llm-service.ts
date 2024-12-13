@@ -1,7 +1,7 @@
 import { HumanMessage, type BaseMessage } from "@langchain/core/messages";
 import type { BaseLanguageModelInterface } from "@langchain/core/language_models/base";
 import type { IterableReadableStreamInterface } from "@langchain/core/utils/stream";
-import type { ChatOptions, UpstashMessage, OpenAIChatLanguageModel } from "./types";
+import type { ChatOptions, UpstashMessage, OpenAIChatLanguageModel, ToolingOptions } from "./types";
 import { type ModifiedChatOptions, isOpenAIChatLanguageModel } from "./utils";
 import type { ChatLogger } from "./logger";
 import { streamText, generateText } from "ai";
@@ -32,8 +32,8 @@ export class LLMService {
         debug?.startLLMResponse();
         return (
           optionsWithDefault.streaming
-            ? this.makeStreamingLLMRequest(prompt, callbacks)
-            : this.makeLLMRequest(prompt, callbacks.onComplete)
+            ? this.makeStreamingLLMRequest(prompt, callbacks, optionsWithDefault.toolingOptions)
+            : this.makeLLMRequest(prompt, callbacks.onComplete, optionsWithDefault.toolingOptions)
         ) as ChatReturnType<TChatOptions>;
       },
       { name: "LLM Response", metadata: { sessionId: optionsWithDefault.sessionId } }
@@ -48,13 +48,15 @@ export class LLMService {
     }: {
       onComplete?: (output: string) => void;
       onChunk?: ChatOptions["onChunk"];
-    }
-  ) {
+    },
+    toolingOptions?: ToolingOptions
+  ): Promise<{ output: ReadableStream<string>; isStream: true }> {
     let stream;
     if (isOpenAIChatLanguageModel(this.model)) {
       const { textStream } = await streamText({
         model: this.model,
         prompt,
+        ...toolingOptions,
       });
       stream = textStream;
     } else {
@@ -109,12 +111,17 @@ export class LLMService {
     return { output: newStream, isStream: true };
   }
 
-  private async makeLLMRequest(prompt: string, onComplete?: (output: string) => void) {
+  private async makeLLMRequest(
+    prompt: string,
+    onComplete?: (output: string) => void,
+    toolingOptions?: ToolingOptions
+  ) {
     let content;
     if (isOpenAIChatLanguageModel(this.model)) {
       const { text } = await generateText({
         model: this.model,
         prompt,
+        ...toolingOptions,
       });
       content = text;
     } else {

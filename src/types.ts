@@ -6,11 +6,38 @@ import type { Index } from "@upstash/vector";
 import type { CustomPrompt } from "./rag-chat";
 import type { ChatMistralAI } from "@langchain/mistralai";
 import type { ChatAnthropic } from "@langchain/anthropic";
+import type { CoreTool } from "ai";
 
 declare const __brand: unique symbol;
 type Brand<B> = { [__brand]: B };
 export type Branded<T, B> = T & Brand<B>;
 type OptionalAsync<T> = T | Promise<T>;
+
+export type ToolingOptions = {
+  /**
+   * Tools to use when calling the LLM.
+   * https://sdk.vercel.ai/docs/ai-sdk-core/tools-and-tool-calling
+   */
+  tools?: Record<string, CoreTool>;
+  /**
+   * Maximum number of steps to take when using tools.
+   * @default 5
+   */
+  maxSteps?: number;
+  /**
+   * The tool choice strategy
+   * Whether to force the model to attempt tool usage.
+   * @default 'auto'
+   */
+  toolChoice?:
+    | "auto"
+    | "none"
+    | "required"
+    | {
+        type: "tool";
+        toolName: keyof Record<string, CoreTool>;
+      };
+};
 
 export type ChatOptions = {
   /** Length of the conversation history to include in your LLM query. Increasing this may lead to hallucinations. Retrieves the last N messages.
@@ -92,6 +119,13 @@ export type ChatOptions = {
    * https://upstash.com/docs/vector/features/filtering#metadata-filtering
    */
   contextFilter?: string;
+
+  /**
+   * Options for tools.
+   * currently only supported for OpenAI models
+   * @see https://sdk.vercel.ai/docs/ai-sdk-core/tools-and-tool-calling
+   */
+  toolingOptions?: ToolingOptions;
 } & CommonChatAndRAGOptions;
 
 export type PrepareChatResult = { data: string; id: string; metadata: unknown }[];
