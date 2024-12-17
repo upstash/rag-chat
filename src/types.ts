@@ -6,11 +6,123 @@ import type { Index } from "@upstash/vector";
 import type { CustomPrompt } from "./rag-chat";
 import type { ChatMistralAI } from "@langchain/mistralai";
 import type { ChatAnthropic } from "@langchain/anthropic";
+import type {
+  CallWarning,
+  CoreAssistantMessage,
+  CoreTool,
+  CoreToolChoice,
+  CoreToolMessage,
+  FinishReason,
+  LanguageModelResponseMetadataWithHeaders,
+  LanguageModelUsage,
+  ProviderMetadata,
+} from "ai";
 
 declare const __brand: unique symbol;
 type Brand<B> = { [__brand]: B };
 export type Branded<T, B> = T & Brand<B>;
 type OptionalAsync<T> = T | Promise<T>;
+
+export type StepResult<TOOLS extends Record<string, CoreTool>> = {
+  /**
+   * The generated text.
+   */
+  readonly text: string;
+  /**
+   * The tool calls that were made during the generation.
+   */
+  readonly toolCalls: {
+    type: "tool-call";
+    toolCallId: string;
+    toolName: keyof TOOLS & string;
+    args: unknown;
+  }[];
+  /**
+   * The results of the tool calls.
+   */
+  readonly toolResults: {
+    type: "tool-result";
+    toolCallId: string;
+    toolName: keyof TOOLS & string;
+    args: unknown;
+    result: unknown;
+  }[];
+  /**
+   * The reason why the generation finished.
+   */
+  readonly finishReason: FinishReason;
+  /**
+   * The token usage of the generated text.
+   */
+  readonly usage: LanguageModelUsage;
+  /**
+   * Warnings from the model provider.
+   */
+  readonly warnings: CallWarning[] | undefined;
+  /**
+   * Response information.
+   */
+  readonly response: LanguageModelResponseMetadataWithHeaders;
+  /**
+   * Additional provider-specific metadata.
+   */
+  readonly experimental_providerMetadata: ProviderMetadata | undefined;
+  /**
+   * The type of step that this result is for.
+   */
+  readonly stepType: "initial" | "continue" | "tool-result";
+  /**
+   * True when there will be a continuation step with a continuation text.
+   */
+  readonly isContinued: boolean;
+};
+
+export type ToolingOptions<TOOLS extends Record<string, CoreTool> = Record<string, CoreTool>> = {
+  /**
+   * Tools to use when calling the LLM.
+   * @see https://sdk.vercel.ai/docs/ai-sdk-core/tools-and-tool-calling
+   */
+  tools?: TOOLS;
+
+  /**
+   * Maximum number of steps to take when using tools.
+   * @default 5
+   */
+  maxSteps?: number;
+
+  /**
+   * The tool choice strategy
+   * Whether to force the model to attempt tool usage.
+   * @default 'auto'
+   */
+  toolChoice?: CoreToolChoice<TOOLS>;
+
+  /**
+   * An optional AbortSignal to cancel the request.
+   */
+  abortSignal?: AbortSignal;
+
+  /**
+   * Callback that is called when each step (LLM call) is finished, including intermediate steps.
+   */
+  onStepFinish?: (event: StepResult<TOOLS>) => Promise<void> | void;
+
+  /**
+   * Callback that is called when the LLM response and all tool executions are finished.
+   */
+  onFinish?: (
+    event: Omit<StepResult<TOOLS>, "stepType" | "isContinued"> & {
+      /**
+       * Details for all steps.
+       */
+      readonly steps: StepResult<TOOLS>[];
+      /**
+       * The response messages that were generated during the call.
+       */
+      readonly responseMessages: (CoreAssistantMessage | CoreToolMessage)[];
+    }
+  ) => Promise<void> | void;
+};
 
 export type ChatOptions = {
   /** Length of the conversation history to include in your LLM query. Increasing this may lead to hallucinations. Retrieves the last N messages.
@@ -92,6 +204,13 @@ export type ChatOptions = {
    * https://upstash.com/docs/vector/features/filtering#metadata-filtering
    */
   contextFilter?: string;
+
+  /**
+   * Options for tools.
+   * currently only supported for OpenAI models
+   * @see https://sdk.vercel.ai/docs/ai-sdk-core/tools-and-tool-calling
+   */
+  toolingOptions?: ToolingOptions;
 } & CommonChatAndRAGOptions;
 
 export type PrepareChatResult = { data: string; id: string; metadata: unknown }[];
