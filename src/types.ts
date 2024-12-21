@@ -85,6 +85,14 @@ export type ChatOptions = {
    * Must be provided if the Vector Database doesn't have default embeddings.
    */
   embedding?: number[];
+
+  /**
+   * Allows filtering metadata from the vector database.
+   * @example "population >= 1000000 AND geography.continent = 'Asia'"
+   * https://upstash.com/docs/vector/features/filtering#metadata-filtering
+   */
+  contextFilter?: string;
+
   /**
    * Hook to access the final response and modify as you wish.
    */

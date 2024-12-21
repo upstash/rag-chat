@@ -73,6 +73,7 @@ export type VectorPayload = {
   similarityThreshold?: number;
   topK?: number;
   namespace?: string;
+  contextFilter?: string;
 };
 
 export type ResetOptions = {
@@ -106,6 +107,7 @@ export class Database {
     similarityThreshold = DEFAULT_SIMILARITY_THRESHOLD,
     topK = DEFAULT_TOP_K,
     namespace,
+    contextFilter,
   }: VectorPayload): Promise<{ data: string; id: string; metadata: TMetadata }[]> {
     const index = this.index;
     const result = await index.query<Record<string, string>>(
@@ -114,6 +116,7 @@ export class Database {
         topK,
         includeData: true,
         includeMetadata: true,
+        ...(typeof contextFilter === "string" && { filter: contextFilter }),
       },
       { namespace }
     );
