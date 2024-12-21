@@ -92,6 +92,11 @@ export type ChatOptions = {
    * https://upstash.com/docs/vector/features/filtering#metadata-filtering
    */
   contextFilter?: string;
+
+  /**
+   * Hook to access the final response and modify as you wish.
+   */
+  onFinish?: ({ output }: { output: string }) => void;
 } & CommonChatAndRAGOptions;
 
 export type PrepareChatResult = { data: string; id: string; metadata: unknown }[];
