@@ -85,6 +85,10 @@ export type ChatOptions = {
    * Must be provided if the Vector Database doesn't have default embeddings.
    */
   embedding?: number[];
+  /**
+   * Hook to access the final response and modify as you wish.
+   */
+  onFinish?: ({ output }: { output: string }) => void;
 } & CommonChatAndRAGOptions;
 
 export type PrepareChatResult = { data: string; id: string; metadata: unknown }[];

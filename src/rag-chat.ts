@@ -139,6 +139,9 @@ export class RAGChat {
                 if (!optionsWithDefault.disableHistory) {
                   await this.addAssistantMessageToHistory(output, optionsWithDefault);
                 }
+                if (optionsWithDefault.onFinish) {
+                  optionsWithDefault.onFinish({ output });
+                }
               },
             },
             this.debug
@@ -291,6 +294,7 @@ export class RAGChat {
       promptFn: isRagDisabledAndPromptFunctionMissing
         ? DEFAULT_PROMPT_WITHOUT_RAG
         : (options?.promptFn ?? this.config.prompt),
+      onFinish: options?.onFinish,
     };
   }
 }
