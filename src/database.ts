@@ -153,32 +153,34 @@ export class Database {
     const { namespace } = input.options ?? {};
     if (input.type === "text") {
       try {
-        const vectorId = await this.index.upsert(
+        const returnId = input.id ?? nanoid();
+        await this.index.upsert(
           {
             data: input.data,
-            id: input.id ?? nanoid(),
+            id: returnId,
             metadata: input.options?.metadata,
           },
           { namespace }
         );
 
-        return { success: true, ids: [vectorId.toString()] };
+        return { success: true, ids: [returnId.toString()] };
       } catch (error) {
         return { success: false, error: JSON.stringify(error, Object.getOwnPropertyNames(error)) };
       }
     } else if (input.type === "embedding") {
       try {
-        const vectorId = await this.index.upsert(
+        const returnId = input.id ?? nanoid();
+        await this.index.upsert(
           {
             vector: input.data,
             data: input.text,
-            id: input.id ?? nanoid(),
+            id: returnId,
             metadata: input.options?.metadata,
           },
           { namespace }
         );
 
-        return { success: true, ids: [vectorId.toString()] };
+        return { success: true, ids: [returnId.toString()] };
       } catch (error) {
         return { success: false, error: JSON.stringify(error, Object.getOwnPropertyNames(error)) };
       }
