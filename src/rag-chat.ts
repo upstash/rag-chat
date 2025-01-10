@@ -292,6 +292,7 @@ export class RAGChat {
         ? DEFAULT_PROMPT_WITHOUT_RAG
         : (options?.promptFn ?? this.config.prompt),
       contextFilter: options?.contextFilter ?? undefined,
+      queryMode: options?.queryMode ?? undefined,
     };
   }
 }
