@@ -1079,7 +1079,7 @@ describe("RAGChat with onFinish hook", () => {
   const ragChat = new RAGChat({
     vector,
     namespace,
-    streaming: true,
+    streaming: false,
     model: upstash("meta-llama/Meta-Llama-3-8B-Instruct"),
   });
 
@@ -1115,6 +1115,10 @@ describe("RAGChat with onFinish hook", () => {
           capturedOutput = output;
         },
       });
+
+      // on complete is async, wait a sec to make sure it executes
+      // eslint-disable-next-line @typescript-eslint/no-magic-numbers
+      await new Promise((r) => setTimeout(r, 1000));
 
       expect(onFinishCalled).toBe(true);
       expect(capturedOutput).toBe(result.output);

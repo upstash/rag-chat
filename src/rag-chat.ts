@@ -128,7 +128,7 @@ export class RAGChat {
             formattedHistory
           );
 
-          //   Either calls streaming or non-streaming function from RAGChatBase. Streaming function returns AsyncIterator and allows callbacks like onComplete.
+          // Either calls streaming or non-streaming function from RAGChatBase. Streaming function returns AsyncIterator and allows callbacks like onComplete.
           const llmResult = await this.llm.callLLM<TChatOptions>(
             optionsWithDefault,
             options,

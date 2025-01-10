@@ -94,7 +94,7 @@ export type ChatOptions = {
   contextFilter?: string;
 
   /**
-   * Hook to access the final response and modify as you wish.
+   * Hook to access the final response
    */
   onFinish?: ({ output }: { output: string }) => void;
 } & CommonChatAndRAGOptions;
