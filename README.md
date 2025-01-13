@@ -6,9 +6,14 @@
 >
 > The project is maintained and supported by the community. Upstash may contribute but does not officially support or assume responsibility for it.
 
+> [!NOTE]  
+> **Recommendation from the Upstash Team**
+>
+> The RAG Chat SDK is designed to create prototypes more easily and quickly. For real projects, use Langchain, LlamaIndex, and the Vercel AI SDK.
 
 
-The `@upstash/rag-chat` package makes it easy to develop powerful retrieval-augmented generation (RAG) chat applications with minimal setup and configuration.
+
+The `@upstash/rag-chat` package makes it easy to develop retrieval-augmented generation (RAG) chat applications with minimal setup and configuration.
 
 Features:
 
