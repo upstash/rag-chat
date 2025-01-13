@@ -93,6 +93,39 @@ const response = await ragChat.chat("What is the speed of light?");
 console.log(response.output);
 ```
 
-### Docs
+## Docs
 
-Checkout [the documentation](docs/gettingstarted) for integrations and advanced options.
+### General
+- [gettingstarted](./general/gettingstarted.mdx)
+- [how-to](./general/how-to.mdx)
+- [api](./general/api.mdx)
+- [config](./general/config.mdx)
+- [debug](./general/debug.mdx)
+- [features](./general/features.mdx)
+
+### Integrations
+- [anthropic](./integrations/anthropic.mdx)
+- [custom](./integrations/custom.mdx)
+- [groq](./integrations/groq.mdx)
+- [helicone](./integrations/helicone.mdx)
+- [langsmith](./integrations/langsmith.mdx)
+- [mistralai](./integrations/mistralai.mdx)
+- [nextjs](./integrations/nextjs.mdx)
+- [ollama](./integrations/ollama.mdx)
+- [open-router](./integrations/open-router.mdx)
+- [openai](./integrations/openai.mdx)
+- [overview](./integrations/overview.mdx)
+- [togetherai](./integrations/togetherai.mdx)
+- [unstructured](./integrations/unstructured.mdx)
+- [vercel-ai](./integrations/vercel-ai.mdx)
+
+### Quickstarts
+- [cloudflare-workers](./quickstarts/cloudflare-workers.mdx)
+- [hono](./quickstarts/hono.mdx)
+- [nextjs](./quickstarts/nextjs.mdx)
+- [nextjs-server-actions](./quickstarts/nextjs-server-actions.mdx)
+- [nodejs](./quickstarts/nodejs.mdx)
+- [nuxt](./quickstarts/nuxt.mdx)
+- [overview](./quickstarts/overview.mdx)
+- [sveltekit](./quickstarts/sveltekit.mdx)
+
