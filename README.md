@@ -95,4 +95,4 @@ console.log(response.output);
 
 ### Docs
 
-Checkout [the documentation](https://upstash.com/docs/vector/sdks/rag-chat/gettingstarted) for integrations and advanced options.
+Checkout [the documentation](docs/gettingstarted) for integrations and advanced options.

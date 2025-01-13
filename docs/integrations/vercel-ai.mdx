@@ -1,0 +1,73 @@
+---
+title: Vercel AI SDK
+---
+
+RAGChat can be easily integrated with the Vercel AI SDK. See [our example project for a more complete view](https://github.com/upstash/rag-chat/tree/master/examples/nextjs/vercel-ai-sdk).
+
+If you want to use RAGChat & Vercel AI SDK in your project, first set up your route handler:
+
+```typescript
+import { aiUseChatAdapter } from "@upstash/rag-chat/nextjs";
+import { ragChat } from "@/utils/rag-chat";
+
+export async function POST(req: Request) {
+  const { messages } = await req.json();
+  const lastMessage = messages[messages.length - 1].content;
+
+  const response = await ragChat.chat(lastMessage, { streaming: true });
+  return aiUseChatAdapter(response);
+}
+```
+
+Second, use the `useChat` hook in your frontend component:
+
+```typescript
+"use client"
+
+import { useChat } from "ai/react";
+
+const ChatComponent = () => {
+  const { messages, input, handleInputChange, handleSubmit } = useChat({
+    api: "/api/chat",
+    initialInput: "What year was the construction of the Eiffel Tower completed, and what is its height?",
+  });
+
+  return (
+    <div>
+      <ul>
+        {messages.map((m) => (
+          <li key={m.id}>{m.content}</li>
+        ))}
+      </ul>
+
+      <form onSubmit={handleSubmit}>
+        <input
+          value={input}
+          onChange={handleInputChange}
+          placeholder="Ask a question..."
+        />
+        <button type="submit">Send</button>
+      </form>
+    </div>
+  );
+};
+```
+
+## Using `ai-sdk` models in RAG Chat
+
+If you're already using the ai-sdk library and want to incorporate its models into RAG Chat, you can easily do so with minimal configuration changes. This integration allows you to maintain your existing AI setup while benefiting from RAG Chat's advanced features.
+
+```ts
+import { openai } from "@ai-sdk/openai";
+
+const ragChat = new RAGChat({
+  model: openai("gpt-3.5-turbo"),
+  vector,
+  redis: new Redis({
+    token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+    url: process.env.UPSTASH_REDIS_REST_URL!,
+  }),
+  sessionId: "ai-sdk-session",
+  namespace: "ai-sdk",
+});
+```

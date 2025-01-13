@@ -1,0 +1,75 @@
+---
+title: Groq
+---
+
+[Groq](https://groq.com/) is a language model provider. Check out [Groq Pricing](https://groq.com/pricing/) for more information about their models and pricing.
+
+### Install RAG Chat SDK
+
+Initialize the project and install the required packages:
+
+```bash
+npm init es6
+npm install dotenv
+npm install @upstash/rag-chat
+```
+
+### Setup Upstash Redis
+
+Create a Redis database using [Upstash Console](https://console.upstash.com) or [Upstash CLI](https://github.com/upstash/cli) and copy the `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` into your `.env` file.
+
+```shell .env
+UPSTASH_REDIS_REST_URL=<YOUR_URL>
+UPSTASH_REDIS_REST_TOKEN=<YOUR_TOKEN>
+```
+
+### Setup Upstash Vector
+
+Create a Vector index using [Upstash Console](https://console.upstash.com) or [Upstash CLI](https://github.com/upstash/cli) and copy the `UPSTASH_VECTOR_REST_URL` and `UPSTASH_VECTOR_REST_TOKEN` into your `.env` file.
+
+```shell .env
+UPSTASH_VECTOR_REST_URL=<YOUR_URL>
+UPSTASH_VECTOR_REST_TOKEN=<YOUR_TOKEN>
+```
+
+### Setup Groq
+
+Create a Groq account and get an API key from [Groq Console -> API Keys](https://console.groq.com/keys). Set your Groq API key as an environment variable:
+
+```bash .env
+GROQ_AI_KEY=<YOUR_API_KEY>
+```
+
+### Setup the Project
+
+Initialize RAGChat with the Groq model:
+
+```typescript index.ts
+import { RAGChat, groq } from "@upstash/rag-chat";
+import "dotenv/config";
+
+export const ragChat = new RAGChat({
+  model: groq("llama-3.1-70b-versatile",{apiKey: process.env.GROQ_AI_KEY}),
+});
+```
+
+Add context to the RAG Chat:
+
+```typescript index.ts
+await ragChat.context.add("The speed of light is approximately 299,792,458 meters per second.");
+```
+
+Chat with the RAG Chat:
+
+```typescript index.ts
+const response = await ragChat.chat("What is the speed of light?");
+console.log(response);
+```
+
+### Run
+
+Run the project:
+
+```bash
+npx tsx index.ts
+```

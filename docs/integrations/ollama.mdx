@@ -1,0 +1,12 @@
+---
+title: Ollama
+---
+
+You can use Ollama as LLM provider for your local development in RAGChat. To use an Ollama model, first initialize RAGChat with the Ollama model:
+
+```typescript
+import { RAGChat, ollama } from "@upstash/rag-chat";
+export const ragChat = new RAGChat({
+  model: ollama("llama3.1"),
+});
+```

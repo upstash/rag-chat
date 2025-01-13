@@ -1,0 +1,204 @@
+---
+title: Getting Started
+---
+
+Upstash RAG Chat is **TypeScript toolkit for building powerful RAG applications**. With Upstash RAG Chat, you can focus on building a high-quality chatbot without having to deal with complicated AI orchestration tools.
+
+You can find the Github Repository [here](https://github.com/upstash/rag-chat).
+        
+
+### Installation
+
+Install the package using your preferred package manager:
+
+```sh
+pnpm add @upstash/rag-chat
+
+bun add @upstash/rag-chat
+
+npm i @upstash/rag-chat
+```
+
+### Quick start
+
+1. Set up your environment variables:
+
+```sh
+UPSTASH_VECTOR_REST_URL="XXXXX"
+UPSTASH_VECTOR_REST_TOKEN="XXXXX"
+
+
+# if you use OpenAI compatible models
+OPENAI_API_KEY="XXXXX"
+
+# or if you use Upstash hosted models
+QSTASH_TOKEN="XXXXX"
+
+# Optional: For Redis-based chat history (default is in-memory)
+UPSTASH_REDIS_REST_URL="XXXXX"
+UPSTASH_REDIS_REST_TOKEN="XXXXX"
+```
+
+2. Initialize and use RAGChat:
+
+```typescript
+import { RAGChat } from "@upstash/rag-chat";
+
+const ragChat = new RAGChat();
+
+const response = await ragChat.chat("Tell me about machine learning");
+console.log(response);
+```
+
+### Configuring Your Chat Model
+
+RAGChat supports both Upstash-hosted models and all OpenAI and OpenAI-compatible models out of the box:
+
+#### Using OpenAI Models
+
+To use an OpenAI model, first initialize RAGChat:
+
+```typescript
+import { RAGChat, openai } from "@upstash/rag-chat";
+
+export const ragChat = new RAGChat({
+  model: openai("gpt-4-turbo"),
+});
+```
+
+And set your OpenAI API key as an environment variable:
+
+```bash
+OPENAI_API_KEY=...
+```
+
+#### Using Upstash-hosted Open-Source Models
+
+To use an Upstash model, first initialize RAGChat:
+
+```typescript
+import { RAGChat, upstash } from "@upstash/rag-chat";
+
+export const ragChat = new RAGChat({
+  model: upstash("mistralai/Mistral-7B-Instruct-v0.2"),
+});
+```
+
+And set your Upstash QStash API key environment variable:
+
+```bash
+QSTASH_TOKEN=...
+```
+
+#### Using Custom Providers - TogetherAi, Replicate
+
+Initialize RAGChat with custom provider's API key and url:
+
+```typescript
+import { RAGChat, custom } from "@upstash/rag-chat";
+
+export const ragChat = new RAGChat({
+  model: custom("codellama/CodeLlama-70b-Instruct-hf", {
+    apiKey: "TOGETHER_AI_API_KEY",
+    baseUrl: "https://api.together.xyz/v1",
+  }),
+});
+```
+
+### Managing Your Knowledge Base
+
+Add various types of data to your RAG application:
+
+#### Adding Text
+
+```typescript
+await ragChat.context.add({
+  type: "text",
+  data: "The speed of light is approximately 299,792,458 meters per second.",
+});
+
+//OR
+
+await ragChat.context.add("The speed of light is approximately 299,792,458 meters per second.");
+```
+
+#### Adding PDF Content
+
+```typescript
+await ragChat.context.add({
+  type: "pdf",
+  fileSource: "./data/quantum_computing_basics.pdf",
+
+  // optional 👇: only add this knowledge to a specific namespace
+  options: { namespace: "user-123-documents" },
+});
+```
+
+#### Adding Web Content
+
+```typescript
+await ragChat.context.add({
+  type: "html",
+  source: "https://en.wikipedia.org/wiki/Quantum_computing",
+
+  // optional 👇: custom page parsing settings
+  config: { chunkOverlap: 50, chunkSize: 200 },
+});
+```
+
+#### Removing Content
+
+Remove specific documents:
+
+```typescript
+await ragChat.context.delete({ id: "1", namespace: "user-123-documents" });
+```
+
+### Managing Chat History
+
+RAGChat provides robust functionality for interacting with and managing chat history. This allows you to maintain context, review past interactions, and customize the conversation flow.
+
+#### Retrieving Chat History
+
+Fetch recent messages from the chat history:
+
+```typescript
+const history = await ragChat.history.getMessages({ amount: 10 });
+console.log(history); // 👈 Last (up to) 10 messages
+```
+
+You can also specify a session ID to retrieve history for a particular conversation:
+
+```typescript
+const sessionHistory = await ragChat.history.getMessages({
+  amount: 5,
+  sessionId: "user-123-session",
+});
+```
+
+#### Deleting Chat History
+
+Remove chat history for a specific session:
+
+```typescript
+ragChat.history.deleteMessages({ sessionId: "user-123-session" });
+```
+
+#### Adding Custom Messages
+
+Injecting custom messages into the chat history:
+
+```typescript
+// Adding a user message
+await ragChat.history.addMessage({
+  message: { content: "What's the weather like?", role: "user" },
+});
+
+// Adding a system message
+await ragChat.history.addMessage({
+  message: {
+    content: "The AI should provide weather information.",
+    role: "system",
+  },
+});
+```

@@ -1,0 +1,116 @@
+---
+title: Next.js Server Actions
+---
+<Card title="GitHub Repository" icon="github" href="https://github.com/upstash/rag-chat/tree/master/examples/nextjs/server-actions" horizontal>
+  You can find the project source code on GitHub.
+</Card>
+This guide provides detailed, step-by-step instructions on how to use Upstash RAG Chat with Next.js Server Actions. You can also explore our [Next.js Server Actions example](https://github.com/upstash/rag-chat/tree/master/examples/nextjs/server-actions) for detailed, end-to-end examples and best practices.
+
+### Project Setup
+
+Create a new Next.js application and install `@upstash/rag-chat` package.
+
+```shell
+npx create-next-app@latest
+cd my-app
+npm install @upstash/rag-chat
+```
+
+### Setup Upstash Redis
+
+Create a Redis database using [Upstash Console](https://console.upstash.com) or [Upstash CLI](https://github.com/upstash/cli) and copy the `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` into your `.env` file.
+
+```shell .env
+UPSTASH_REDIS_REST_URL=<YOUR_URL>
+UPSTASH_REDIS_REST_TOKEN=<YOUR_TOKEN>
+```
+
+### Setup Upstash Vector
+
+Create a Vector index using [Upstash Console](https://console.upstash.com) or [Upstash CLI](https://github.com/upstash/cli) and copy the `UPSTASH_VECTOR_REST_URL` and `UPSTASH_VECTOR_REST_TOKEN` into your `.env` file.
+
+```shell .env
+UPSTASH_VECTOR_REST_URL=<YOUR_URL>
+UPSTASH_VECTOR_REST_TOKEN=<YOUR_TOKEN>
+```
+
+### Setup QStash LLM
+
+Navigate to [QStash Console](https://console.upstash.com/qstash) and copy the `QSTASH_TOKEN` into your `.env` file.
+
+```shell .env
+QSTASH_TOKEN=<YOUR_TOKEN>
+```
+
+### Create a Next.js Server Action
+
+Create `/app/actions.ts`:
+
+```typescript /app/actions.ts
+"use server";
+
+import { RAGChat, upstash } from "@upstash/rag-chat";
+import { createServerActionStream } from "@upstash/rag-chat/nextjs";
+
+const ragChat = new RAGChat({
+  model: upstash("meta-llama/Meta-Llama-3-8B-Instruct"),
+});
+
+export const serverChat = async (message: string) => {
+  const { output } = await ragChat.chat(message, { streaming: true });
+
+  // 👇 adapter to let us stream from server actions
+  return createServerActionStream(output);
+};
+```
+
+### Create a Chat Component
+
+Create `/app/components/chat.tsx` using the server action:
+
+```typescript /app/components/chat.tsx
+"use client";
+
+import { useState } from "react";
+import { readServerActionStream } from "@upstash/rag-chat/nextjs";
+import { serverChat } from "../actions";
+
+export const Chat = () => {
+  const [prompt, setPrompt] = useState('');
+  const [response, setResponse] = useState('');
+
+  const clientChat = async () => {
+    const stream = await serverChat(prompt);
+
+    for await (const chunk of readServerActionStream(stream)) {
+      setResponse(prev => prev + chunk);
+    }
+  };
+
+  return (
+    <div className="flex flex-col items-start p-4">
+      <input className="border" placeholder="Enter your prompt" value={prompt} onChange={e => setPrompt(e.target.value)} />  
+      <button onClick={clientChat}>Start Chat</button>
+      <div>{response}</div>
+    </div>
+  );
+};
+```
+
+### Update Home Page
+
+Update `/app/page.tsx` using the Chat component:
+
+```tsx /app/page.tsx
+import { Chat } from "./components/chat"
+
+export default function Home() {
+  return <Chat />;
+}
+```
+
+### Run & Deploy
+
+Run the app locally with `npm run dev`, check `http://localhost:3000/`
+
+Deploy your app with `vercel`
