@@ -2,14 +2,15 @@
 
 
 > [!NOTE]  
+> **Recommendation from the Upstash Team**
+>
+> The RAG Chat SDK is designed to facilitate easier and faster prototype creation. For real projects, use Vercel AI SDK, Langchain, and LlamaIndex.
+
+
+> [!NOTE]  
 > **This project is a Community Project.**
 >
 > The project is maintained and supported by the community. Upstash may contribute but does not officially support or assume responsibility for it.
-
-> [!NOTE]  
-> **Recommendation from the Upstash Team**
->
-> The RAG Chat SDK is designed to create prototypes more easily and quickly. For real projects, use Langchain, LlamaIndex, and the Vercel AI SDK.
 
 
 
