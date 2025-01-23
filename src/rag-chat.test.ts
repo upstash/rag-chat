@@ -1110,3 +1110,63 @@ describe("RAGChat - context filtering", () => {
     { timeout: 30_000 }
   );
 });
+
+describe("RAGChat with onFinish hook", () => {
+  const namespace = "result-metadata";
+  const vector = new Index({
+    token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
+    url: process.env.UPSTASH_VECTOR_REST_URL!,
+  });
+
+  const ragChat = new RAGChat({
+    vector,
+    namespace,
+    streaming: false,
+    model: upstash("meta-llama/Meta-Llama-3-8B-Instruct"),
+  });
+
+  afterAll(async () => {
+    await vector.reset({ namespace });
+    await vector.deleteNamespace(namespace);
+  });
+
+  test(
+    "should call onFinish callback with correct output",
+    async () => {
+      // Set up test data
+      await ragChat.context.add({
+        type: "text",
+        data: "Tokyo is the Capital of Japan.",
+        options: { namespace, metadata: { unit: "Samurai" } },
+      });
+      await ragChat.context.add({
+        type: "text",
+        data: "Shakuhachi is a traditional wind instrument",
+        options: { namespace, metadata: { unit: "Shakuhachi" } },
+      });
+      await awaitUntilIndexed(vector);
+
+      // Create a spy for onFinish callback
+      let onFinishCalled = false;
+      let capturedOutput = "";
+
+      const result = await ragChat.chat<{ unit: string }>("Where is the capital of Japan?", {
+        namespace,
+        onFinish: ({ output }) => {
+          onFinishCalled = true;
+          capturedOutput = output;
+        },
+      });
+
+      // on complete is async, wait a sec to make sure it executes
+      // eslint-disable-next-line @typescript-eslint/no-magic-numbers
+      await new Promise((r) => setTimeout(r, 1000));
+
+      expect(onFinishCalled).toBe(true);
+      expect(capturedOutput).toBe(result.output);
+      expect(result.output.toLowerCase()).toContain("tokyo");
+      expect(result.metadata).toEqual([{ unit: "Samurai" }, { unit: "Shakuhachi" }]);
+    },
+    { timeout: 30_000 }
+  );
+});

@@ -94,6 +94,10 @@ export type ChatOptions = {
   contextFilter?: string;
 
   /**
+   * Hook to access the final response
+   */
+  onFinish?: ({ output }: { output: string }) => void;
+  /*
    * Query mode to use when querying a hybrid index.
    *
    * This is useful if your index is a hybrid index and you want to query the

@@ -128,7 +128,7 @@ export class RAGChat {
             formattedHistory
           );
 
-          //   Either calls streaming or non-streaming function from RAGChatBase. Streaming function returns AsyncIterator and allows callbacks like onComplete.
+          // Either calls streaming or non-streaming function from RAGChatBase. Streaming function returns AsyncIterator and allows callbacks like onComplete.
           const llmResult = await this.llm.callLLM<TChatOptions>(
             optionsWithDefault,
             options,
@@ -138,6 +138,9 @@ export class RAGChat {
                 await this.debug?.endLLMResponse(output);
                 if (!optionsWithDefault.disableHistory) {
                   await this.addAssistantMessageToHistory(output, optionsWithDefault);
+                }
+                if (optionsWithDefault.onFinish) {
+                  optionsWithDefault.onFinish({ output });
                 }
               },
             },
@@ -292,6 +295,7 @@ export class RAGChat {
         ? DEFAULT_PROMPT_WITHOUT_RAG
         : (options?.promptFn ?? this.config.prompt),
       contextFilter: options?.contextFilter ?? undefined,
+      onFinish: options?.onFinish,
       queryMode: options?.queryMode ?? undefined,
     };
   }
