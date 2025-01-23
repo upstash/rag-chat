@@ -1,0 +1,128 @@
+---
+title: Config Options
+---
+
+### Instance Options
+
+Customize your RAGChat instance with advanced options:
+
+```typescript
+
+export const ragChat = new RAGChat({
+  model: openai("gpt-4-turbo"),
+
+  vector: new Index({
+    url: "UPSTASH_VECTOR_REST_URL",
+    token: "UPSTASH_VECTOR_REST_TOKEN",
+  }),
+
+  redis: new Redis({
+    url: "UPSTASH_REDIS_REST_URL",
+    token: "UPSTASH_REDIS_REST_TOKEN",
+  }),
+
+  ratelimit: new Ratelimit({
+    redis: Redis.fromEnv(),
+    limiter: Ratelimit.slidingWindow(10, "10 s"),
+  }),
+  
+  debug: true,
+  /** 
+    * Set to `true` if working with web apps and you want to be interactive without stalling users.
+    */
+  streaming: true,
+  /** Chat session ID of the user interacting with the application.
+    * @default "upstash-rag-chat-session"
+    */
+  sessionId: "session_id",
+  /**
+    * Namespace of the index you wanted to query.
+    */
+  namespace: "namespace",
+  /**
+    * Metadata for your chat message. This could be used to store anything in the chat history. 
+    * By default RAG Chat SDK uses this to persist used model name in the history
+    */
+  metadata: { key: "value"},
+  
+  /** Rate limit session ID of the user interacting with the application.
+    * @default "upstash-rag-chat-ratelimit-session"
+    */
+  ratelimitSessionId: "RatelimitSessionId"
+
+  promptFn: ({context, question, chatHistory}) =>
+    `You are an AI assistant with access to an Upstash Vector Store.
+      Use the provided context and chat history to answer the question.
+      If the answer isn't available, politely inform the user.
+      ------
+      Chat history:
+      ${chatHistory}
+      ------
+      Context:
+      ${context}
+      ------
+      Question: ${question}
+      Answer:`,
+});
+```
+
+### Chat Options
+ 
+Here below are the options that you can pass to the `chat` method of the `RAGChat` instance:
+
+```typescript
+
+ragChat.chat(
+  "Tell me about machine learning",
+  {
+    /** Length of the conversation history to include in your LLM query. Increasing this may lead to hallucinations. Retrieves the last N messages.
+     * @default 5
+     */
+    historyLength : 5,
+    /** Configuration to retain chat history. After the specified time, the history will be automatically cleared.
+     * @default 86_400 // 1 day in seconds
+     */
+    historyTTL : 86_400,
+    /** Configuration to adjust the accuracy of results.
+     * @default 0.5
+     */
+    similarityThreshold : 0.5,
+    /** Amount of data points to include in your LLM query.
+     * @default 5
+     */
+    topK : 5,
+    /**
+     *  Details of applied rate limit.
+     */
+    ratelimitDetails : (response: Awaited<ReturnType<Ratelimit["limit"]>>) => {},
+    /**
+     * Hook to modify or get data and details of each chunk. Can be used to alter streamed content.
+     */
+    onChunk : ({content, inputTokens, chunkTokens, totalTokens, rawContent,}: {
+        inputTokens: number;
+        chunkTokens: number;
+        totalTokens: number;
+        content: string;
+        rawContent: string;
+    }) => {},
+    /**
+     * Hook to access the retrieved context and modify as you wish.
+     */
+    onContextFetched : (context: PrepareChatResult) => {
+        console.log(context);
+        return context
+    },
+    /**
+     * Hook to access the retrieved history and modify as you wish.
+     */
+    onChatHistoryFetched : (messages: UpstashMessage[]) => {
+        console.log(messages);
+        return messages;
+    };
+    /**
+     * Allows disabling RAG and use chat as LLM in combination with prompt. This will give you ability to build your own pipelines.
+     */
+    disableRAG : false
+  }
+);
+```

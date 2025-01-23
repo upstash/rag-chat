@@ -1,0 +1,194 @@
+---
+title: Next.js
+---
+<Card title="GitHub Repository" icon="github" href="https://github.com/upstash/rag-chat/tree/master/examples/nextjs/chat-to-website" horizontal>
+  You can find the project source code on GitHub.
+</Card>
+This guide provides detailed, step-by-step instructions on how to use Upstash RAG Chat with Next.js. You can also explore our [Next.js Chat to Website example](https://github.com/upstash/rag-chat/tree/master/examples/nextjs/chat-to-website) for detailed, end-to-end examples and best practices.
+
+### Project Setup
+
+Create a new Next.js application and install `@upstash/rag-chat` package.
+
+```shell
+npx create-next-app@latest
+cd my-app
+npm install @upstash/rag-chat
+```
+
+### Setup Upstash Redis
+
+Create a Redis database using [Upstash Console](https://console.upstash.com) or [Upstash CLI](https://github.com/upstash/cli) and copy the `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` into your `.env` file.
+
+```shell .env
+UPSTASH_REDIS_REST_URL=<YOUR_URL>
+UPSTASH_REDIS_REST_TOKEN=<YOUR_TOKEN>
+```
+
+### Setup Upstash Vector
+
+Create a Vector index using [Upstash Console](https://console.upstash.com) or [Upstash CLI](https://github.com/upstash/cli) and copy the `UPSTASH_VECTOR_REST_URL` and `UPSTASH_VECTOR_REST_TOKEN` into your `.env` file.
+
+```shell .env
+UPSTASH_VECTOR_REST_URL=<YOUR_URL>
+UPSTASH_VECTOR_REST_TOKEN=<YOUR_TOKEN>
+```
+
+### Setup QStash LLM
+
+Navigate to [QStash Console](https://console.upstash.com/qstash) and copy the `QSTASH_TOKEN` into your `.env` file.
+
+```shell .env
+QSTASH_TOKEN=<YOUR_TOKEN>
+```
+
+### Configure Middleware for Cookies
+
+Create a middleware in `/app/middleware.ts` to generate a session ID cookie. This cookie will be used to track the user's chat session.
+
+```typescript middleware.ts
+import { NextRequest, NextResponse } from "next/server";
+
+export function middleware(req: NextRequest) {
+  const res = NextResponse.next();
+
+  const cookie = req.cookies.get("sessionId");
+
+  if (!cookie) {
+    res.cookies.set("sessionId", crypto.randomUUID());
+  }
+
+  return res;
+}
+```
+
+### Create a Chat Streaming API Route
+
+We will create a RAG Chat instance in `/app/lib/rag-chat.ts` to later use in our API route and Home page.
+
+```typescript /app/lib/rag-chat.ts
+import { RAGChat, upstash } from "@upstash/rag-chat";
+import { Redis } from "@upstash/redis";
+
+const redis = Redis.fromEnv();
+
+export const ragChat = new RAGChat({
+  model: upstash("meta-llama/Meta-Llama-3-8B-Instruct"),
+  redis: redis,
+});
+```
+
+Using the RAG Chat instance we created, we can now create a chat streaming API route in `/app/api/chat-stream/route.ts`.
+
+```typescript /app/api/chat-stream/route.ts
+import { ragChat } from "@/app/lib/rag-chat";
+import { aiUseChatAdapter } from "@upstash/rag-chat/nextjs";
+import { NextRequest } from "next/server";
+
+export const POST = async (req: NextRequest) => {
+  const { messages, sessionId } = await req.json();
+
+  const lastMessage = messages[messages.length - 1].content;
+
+  const response = await ragChat.chat(lastMessage, {
+    streaming: true,
+    sessionId,
+  });
+
+  return aiUseChatAdapter(response);
+};
+```
+
+### Create a Chat Component
+
+We can now create a chat component in `/app/components/chat.tsx` using the chat streaming API route we created.
+
+```typescript /app/components/chat.tsx
+"use client";
+
+import { useChat, Message } from "ai/react";
+
+export const Chat = ({
+  sessionId,
+  initialMessages,
+}: {
+  sessionId: string;
+  initialMessages: Message[];
+}) => {
+  const { messages, handleInputChange, handleSubmit, input, setInput } =
+    useChat({
+      api: "/api/chat-stream",
+      body: { sessionId },
+      initialMessages,
+    });
+
+  return (
+    <div>
+      <div className="flex h-[calc(100vh-64px)] flex-col overflow-y-auto items-center">
+        {messages.length ? (
+          messages.map((message, i) => (
+            <div className="w-[60vw] flex flex-row gap-3 p-6" key={i}>
+              <div className="min-w-12">
+                {message.role === "user" ? "User" : "Bot"}
+              </div>
+              <p className="text-sm font-normal text-gray-900">
+                {message.content}
+              </p>
+            </div>
+          ))
+        ) : (
+          <div className="text-zinc-500 text-sm pt-6">
+            Ask your first question to get started.
+          </div>
+        )}
+      </div>
+      <form onSubmit={handleSubmit} className="relative">
+        <div className="flex flex-row gap-2 p-3 h-16 items-center">
+          <input
+            onChange={handleInputChange}
+            value={input}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleSubmit();
+                setInput("");
+              }
+            }}
+            placeholder="Enter your question..."
+            className="border rounded-xl w-full py-1 px-3"
+          />
+
+          <button type="submit" className="border rounded-xl py-1 px-3">
+            Send
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+};
+```
+
+### Update Home Page
+
+Update `/app/page.tsx` using the Chat component we created.
+
+```tsx /app/page.tsx
+import { Chat } from "./components/chat";
+import { cookies } from "next/headers";
+import { ragChat } from "@/app/lib/rag-chat";
+
+export default async function Home() {
+  const sessionId = cookies().get("sessionId")?.value;
+  const initialMessages = await ragChat.history.getMessages({
+    amount: 10,
+    sessionId,
+  });
+  return <Chat sessionId={sessionId!} initialMessages={initialMessages} />;
+}
+```
+
+### Run & Deploy
+
+Run the app locally with `npm run dev`, check `http://localhost:3000/`
+
+Deploy your app with `vercel`

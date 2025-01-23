@@ -89,6 +89,7 @@ export class ContextService {
           topK: optionsWithDefault.topK,
           namespace: optionsWithDefault.namespace,
           contextFilter: optionsWithDefault.contextFilter,
+          queryMode: optionsWithDefault.queryMode,
         });
 
         // Log the result, which will be captured by the outer traceable

@@ -1,0 +1,123 @@
+---
+title: Next.js
+---
+
+### Next.js Route Handlers
+
+RAGChat integrates with Next.js route handlers out of the box. See [our example project for a complete view](https://github.com/upstash/rag-chat/tree/master/examples/nextjs/chat-to-website).
+
+Here's how to use it:
+
+#### Basic usage
+
+```typescript
+import { ragChat } from "@/utils/rag-chat";
+import { NextResponse } from "next/server";
+
+export const POST = async (req: Request) => {
+  // 👇 user message
+  const { message } = await req.json();
+  const { output } = await ragChat.chat(message);
+  return NextResponse.json({ output });
+};
+```
+
+#### Streaming responses
+
+To stream the response from a route handler:
+
+```typescript
+import { ragChat } from "@/utils/rag-chat";
+
+export const POST = async (req: Request) => {
+  const { message } = await req.json();
+  const { output } = await ragChat.chat(message, { streaming: true });
+  return new Response(output);
+};
+```
+
+On the frontend, you can read the streamed data like this:
+
+```typescript
+"use client"
+
+export const ChatComponent = () => {
+  const [response, setResponse] = useState('');
+
+  async function fetchStream() {
+    const response = await fetch("/api/chat", {
+      method: "POST",
+      body: JSON.stringify({ message: "Your question here" }),
+    });
+
+    if (!response.body) {
+      console.error("No response body");
+      return;
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value, { stream: true });
+      setResponse(prev => prev + chunk);
+    }
+  }
+
+  useEffect(() => {
+    fetchStream();
+  }, []);
+
+  return <div>{response}</div>;
+}
+```
+
+### Next.js Server Actions
+
+RAGChat supports Next.js server actions natively. See [our example project on GitHub](https://github.com/upstash/rag-chat/tree/master/examples/nextjs/server-actions).
+
+First, define your server action:
+
+```typescript
+"use server";
+
+import { ragChat } from "@/utils/rag-chat";
+import { createServerActionStream } from "@upstash/rag-chat/nextjs";
+
+export const serverChat = async (message: string) => {
+  const { output } = await ragChat.chat(message, { streaming: true });
+
+  // 👇 adapter to let us stream from server actions
+  return createServerActionStream(output);
+};
+```
+
+Second, use the server action in your client component:
+
+```typescript
+"use client";
+
+import { readServerActionStream } from "@upstash/rag-chat/nextjs";
+
+export const ChatComponent = () => {
+  const [response, setResponse] = useState('');
+
+  const clientChat = async () => {
+    const stream = await serverChat("How are you?");
+
+    for await (const chunk of readServerActionStream(stream)) {
+      setResponse(prev => prev + chunk);
+    }
+  };
+
+  return (
+    <div>
+      <button onClick={clientChat}>Start Chat</button>
+      <div>{response}</div>
+    </div>
+  );
+};
+```

@@ -1,0 +1,73 @@
+---
+title: SvelteKit
+---
+<Card title="GitHub Repository" icon="github" href="https://github.com/upstash/rag-chat/tree/master/examples/nextjs/sveltekit" horizontal>
+  You can find the project source code on GitHub.
+</Card>
+This guide provides detailed, step-by-step instructions on how to use Upstash RAG Chat with SvelteKit. You can also explore our [SvelteKit example](https://github.com/upstash/rag-chat/tree/master/examples/nextjs/sveltekit) for detailed, end-to-end examples and best practices.
+
+### Project Setup
+
+Create a new SvelteKit application and install `@upstash/rag-chat` package.
+
+```shell
+npm create svelte@latest my-app
+cd my-app
+npm install @upstash/rag-chat
+```
+
+### Setup Upstash Vector
+
+Create a Vector index using [Upstash Console](https://console.upstash.com) or [Upstash CLI](https://github.com/upstash/cli) and copy the `UPSTASH_VECTOR_REST_URL` and `UPSTASH_VECTOR_REST_TOKEN` into your `.env` file.
+
+```shell .env
+UPSTASH_VECTOR_REST_URL=<YOUR_URL>
+UPSTASH_VECTOR_REST_TOKEN=<YOUR_TOKEN>
+```
+
+### Setup QStash LLM
+
+Navigate to [QStash Console](https://console.upstash.com/qstash) and copy the `QSTASH_TOKEN` into your `.env` file.
+
+```shell .env
+QSTASH_TOKEN=<YOUR_TOKEN>
+```
+
+### Create a SvelteKit Handler
+
+Create `/src/routes/chat/+server.ts`:
+
+```typescript /src/routes/chat/+server.ts
+import { RAGChat, upstash } from "@upstash/rag-chat";
+import { Index } from "@upstash/vector";
+import { env } from "$env/dynamic/private";
+
+const ragChat = new RAGChat({
+  vector: new Index({
+    token: env.UPSTASH_VECTOR_REST_TOKEN,
+    url: env.UPSTASH_VECTOR_REST_URL
+  }),
+  model: upstash("meta-llama/Meta-Llama-3-8B-Instruct", {
+    apiKey: env.QSTASH_TOKEN
+  }),
+});
+
+export async function GET() {
+  const response = await ragChat.chat("What is the speed of light?");
+  return new Response(response.output, {
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  });
+}
+```
+
+### Run
+
+Run the SvelteKit application:
+
+```bash
+npm run dev
+```
+
+Visit `http://localhost:5173/chat`

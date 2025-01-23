@@ -3,7 +3,7 @@ import { ChatOpenAI } from "@langchain/openai";
 import { openai } from "@ai-sdk/openai";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
-import { Index } from "@upstash/vector";
+import { Index, QueryMode } from "@upstash/vector";
 import { LangChainAdapter, StreamingTextResponse } from "ai";
 import {
   afterAll,
@@ -49,6 +49,11 @@ describe("RAG Chat with advance configs and direct instances", () => {
     url: process.env.UPSTASH_REDIS_REST_URL!,
   });
 
+  const hybridVector = new Index({
+    url: process.env.HYBRID_EMBEDDING_UPSTASH_VECTOR_REST_URL!,
+    token: process.env.HYBRID_EMBEDDING_UPSTASH_VECTOR_REST_TOKEN!,
+  });
+
   const ragChat = new RAGChat({
     model: upstashOpenai("gpt-3.5-turbo"),
     vector,
@@ -69,6 +74,7 @@ describe("RAG Chat with advance configs and direct instances", () => {
     await vector.reset({ namespace });
     await vector.deleteNamespace(namespace);
     await redis.flushdb();
+    await hybridVector.reset({ all: true });
   });
 
   test("should get result without streaming", async () => {
@@ -88,6 +94,42 @@ describe("RAG Chat with advance configs and direct instances", () => {
     expect(result.context[0].data).toContain(
       "Paris, the capital of France, is renowned for its iconic landmark, the Eiffel Tower, which was completed in 1889 and stands at 330 meters tall."
     );
+  });
+
+  test("should retrieve with query mode", async () => {
+    const ragChat = new RAGChat({
+      vector: hybridVector,
+      streaming: true,
+      model: upstash("meta-llama/Meta-Llama-3-8B-Instruct"),
+    });
+
+    await ragChat.context.add({
+      type: "text",
+      data: "foo is bar",
+    });
+    await ragChat.context.add({
+      type: "text",
+      data: "foo is zed",
+    });
+    await awaitUntilIndexed(hybridVector);
+
+    const result = await ragChat.chat<{ unit: string }>("what is foo or bar?", {
+      topK: 1,
+      similarityThreshold: 0,
+      queryMode: QueryMode.SPARSE,
+      onContextFetched(context) {
+        expect(context.length).toBe(1);
+        return context;
+      },
+    });
+
+    expect(result.context).toEqual([
+      {
+        data: "foo is bar",
+        id: expect.any(String) as string,
+        metadata: undefined,
+      },
+    ]);
   });
 });
 

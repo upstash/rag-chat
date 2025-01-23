@@ -1,0 +1,92 @@
+---
+title: Node.js
+---
+<Card title="GitHub Repository" icon="github" href="https://github.com/upstash/rag-chat/tree/master/examples/nodejs" horizontal>
+  You can find the project source code on GitHub.
+</Card>
+
+### Install RAG Chat SDK
+
+Initialize the project and install the required packages:
+
+```bash
+npm init es6
+npm install dotenv
+npm install @upstash/rag-chat
+```
+
+### Setup Upstash Redis
+
+Create a Redis database using [Upstash Console](https://console.upstash.com) or [Upstash CLI](https://github.com/upstash/cli) and copy the `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` into your `.env` file.
+
+```shell .env
+UPSTASH_REDIS_REST_URL=<YOUR_URL>
+UPSTASH_REDIS_REST_TOKEN=<YOUR_TOKEN>
+```
+
+### Setup Upstash Vector
+
+Create a Vector index using [Upstash Console](https://console.upstash.com) or [Upstash CLI](https://github.com/upstash/cli) and copy the `UPSTASH_VECTOR_REST_URL` and `UPSTASH_VECTOR_REST_TOKEN` into your `.env` file.
+
+```shell .env
+UPSTASH_VECTOR_REST_URL=<YOUR_URL>
+UPSTASH_VECTOR_REST_TOKEN=<YOUR_TOKEN>
+```
+
+### Setup QStash LLM
+
+Navigate to [QStash Console](https://console.upstash.com/qstash) and copy the `QSTASH_TOKEN` into your `.env` file.
+
+```shell .env
+QSTASH_TOKEN=<YOUR_TOKEN>
+```
+
+### Create a Node.js Server
+
+Create `server.ts`:
+
+```typescript server.ts
+import { RAGChat, upstash } from "@upstash/rag-chat";
+import dotenv from "dotenv";
+import { createServer } from "node:http";
+
+dotenv.config();
+
+const server = createServer(async (_, result) => {
+  const ragChat = new RAGChat({
+    model: upstash("meta-llama/Meta-Llama-3-8B-Instruct"),
+  });
+
+  await ragChat.context.add({
+    type: "text",
+    data: "Paris, the capital of France, is renowned for its iconic landmark, the Eiffel Tower, which was completed in 1889 and stands at 330 meters tall.",
+  });
+
+  // 👇 slight delay to allow for vector indexing
+  await sleep(3000);
+
+  const response = await ragChat.chat(
+    "What year was the construction of the Eiffel Tower completed, and what is its height?"
+  );
+
+  result.writeHead(200, { "Content-Type": "text/plain" });
+  result.write(response.output);
+  result.end();
+});
+
+server.listen(8080, () => {
+  console.log("Server listening on http://localhost:8080");
+});
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+```
+
+### Run the Server
+
+```bash
+npx tsx server.ts
+```
+
+Visit `http://localhost:8080`

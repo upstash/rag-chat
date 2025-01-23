@@ -1,0 +1,105 @@
+---
+title: Unstructured
+---
+
+[Unstructured](https://unstructured.io/) extracts complex data from difficult-to-use formats like HTML, PDF, CSV, and more. Check out [Unstructured - Product](https://unstructured.io/product) for more information about their product and pricing.
+
+### Install RAG Chat SDK
+
+[Install Bun](https://bun.sh/docs/installation) if you haven't.
+
+Initialize the project and install the required packages:
+
+```bash
+npm init es6
+npm install dotenv
+npm install @upstash/rag-chat
+npm i --save-dev @types/bun  
+```
+
+### Setup Upstash Redis
+
+Create a Redis database using [Upstash Console](https://console.upstash.com) or [Upstash CLI](https://github.com/upstash/cli) and copy the `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` into your `.env` file.
+
+```shell .env
+UPSTASH_REDIS_REST_URL=<YOUR_URL>
+UPSTASH_REDIS_REST_TOKEN=<YOUR_TOKEN>
+```
+
+### Setup Upstash Vector
+
+Create a Vector index using [Upstash Console](https://console.upstash.com) or [Upstash CLI](https://github.com/upstash/cli) and copy the `UPSTASH_VECTOR_REST_URL` and `UPSTASH_VECTOR_REST_TOKEN` into your `.env` file.
+
+```shell .env
+UPSTASH_VECTOR_REST_URL=<YOUR_URL>
+UPSTASH_VECTOR_REST_TOKEN=<YOUR_TOKEN>
+```
+
+### Setup QStash LLM
+
+Navigate to [QStash Console](https://console.upstash.com/qstash) and copy the `QSTASH_TOKEN` into your `.env` file.
+
+```shell .env
+QSTASH_TOKEN=<YOUR_TOKEN>
+```
+
+### Setup Unstructured
+
+Create an Unstructured account and get an API key from [Unstructed -> API Keys](https://app.unstructured.io/keys). Set your Unstructed API key as an environment variable:
+
+```bash .env
+UNSTRUCTURED_IO_KEY=<YOUR_API_KEY>
+```
+
+### Setup the Project
+
+Initialize RAGChat:
+
+```typescript index.ts
+import { RAGChat, upstash } from "@upstash/rag-chat";
+import "dotenv/config";
+
+const ragChat = new RAGChat({
+  model: upstash("meta-llama/Meta-Llama-3-8B-Instruct"),
+});
+```
+
+Fetch a webpage and save it to a file:
+
+```typescript index.ts
+const fileSource = "./hackernews.html";
+const response = await fetch("https://news.ycombinator.com/");
+await Bun.write(fileSource, await response.text());
+```
+
+Add context to the RAG Chat with the Unstructured processor:
+
+```typescript index.ts
+await ragChat.context.add({
+  options: {
+    namespace: "unstructured-upstash",
+  },
+  fileSource,
+  processor: {
+    name: "unstructured",
+    options: { apiKey: process.env.UNSTRUCTURED_IO_KEY },
+  },
+});
+```
+
+Chat with the RAG Chat:
+
+```typescript index.ts
+const result = await ragChat.chat("What is the second story on hacker news?", {
+  streaming: false,
+  namespace: "unstructured-upstash",
+});
+```
+
+### Run
+
+Run the project:
+
+```bash
+bun run index.ts
+```

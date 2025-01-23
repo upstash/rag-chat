@@ -2,7 +2,7 @@ import type { ChatOpenAI } from "@langchain/openai";
 import type { openai } from "@ai-sdk/openai";
 import type { Ratelimit } from "@upstash/ratelimit";
 import type { Redis } from "@upstash/redis";
-import type { Index } from "@upstash/vector";
+import type { Index, QueryMode } from "@upstash/vector";
 import type { CustomPrompt } from "./rag-chat";
 import type { ChatMistralAI } from "@langchain/mistralai";
 import type { ChatAnthropic } from "@langchain/anthropic";
@@ -97,6 +97,13 @@ export type ChatOptions = {
    * Hook to access the final response
    */
   onFinish?: ({ output }: { output: string }) => void;
+  /*
+   * Query mode to use when querying a hybrid index.
+   *
+   * This is useful if your index is a hybrid index and you want to query the
+   * sparse or dense part when you pass `data`.
+   */
+  queryMode?: QueryMode;
 } & CommonChatAndRAGOptions;
 
 export type PrepareChatResult = { data: string; id: string; metadata: unknown }[];

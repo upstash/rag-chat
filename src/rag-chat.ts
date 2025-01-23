@@ -296,6 +296,7 @@ export class RAGChat {
         : (options?.promptFn ?? this.config.prompt),
       contextFilter: options?.contextFilter ?? undefined,
       onFinish: options?.onFinish,
+      queryMode: options?.queryMode ?? undefined,
     };
   }
 }

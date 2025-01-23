@@ -1,5 +1,5 @@
 import type { WebBaseLoaderParams } from "@langchain/community/document_loaders/web/cheerio";
-import type { Index } from "@upstash/vector";
+import type { Index, QueryMode } from "@upstash/vector";
 import type { RecursiveCharacterTextSplitterParams } from "langchain/text_splitter";
 import { nanoid } from "nanoid";
 import { DEFAULT_SIMILARITY_THRESHOLD, DEFAULT_TOP_K } from "./constants";
@@ -74,6 +74,7 @@ export type VectorPayload = {
   topK?: number;
   namespace?: string;
   contextFilter?: string;
+  queryMode?: QueryMode;
 };
 
 export type ResetOptions = {
@@ -108,6 +109,7 @@ export class Database {
     topK = DEFAULT_TOP_K,
     namespace,
     contextFilter,
+    queryMode,
   }: VectorPayload): Promise<{ data: string; id: string; metadata: TMetadata }[]> {
     const index = this.index;
     const result = await index.query<Record<string, string>>(
@@ -117,6 +119,7 @@ export class Database {
         includeData: true,
         includeMetadata: true,
         ...(typeof contextFilter === "string" && { filter: contextFilter }),
+        queryMode,
       },
       { namespace }
     );
@@ -153,32 +156,34 @@ export class Database {
     const { namespace } = input.options ?? {};
     if (input.type === "text") {
       try {
-        const vectorId = await this.index.upsert(
+        const returnId = input.id ?? nanoid();
+        await this.index.upsert(
           {
             data: input.data,
-            id: input.id ?? nanoid(),
+            id: returnId,
             metadata: input.options?.metadata,
           },
           { namespace }
         );
 
-        return { success: true, ids: [vectorId.toString()] };
+        return { success: true, ids: [returnId.toString()] };
       } catch (error) {
         return { success: false, error: JSON.stringify(error, Object.getOwnPropertyNames(error)) };
       }
     } else if (input.type === "embedding") {
       try {
-        const vectorId = await this.index.upsert(
+        const returnId = input.id ?? nanoid();
+        await this.index.upsert(
           {
             vector: input.data,
             data: input.text,
-            id: input.id ?? nanoid(),
+            id: returnId,
             metadata: input.options?.metadata,
           },
           { namespace }
         );
 
-        return { success: true, ids: [vectorId.toString()] };
+        return { success: true, ids: [returnId.toString()] };
       } catch (error) {
         return { success: false, error: JSON.stringify(error, Object.getOwnPropertyNames(error)) };
       }
