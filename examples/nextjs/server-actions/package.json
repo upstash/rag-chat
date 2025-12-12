@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@upstash/rag-chat": "latest",
-    "next": "14.2.11",
+    "next": "14.2.35",
     "react": "^18",
     "react-dom": "^18"
   },
