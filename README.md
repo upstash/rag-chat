@@ -32,11 +32,11 @@ Features:
 Install the package using your preferred package manager:
 
 ```sh
-pnpm add @upstash/rag-chat
+pnpm add @upstash/rag-chat @upstash/redis
 
-bun add @upstash/rag-chat
+bun add @upstash/rag-chat @upstash/redis
 
-npm i @upstash/rag-chat
+npm i @upstash/rag-chat @upstash/redis
 ```
 
 ### Quick Start
@@ -66,8 +66,14 @@ import { RAGChat } from "@upstash/rag-chat";
 
 const ragChat = new RAGChat();
 
-const response = await ragChat.chat("Tell me about machine learning");
-console.log(response);
+const main = async ()=>{
+  const response = await ragChat.chat("Tell me about machine learning");
+  console.log(response);
+}
+
+main()
+
+
 ```
 
 ### Basic Usage
@@ -79,18 +85,24 @@ export const ragChat = new RAGChat({
   model: openai("gpt-4-turbo"),
 });
 
-await ragChat.context.add({
-  type: "text",
-  data: "The speed of light is approximately 299,792,458 meters per second.",
-});
 
-await ragChat.context.add({
-  type: "pdf",
-  fileSource: "./data/physics_basics.pdf",
-});
-const response = await ragChat.chat("What is the speed of light?");
+const main = async ()=>{
 
-console.log(response.output);
+  await ragChat.context.add({
+    type: "text",
+    data: "The speed of light is approximately 299,792,458 meters per second.",
+  });
+  
+  await ragChat.context.add({
+    type: "pdf",
+    fileSource: "./data/physics_basics.pdf",
+  });
+  const response = await ragChat.chat("What is the speed of light?");
+  
+  console.log(response.output);
+}
+
+main()
 ```
 
 ## Docs
