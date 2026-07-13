@@ -127,14 +127,9 @@ export class Database {
 
     if (allValuesUndefined) {
       console.error("There is no answer for this question in the provided context.");
-
-      return [
-        {
-          data: "There is no answer for this question in the provided context.",
-          id: "error",
-          metadata: {} as TMetadata,
-        },
-      ];
+      // Return an empty list so callers do not surface a fixed-size array of
+      // undefined metadata (default topK is 5) when nothing relevant is found.
+      return [];
     }
 
     const facts = result
@@ -142,7 +137,9 @@ export class Database {
       .map((embedding) => ({
         data: embedding.data ?? "",
         id: embedding.id.toString(),
-        metadata: embedding.metadata as TMetadata,
+        // Vectors without stored metadata previously leaked `undefined` entries
+        // into `chat()` responses (see #49).
+        metadata: (embedding.metadata ?? {}) as TMetadata,
       }));
 
     return facts;
