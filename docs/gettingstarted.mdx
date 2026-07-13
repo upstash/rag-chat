@@ -5,7 +5,6 @@ title: Getting Started
 Upstash RAG Chat is **TypeScript toolkit for building powerful RAG applications**. With Upstash RAG Chat, you can focus on building a high-quality chatbot without having to deal with complicated AI orchestration tools.
 
 You can find the Github Repository [here](https://github.com/upstash/rag-chat).
-        
 
 ### Installation
 
@@ -131,6 +130,13 @@ await ragChat.context.add({
 
   // optional 👇: only add this knowledge to a specific namespace
   options: { namespace: "user-123-documents" },
+});
+
+// When querying that knowledge, pass the same namespace at the top level of chat options
+// (not nested under `options` — that shape is only for `context.add`).
+await ragChat.chat("Summarize the PDF", {
+  namespace: "user-123-documents",
+  sessionId: "user-123-session", // optional 👇: isolate this user's chat history
 });
 ```
 

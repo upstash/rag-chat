@@ -19,12 +19,57 @@ const result = await ragChat.chat("THIS_IS_USERS_QUESTION", {
 ```
 
 #### Adjust the context quality
+
 If your chatbot is negatively affected by the provided context, you can adjust the context quality using the `similarityThreshold` option. The similarityThreshold is a number between 0 and 1, with a default value of 0.5. Increasing this value will improve quality, but the chatbot may reject more queries due to lack of relevant data.
 
 ```ts
 ragChat.chat("Tell me about machine learning", {
-  similarityThreshold: 0.5
+  similarityThreshold: 0.5,
 });
+```
+
+#### Use namespaces correctly
+
+Namespaces isolate knowledge in the vector index (for example per user or tenant).
+
+- When **adding** context, pass `namespace` under `options`.
+- When **chatting**, pass `namespace` at the **top level** of the chat options — not nested under `options`.
+
+```ts
+const namespace = "user-123-documents";
+
+await ragChat.context.add({
+  type: "text",
+  data: "The speed of light is approximately 299,792,458 meters per second.",
+  options: { namespace },
+});
+
+// Correct: namespace is a top-level chat option
+const reply = await ragChat.chat("What is the speed of light?", {
+  namespace,
+});
+
+// Incorrect: nesting under `options` is ignored for chat retrieval
+// await ragChat.chat("What is the speed of light?", {
+//   options: { namespace },
+// });
+```
+
+If add and chat use different namespaces (or chat omits `namespace`), retrieval will look in the wrong index and the model may answer as if no context was provided.
+
+#### Isolate chat history with sessionId
+
+If you do not set `sessionId`, every client shares the default session (`upstash-rag-chat-session`) and therefore the same history.
+
+Pass a unique `sessionId` per conversation (or per user) on `chat`, and use the same id when reading or deleting history:
+
+```ts
+const sessionId = "user-123-support-chat";
+
+await ragChat.chat("Hello", { sessionId });
+
+const history = await ragChat.history.getMessages({ sessionId, amount: 10 });
+await ragChat.history.deleteMessages({ sessionId });
 ```
 
 #### Disable RAG to bypass context
@@ -33,12 +78,12 @@ When RAG disabled, RAG chat skips the vector store and directly sends the questi
 
 ```ts
 const result = await ragChat.chat("THIS_IS_USERS_QUESTION", {
-  disableRAG: true
+  disableRAG: true,
 });
 ```
 
-
 #### Enable debug logs
+
 ```ts
 new RAGChat({ debug: true });
 ```
@@ -50,21 +95,21 @@ You can access and update the context by using the `onContextFetched` callback. 
 ```ts
 let response = await ragChat.chat(question, {
   onContextFetched: (context) => {
-    console.log("Retrieved context:", context)
-    return context
+    console.log("Retrieved context:", context);
+    return context;
   },
 });
 ```
 
-
 #### Access the chat history
+
 You can access chat history by using the `onChatHistoryFetched` callback. This callback is called after the chat history is fetched from the Redis (or memory) before the prompt is sent to the LLM.
 
 ```ts
 let response = await ragChat.chat(question, {
   onChatHistoryFetched: (messages) => {
-    console.log("Retrieved chat history:", messages)
-    return messages
+    console.log("Retrieved chat history:", messages);
+    return messages;
   },
 });
 ```
@@ -78,7 +123,7 @@ export const rag = new RAGChat();
 await rag.context.add({
   type: "text",
   data: "Mississippi is a state in the United States of America",
-  options: { metadata: { source: "wikipedia" }}
+  options: { metadata: { source: "wikipedia" } },
 });
 const response = await rag.chat("Where is Mississippi?");
 
@@ -87,6 +132,7 @@ console.log(response.metadata);
 ```
 
 #### Access the ratelimit details
+
 You can see how much allowance a user has by using the ratelimitDetails hook.
 
 ```ts
@@ -99,6 +145,7 @@ await ragChat.chat("You shall not pass", {
 ```
 
 #### Access the output during streaming
+
 You can access, read, or modify your streamed data.
 
 ```ts
@@ -118,32 +165,32 @@ await ragChat.chat("", {
 #### Store metadata in the chat history and access context
 
 ```ts
-let messages: UpstashMessage[] = []
-let context: PrepareChatResult = []
+let messages: UpstashMessage[] = [];
+let context: PrepareChatResult = [];
 
 const response = await ragChat.chat(question, {
   onChatHistoryFetched(_messages) {
-    messages = _messages
+    messages = _messages;
     this.metadata = {
       ...this.metadata,
       usedHistory: JSON.stringify(
         messages.map((message) => {
-          delete message.metadata?.usedHistory
-          delete message.metadata?.usedContext
-          return message
+          delete message.metadata?.usedHistory;
+          delete message.metadata?.usedContext;
+          return message;
         })
       ),
-    }
-    return _messages
+    };
+    return _messages;
   },
   onContextFetched(_context) {
-    context = _context
-    this.metadata = { ...this.metadata, usedContext: context.map((x) => x.data.replace("-", "")) }
-    return _context
+    context = _context;
+    this.metadata = { ...this.metadata, usedContext: context.map((x) => x.data.replace("-", "")) };
+    return _context;
   },
   streaming: true,
   metadata: {
     modelNameWithProvider: `${LLM_MODELS[llmModel].provider}_${llmModel}`,
   },
-})
+});
 ```

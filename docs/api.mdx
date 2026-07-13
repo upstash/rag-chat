@@ -99,13 +99,18 @@ The chat method enables conversations with a language model (LLM) using your vec
 {" "}
 
 <ParamField path="sessionId" type="string">
-  Chat session ID of the user interacting with the application
+  Chat session ID of the user interacting with the application. If omitted, all clients share the
+  default session and therefore the same chat history. Pass a unique value per conversation (or per
+  user) to isolate histories.
 </ParamField>
 
 {" "}
 
 <ParamField path="namespace" type="string">
-  Limit included context elements to a specific namespace (i.e. results for a specific user)
+  Limit included context elements to a specific namespace (i.e. results for a specific user). This
+  is a **top-level** chat option — do not nest it under `options`. When adding context, `namespace`
+  goes under `options` on `context.add`; when chatting, pass `namespace` directly on `chat` (and
+  keep it aligned with the namespace you ingested into).
 </ParamField>
 
 {" "}
@@ -161,19 +166,19 @@ const chatResponse = await ragChat.chat({
     topK: 3,
     streaming: true,
     onContextFetched: (context) => {
-      console.log("Retrieved context:", context)
-      return context
+      console.log("Retrieved context:", context);
+      return context;
     },
     metadata: { source: "product_inquiry" },
   },
-})
+});
 
 if (chatResponse.isStream) {
   for await (const chunk of chatResponse.output) {
-    console.log(chunk)
+    console.log(chunk);
   }
 } else {
-  console.log(chatResponse.output)
+  console.log(chatResponse.output);
 }
 ```
 
@@ -282,12 +287,12 @@ const result = await context.add({
   fileSource: "./document.pdf",
   pdfConfig: { splitPages: true },
   options: { metadata: { source: "company_report" } },
-})
+});
 
 if (result.success) {
-  console.log(`Added ${result.ids.length} context items`)
+  console.log(`Added ${result.ids.length} context items`);
 } else {
-  console.error(`Failed to add context: ${result.error}`)
+  console.error(`Failed to add context: ${result.error}`);
 }
 ```
 
@@ -336,13 +341,13 @@ The method doesn't return a value, but it's asynchronous, so you should wait for
 await context.delete({
   id: "item_123",
   namespace: "product_catalog",
-})
+});
 
 // Deleting multiple items
 await context.delete({
   id: ["item_456", "item_789", "item_101"],
   namespace: "customer_data",
-})
+});
 ```
 
 ### `deleteEntireContext`
@@ -378,13 +383,13 @@ The method doesn't return a value, but it's asynchronous, so you should wait for
 
 ```javascript
 // Resetting the entire vector database
-await context.deleteEntireContext()
-console.log("Entire context deleted successfully")
+await context.deleteEntireContext();
+console.log("Entire context deleted successfully");
 
 // Resetting a specific namespace
 await context.deleteEntireContext({
   namespace: "temporary_data",
-})
+});
 ```
 
 <Warning>
@@ -487,7 +492,7 @@ await history.addMessage({
   },
   sessionId: "user_456_weather_chat",
   sessionTTL: 1800, // Session will expire after 30 minutes
-})
+});
 ```
 
 ### `deleteMessages`
@@ -516,11 +521,11 @@ The method doesn't return a value, but it's asynchronous, so you should wait for
 #### Example:
 
 ```javascript
-const sessionIdToDelete = "user_789_support_chat"
+const sessionIdToDelete = "user_789_support_chat";
 
-await history.deleteMessages({ sessionId: sessionIdToDelete })
+await history.deleteMessages({ sessionId: sessionIdToDelete });
 
-console.log(`All messages in session ${sessionIdToDelete} have been deleted`)
+console.log(`All messages in session ${sessionIdToDelete} have been deleted`);
 ```
 
 <Warning>
@@ -537,14 +542,15 @@ The `getMessages` method retrieves several messages from a chat session's histor
 <ParamField path="options" type="GetMessagesOptions">
   <Expandable>
     <ParamField path="sessionId" type="string" default="DEFAULT_CHAT_SESSION_ID">
-      Chat session ID from which to retrieve messages. If not provided, a default
-      session ID will be used.
+      Chat session ID from which to retrieve messages. If not provided, a default session ID will be
+      used.
     </ParamField>
     <ParamField path="amount" type="number" default="DEFAULT_HISTORY_LENGTH">
       The amount of messages to retrieve.
     </ParamField>
     <ParamField path="startIndex" type="number" default="0">
-      The starting index from which to retrieve messages (i.e. for pagination). Defaults to 0 (most recent message).
+      The starting index from which to retrieve messages (i.e. for pagination). Defaults to 0 (most
+      recent message).
     </ParamField>
   </Expandable>
 </ParamField>
@@ -598,10 +604,10 @@ const messages = await history.getMessages({
   sessionId: "user_123_support_chat",
   amount: 10,
   startIndex: 0,
-})
+});
 
-console.log(`Retrieved ${messages.length} messages:`)
+console.log(`Retrieved ${messages.length} messages:`);
 messages.forEach((msg) => {
-  console.log(`${msg.role}: ${msg.content} (ID: ${msg.id})`)
-})
+  console.log(`${msg.role}: ${msg.content} (ID: ${msg.id})`);
+});
 ```
