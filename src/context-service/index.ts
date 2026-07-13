@@ -104,7 +104,8 @@ export class ContextService {
               run_type: "tool",
             }
           )(context),
-          metadata: context.map(({ metadata }) => metadata) as TMetadata[],
+          metadata:
+            context.length > 0 ? context.map(({ metadata }) => (metadata ?? {}) as TMetadata) : [],
           rawContext: context,
         };
       },
